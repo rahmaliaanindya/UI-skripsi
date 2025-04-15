@@ -163,11 +163,23 @@ elif menu == "Hasil Clustering":
         st.pyplot(plt.gcf())
         plt.clf()
 
-        # Tampilkan hasil clustering
         if st.session_state.df is not None:
-            df = st.session_state.df.copy()
-            df['Cluster'] = labels
-            st.subheader("Hasil Cluster pada Data")
-            st.dataframe(df[['Cluster'] + list(df.columns)])
+    df = st.session_state.df.copy()
+    df['Cluster'] = labels
+
+    st.subheader("📄 Hasil Cluster pada Data")
+
+    # Hindari duplikasi kolom 'Cluster'
+    columns_without_cluster = [col for col in df.columns if col != 'Cluster']
+    df_display = df[['Cluster'] + columns_without_cluster]
+
+    # Tampilkan DataFrame
+    st.dataframe(df_display)
+
+    # Tampilkan jumlah anggota tiap cluster
+    st.subheader("📊 Jumlah Anggota per Cluster")
+    cluster_counts = df['Cluster'].value_counts().sort_index()
+    st.bar_chart(cluster_counts)
+
     else:
         st.warning("⚠️ Data belum diproses. Silakan lakukan preprocessing terlebih dahulu.")
