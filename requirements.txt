@@ -1,2 +1,15 @@
-streamlit
-pandas
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import SpectralClustering, KMeans
+from sklearn.metrics import silhouette_score, davies_bouldin_score
+from scipy.linalg import eigh
+from sklearn.neighbors import kneighbors_graph
+from sklearn.metrics import silhouette_score
+from sklearn.metrics import davies_bouldin_score
+import matplotlib.pyplot as plt
+from pyswarm import pso
+from sklearn.decomposition import PCA
+from scipy.stats import zscore # Import the zscore function
