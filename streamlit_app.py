@@ -168,6 +168,6 @@ elif menu == "Hasil Clustering":
             df = st.session_state.df.copy()
             df['Cluster'] = labels
             st.subheader("Hasil Cluster pada Data")
-            st.dataframe(df[['Cluster'] + list(df.columns[:3])])  # Tampilkan 3 kolom pertama + cluster
+            st.dataframe(df[['Cluster'] + list(df.columns)])
     else:
         st.warning("⚠️ Data belum diproses. Silakan lakukan preprocessing terlebih dahulu.")
