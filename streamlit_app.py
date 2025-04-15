@@ -51,7 +51,7 @@ if menu == "Home":
     - 📁 Mengunggah dan mengeksplorasi data indikator kemiskinan
     - 🧹 Melakukan preprocessing data
     - 📊 Menampilkan visualisasi
-    - 🤖 Menerapkan metode **Clustering**
+    - 🤖 Menerapkan metode **Spectral Clustering**
     - 📈 Mengevaluasi hasil pengelompokan
 
     📌 Silakan pilih menu di atas untuk memulai analisis.
