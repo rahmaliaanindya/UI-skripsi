@@ -45,7 +45,7 @@ menu = st.radio(
 # === Konten berdasarkan Menu ===
 if menu == "Home":
     st.markdown("""
-    # 👋 Selamat Datang di Aplikasi Analisis Kemiskinan Jawa Timur 📊
+    # 👋 Selamat Datang di Aplikasi Analisis Cluster Kemiskinan Jawa Timur 📊
 
     Aplikasi ini dirancang untuk:
     - 📁 Mengunggah dan mengeksplorasi data indikator kemiskinan
