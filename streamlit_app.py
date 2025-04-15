@@ -28,6 +28,30 @@ def local_css():
             h1, h2, h3, h4, h5, h6, p, div, span {
                 color: #4a4a4a !important;
             }
+            .title {
+                font-family: 'Helvetica', sans-serif;
+                color: #334E68;
+                font-size: 36px;
+                font-weight: bold;
+                text-align: center;
+            }
+            .description {
+                font-size: 18px;
+                color: #4A90E2;
+                line-height: 1.6;
+            }
+            .section-header {
+                font-size: 24px;
+                font-weight: bold;
+                color: #D44F4A;
+            }
+            .block-container {
+                padding-top: 1rem;
+            }
+            .icon {
+                font-size: 2rem;
+                color: #D44F4A;
+            }
         </style>
         """,
         unsafe_allow_html=True
