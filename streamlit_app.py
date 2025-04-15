@@ -20,7 +20,7 @@ def local_css():
         """
         <style>
             body {
-                background-image: url('https://example.com/path/to/your/background.jpg');
+                background-image: url('https://www.google.com/url?sa=i&url=https%3A%2F%2Fnnc-frontend.netralnews.com%2Fdaftar-lengkap-nama-kota-dan-kabupaten-di-jawa-timur%2FZDdkODkwUWtJVDFEQlVMUG14TTR5Zz09&psig=AOvVaw0nTXQhuSZLMXm8S-LwV32D&ust=1744821972457000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCOiq_ci-2owDFQAAAAAdAAAAABAJ');
                 background-size: cover;
                 background-position: center;
                 background-attachment: fixed;
