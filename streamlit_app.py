@@ -170,12 +170,11 @@ elif menu == "Hasil Clustering":
 
             st.subheader("📄 Hasil Cluster pada Data")
 
-            # Hindari duplikasi kolom 'Cluster'
-            columns_without_cluster = [col for col in df.columns if col != 'Cluster']
-            df_display = df[['Cluster'] + columns_without_cluster]
+            # Urutkan data berdasarkan 'Cluster'
+            df_sorted = df.sort_values(by='Cluster')
 
-            # Tampilkan DataFrame
-            st.dataframe(df_display)
+            # Tampilkan DataFrame yang sudah diurutkan
+            st.dataframe(df_sorted)
 
             # Tampilkan jumlah anggota tiap cluster
             st.subheader("📊 Jumlah Anggota per Cluster")
