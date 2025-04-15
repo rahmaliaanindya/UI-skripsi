@@ -2,9 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler
-from streamlit_option_menu import option_menu
 
 # Konfigurasi halaman Streamlit
 st.set_page_config(
