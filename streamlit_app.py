@@ -111,6 +111,7 @@ elif menu == "Visualisasi Data":
 # 5. HASIL CLUSTERING
 elif menu == "Hasil Clustering":
     st.header("🧩 Hasil Clustering")
+    
     if st.session_state.X_scaled is not None:
         X_scaled = st.session_state.X_scaled
         st.subheader("Evaluasi Jumlah Cluster (Silhouette & DBI)")
@@ -125,38 +126,48 @@ elif menu == "Hasil Clustering":
             silhouette_scores[k] = silhouette_score(X_scaled, labels)
             dbi_scores[k] = davies_bouldin_score(X_scaled, labels)
 
-        st.line_chart(pd.DataFrame({
+        # Tampilkan grafik evaluasi
+        score_df = pd.DataFrame({
             'Silhouette Score': silhouette_scores,
             'Davies-Bouldin Index': dbi_scores
-        }))
+        })
+        st.line_chart(score_df)
 
-        # Cari jumlah cluster terbaik berdasarkan kedua metrik
+        # Menentukan cluster terbaik dari dua metrik
         best_k_silhouette = max(silhouette_scores, key=silhouette_scores.get)
         best_k_dbi = min(dbi_scores, key=dbi_scores.get)
 
-        # Tampilkan hasil optimal
         st.success(f"🔹 Jumlah cluster optimal berdasarkan **Silhouette Score**: {best_k_silhouette}")
         st.success(f"🔸 Jumlah cluster optimal berdasarkan **Davies-Bouldin Index**: {best_k_dbi}")
+
+        # Pilihan manual untuk k_final atau default ke Silhouette
+        st.subheader("Pilih Jumlah Cluster untuk Clustering Final")
+        k_final = st.number_input("Jumlah Cluster (k):", min_value=2, max_value=10, value=best_k_silhouette, step=1)
 
         # Final Clustering
         final_cluster = SpectralClustering(n_clusters=k_final, affinity='nearest_neighbors', random_state=42)
         labels = final_cluster.fit_predict(X_scaled)
         st.session_state.labels = labels
 
-        # Visualisasi 2D
+        # Visualisasi 2D menggunakan PCA
         from sklearn.decomposition import PCA
         pca = PCA(n_components=2)
         X_pca = pca.fit_transform(X_scaled)
 
+        st.subheader("Visualisasi Clustering (PCA)")
         plt.figure(figsize=(8, 6))
         plt.scatter(X_pca[:, 0], X_pca[:, 1], c=labels, cmap='viridis', edgecolor='k')
-        plt.title("Visualisasi Clustering (PCA)")
+        plt.title("Visualisasi Clustering dengan PCA")
+        plt.xlabel("PC1")
+        plt.ylabel("PC2")
         st.pyplot(plt.gcf())
         plt.clf()
 
+        # Tampilkan hasil clustering
         if st.session_state.df is not None:
             df = st.session_state.df.copy()
             df['Cluster'] = labels
-            st.dataframe(df[['Cluster'] + list(df.columns[:3])])
+            st.subheader("Hasil Cluster pada Data")
+            st.dataframe(df[['Cluster'] + list(df.columns[:3])])  # Tampilkan 3 kolom pertama + cluster
     else:
-        st.warning("Data belum diproses. Silakan lakukan preprocessing terlebih dahulu.")
+        st.warning("⚠️ Data belum diproses. Silakan lakukan preprocessing terlebih dahulu.")
