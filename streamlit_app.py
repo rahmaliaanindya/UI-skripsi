@@ -115,7 +115,7 @@ elif menu == "Hasil Clustering":
         X_scaled = st.session_state.X_scaled
         st.subheader("Evaluasi Jumlah Cluster (Silhouette & DBI)")
 
-        clusters_range = range(2, 6)
+        clusters_range = range(2, 10)
         silhouette_scores = {}
         dbi_scores = {}
 
