@@ -6,7 +6,6 @@ import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import SpectralClustering
 from sklearn.metrics import silhouette_score, davies_bouldin_score
-import base64
 
 # Konfigurasi halaman
 st.set_page_config(
@@ -15,73 +14,38 @@ st.set_page_config(
     layout="wide"
 )
 
-# Fungsi untuk menampilkan gambar sebagai latar belakang
-def set_background_image():
-    """Menggunakan gambar lokal sebagai latar belakang UI aplikasi."""
-    
-    # Gambar latar belakang yang ada di folder proyek (misalnya di folder assets)
-    img_path = "images/peta jatim.jpg"  # Sesuaikan dengan lokasi gambar Anda
-    
-    # Membaca gambar dan mengonversinya menjadi base64
-    with open(img_path, "rb") as f:
-        img_data = f.read()
-    img_base64 = base64.b64encode(img_data).decode()
-    
-    # CSS untuk latar belakang gambar UI
-    st.markdown(
-        f"""
-        <style>
-            body {{
-                background-image: url('data:image/jpeg;base64,{img_base64}');
-                background-size: cover;
-                background-position: center;
-                background-attachment: fixed;
-                font-family: 'Helvetica', sans-serif;
-            }}
-            .main {{
-                background-color: rgba(255, 255, 255, 0.7); /* Transparansi untuk konten */
-                padding: 20px;
-            }}
-            .block-container {{
-                padding-top: 1rem;
-            }}
-            h1, h2, h3, h4, h5, h6, p, div, span {{
-                color: #4a4a4a !important;
-            }}
-            .title {{
-                font-family: 'Helvetica', sans-serif;
-                color: #334E68;
-                font-size: 36px;
-                font-weight: bold;
-                text-align: center;
-            }}
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
-# Panggil fungsi untuk menerapkan latar belakang gambar
-set_background_image()
-
-# Menyisipkan CSS tambahan
+# Custom CSS untuk tampilan dengan background image
 def local_css():
     st.markdown(
         """
         <style>
+            body {
+                background-image: url('https://example.com/path/to/your/background.jpg');
+                background-size: cover;
+                background-position: center;
+                background-attachment: fixed;
+            }
+            .main {
+                background-color: rgba(254, 236, 208, 0.7); /* Transparansi untuk kontras teks */
+            }
+            .block-container {
+                padding-top: 1rem;
+            }
+            h1, h2, h3, h4, h5, h6, p, div, span {
+                color: #4a4a4a !important;
+            }
             .title {
                 font-family: 'Helvetica', sans-serif;
                 color: #334E68;
                 font-size: 36px;
                 font-weight: bold;
                 text-align: center;
-                padding-top: 30px;
             }
         </style>
         """,
         unsafe_allow_html=True
     )
 
-# Menyisipkan CSS
 local_css()
 
 # === Navigasi Menu di Atas ===
