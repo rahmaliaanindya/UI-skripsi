@@ -73,7 +73,7 @@ elif menu == "Upload Data":
         df = pd.read_excel(uploaded_file)
         st.session_state.df = df
         st.success("Data berhasil dimuat!")
-        st.write(df.head())
+        st.write(df)
 
 # 3. PREPROCESSING
 elif menu == "Preprocessing Data":
