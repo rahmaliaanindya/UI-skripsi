@@ -14,25 +14,24 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS untuk tampilan dengan background image
+# Custom CSS untuk tampilan sederhana
 def local_css():
     st.markdown(
         """
         <style>
             body {
-                background-image: url('https://www.google.com/url?sa=i&url=https%3A%2F%2Fnnc-frontend.netralnews.com%2Fdaftar-lengkap-nama-kota-dan-kabupaten-di-jawa-timur%2FZDdkODkwUWtJVDFEQlVMUG14TTR5Zz09&psig=AOvVaw0nTXQhuSZLMXm8S-LwV32D&ust=1744821972457000&source=images&cd=vfe&opi=89978449&ved=0CBQQjRxqFwoTCOiq_ci-2owDFQAAAAAdAAAAABAJ');
-                background-size: cover;
-                background-position: center;
-                background-attachment: fixed;
+                font-family: 'Helvetica', sans-serif;
+                background-color: #f4f4f9; /* Warna latar belakang cerah */
             }
             .main {
-                background-color: rgba(254, 236, 208, 0.7); /* Transparansi untuk kontras teks */
+                background-color: rgba(255, 255, 255, 0.9); /* Transparansi untuk kontras teks */
+                padding: 2rem;
             }
             .block-container {
                 padding-top: 1rem;
             }
             h1, h2, h3, h4, h5, h6, p, div, span {
-                color: #4a4a4a !important;
+                color: #334E68;
             }
             .title {
                 font-family: 'Helvetica', sans-serif;
@@ -40,12 +39,14 @@ def local_css():
                 font-size: 36px;
                 font-weight: bold;
                 text-align: center;
+                margin-top: 50px;
             }
         </style>
         """,
         unsafe_allow_html=True
     )
 
+# Panggil fungsi untuk menambahkan CSS
 local_css()
 
 # === Navigasi Menu di Atas ===
