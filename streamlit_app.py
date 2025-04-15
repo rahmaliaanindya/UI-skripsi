@@ -69,9 +69,6 @@ if menu == "Home":
     📌 Silakan pilih menu di atas untuk memulai analisis.
     """)
 
-import streamlit as st
-import pandas as pd
-
 # 2. UPLOAD DATA
 elif menu == "Upload Data":
     st.header("📤 Upload Data Excel")
@@ -102,11 +99,10 @@ elif menu == "Upload Data":
         st.success("Data berhasil dimuat!")
         st.write(df)
 
-
 # 3. PREPROCESSING
 elif menu == "Preprocessing Data":
     st.header("⚙️ Preprocessing Data")
-    if st.session_state.df is not None:
+    if 'df' in st.session_state:
         df = st.session_state.df
         st.subheader("Cek Missing Values")
         st.write(df.isnull().sum())
@@ -131,7 +127,7 @@ elif menu == "Preprocessing Data":
 # 4. VISUALISASI DATA
 elif menu == "Visualisasi Data":
     st.header("📊 Visualisasi Data")
-    if st.session_state.df is not None:
+    if 'df' in st.session_state:
         df = st.session_state.df
         numerical_df = df.select_dtypes(include=['float64', 'int64'])
 
@@ -148,7 +144,7 @@ elif menu == "Visualisasi Data":
 elif menu == "Hasil Clustering":
     st.header("🧩 Hasil Clustering")
     
-    if st.session_state.X_scaled is not None:
+    if 'X_scaled' in st.session_state:
         X_scaled = st.session_state.X_scaled
         st.subheader("Evaluasi Jumlah Cluster (Silhouette & DBI)")
 
@@ -200,7 +196,7 @@ elif menu == "Hasil Clustering":
         plt.clf()
 
         # Menampilkan hasil clustering
-        if st.session_state.df is not None:
+        if 'df' in st.session_state:
             df = st.session_state.df.copy()
             df['Cluster'] = labels
 
@@ -219,4 +215,3 @@ elif menu == "Hasil Clustering":
 
     else:
         st.warning("⚠️ Data belum diproses. Silakan lakukan preprocessing terlebih dahulu.")
-
