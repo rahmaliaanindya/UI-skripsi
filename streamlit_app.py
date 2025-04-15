@@ -38,7 +38,7 @@ local_css()
 # === Navigasi Menu di Atas ===
 menu = st.radio(
     "Navigasi Aplikasi:",
-    ("Home", "Upload Data", "Preprocessing", "Visualisasi Data", "Hasil Clustering"),
+    ("Home", "Upload Data", "Preprocessing Data", "Visualisasi Data", "Hasil Clustering"),
     horizontal=True
 )
 
