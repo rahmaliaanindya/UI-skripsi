@@ -65,6 +65,15 @@ menu = st.sidebar.radio(
     ("Beranda", "Dashboard", "Visualisasi", "Tentang")
 )
 
+# Fungsi untuk memuat data
+@st.cache_data
+def load_data(file):
+    # Membaca file yang diupload
+    if file is not None:
+        return pd.read_excel(file)
+    else:
+        return None
+
 # Konten berdasarkan menu yang dipilih
 if menu == "Beranda":
     st.markdown('<div class="welcome-text">Selamat datang di Insight Predict 📊</div>', unsafe_allow_html=True)
@@ -81,13 +90,26 @@ elif menu == "Dashboard":
 elif menu == "Visualisasi":
     st.header("📊 Visualisasi Data")
     st.write("Contoh visualisasi:")
-    data = pd.DataFrame({
-        'Kategori': ['A', 'B', 'C', 'D'],
-        'Nilai': [23, 45, 56, 78]
-    })
-    fig, ax = plt.subplots()
-    ax.bar(data['Kategori'], data['Nilai'], color='#6c8c4c')
-    st.pyplot(fig)
+
+    # Upload file Excel untuk memuat data
+    uploaded_file = st.file_uploader("Upload file Excel", type="xlsx")
+    
+    # Load data jika file diupload
+    if uploaded_file is not None:
+        df = load_data(uploaded_file)
+        if df is not None:
+            st.write("Data berhasil dimuat!")
+            st.dataframe(df.head())
+            
+            # Contoh visualisasi
+            fig, ax = plt.subplots()
+            data = df[['Kategori', 'Nilai']]  # Sesuaikan dengan kolom yang ada dalam dataset
+            ax.bar(data['Kategori'], data['Nilai'], color='#6c8c4c')
+            st.pyplot(fig)
+        else:
+            st.write("Gagal memuat data.")
+    else:
+        st.write("Silakan unggah file Excel terlebih dahulu.")
 
 elif menu == "Tentang":
     st.header("ℹ️ Tentang Aplikasi")
