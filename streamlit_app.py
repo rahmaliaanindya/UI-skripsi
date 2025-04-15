@@ -59,37 +59,3 @@ def local_css():
         unsafe_allow_html=True
     )
 
-# Fungsi utama
-def main():
-    local_css()  # Memanggil CSS
-        
-        # Menu navigasi
-        selected = option_menu(
-            None,
-            ['🏠 Home', '📖 Tentang Aplikasi', '📂 Upload Data', 
-             '⚙️ Preprocessing Data', '📊 Visualisasi Data Historis', '🔮 Prediksi Masa Depan'],
-            menu_icon='cast',
-            icons=['house', 'info-circle', 'cloud-upload', 'filter', 'bar-chart', 'line-chart'],
-            default_index=0,
-            styles={
-                "container": {
-                    "padding": "0px",
-                    "background-color": "#cdd4b1"
-                },
-                "icon": {
-                    "color": "#4a4a4a",
-                    "font-size": "17px"
-                },
-                "nav-link": {
-                    "font-size": "15px",
-                    "text-align": "left",
-                    "margin": "5px",
-                    "color": "#4a4a4a",
-                    "--hover-color": "#b5c19a"
-                },
-                "nav-link-selected": {
-                    "background-color": "#6b8e23",
-                    "color": "white"
-                },
-            }
-        )
