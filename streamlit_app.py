@@ -14,39 +14,94 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS untuk tampilan sederhana
-def local_css():
+# Fungsi untuk menampilkan gambar sebagai latar belakang
+def set_background_image():
+    """Menggunakan gambar lokal sebagai latar belakang UI aplikasi."""
+    
+    # Gambar latar belakang yang ada di folder proyek (misalnya di folder assets)
+    img_path = "images/peta jatim.jpg"  # Sesuaikan dengan lokasi gambar Anda
+    
+    # Membaca gambar dan mengonversinya menjadi base64
+    with open(img_path, "rb") as f:
+        img_data = f.read()
+    img_base64 = base64.b64encode(img_data).decode()
+    
+    # CSS untuk latar belakang gambar UI
     st.markdown(
-        """
+        f"""
         <style>
-            body {
+            body {{
+                background-image: url('data:image/jpeg;base64,{img_base64}');
+                background-size: cover;
+                background-position: center;
+                background-attachment: fixed;
                 font-family: 'Helvetica', sans-serif;
-                background-color: #f4f4f9; /* Warna latar belakang cerah */
-            }
-            .main {
-                background-color: rgba(255, 255, 255, 0.9); /* Transparansi untuk kontras teks */
-                padding: 2rem;
-            }
-            .block-container {
+            }}
+            .main {{
+                background-color: rgba(255, 255, 255, 0.6); /* Transparansi untuk konten */
+                padding: 20px;
+                border-radius: 15px;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            }}
+            .block-container {{
                 padding-top: 1rem;
-            }
-            h1, h2, h3, h4, h5, h6, p, div, span {
-                color: #334E68;
-            }
-            .title {
+            }}
+            h1, h2, h3, h4, h5, h6, p, div, span {{
+                color: #4a4a4a !important;
+            }}
+            .title {{
                 font-family: 'Helvetica', sans-serif;
                 color: #334E68;
                 font-size: 36px;
                 font-weight: bold;
                 text-align: center;
                 margin-top: 50px;
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            }}
+            .description {{
+                font-size: 18px;
+                font-weight: lighter;
+                color: #555;
+                text-align: center;
+                margin-top: 30px;
+            }}
+            .content {{
+                padding-top: 20px;
+                background-color: rgba(255, 255, 255, 0.9); /* Transparency to highlight the content */
+                border-radius: 10px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+# Panggil fungsi untuk menambahkan gambar latar belakang
+set_background_image()
+
+# Menyisipkan CSS tambahan
+def local_css():
+    st.markdown(
+        """
+        <style>
+            .btn {
+                background-color: #4CAF50; /* Green background */
+                color: white; /* White text */
+                padding: 10px 20px;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                transition: background-color 0.3s ease;
+            }
+            .btn:hover {
+                background-color: #45a049; /* Darker green on hover */
             }
         </style>
         """,
         unsafe_allow_html=True
     )
 
-# Panggil fungsi untuk menambahkan CSS
+# Menyisipkan CSS
 local_css()
 
 # === Navigasi Menu di Atas ===
