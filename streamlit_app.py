@@ -20,7 +20,7 @@ def set_background_image():
     """Menggunakan gambar lokal sebagai latar belakang UI aplikasi."""
     
     # Gambar latar belakang yang ada di folder proyek (misalnya di folder assets)
-    img_path = "assets/background.jpg"  # Sesuaikan dengan lokasi gambar Anda
+    img_path = "images/peta jatim.jpg"  # Sesuaikan dengan lokasi gambar Anda
     
     # Membaca gambar dan mengonversinya menjadi base64
     with open(img_path, "rb") as f:
