@@ -76,8 +76,8 @@ elif menu == "Upload Data":
     # Deskripsi tentang data yang harus diunggah
     st.markdown("""
     ### Ketentuan Data:
-    - Data harus berupa file **Excel (.xlsx)**.
-    - Data harus mencakup kolom-kolom berikut:
+    - Data berupa file **Excel (.xlsx)**.
+    - Data mencakup kolom-kolom berikut:
         1. **Persentase Penduduk Miskin (%)**
         2. **Jumlah Penduduk Miskin (ribu jiwa)**
         3. **Harapan Lama Sekolah (Tahun)**
