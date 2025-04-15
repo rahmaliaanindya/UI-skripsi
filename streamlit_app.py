@@ -128,7 +128,6 @@ elif menu == "Upload Data":
             st.write(df)
 
 
-
 # 3. PREPROCESSING
 elif menu == "Preprocessing Data":
     st.header("⚙️ Preprocessing Data")
