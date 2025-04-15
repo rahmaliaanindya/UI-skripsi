@@ -157,7 +157,7 @@ elif menu == "Hasil Clustering":
         st.subheader("Visualisasi Clustering (PCA)")
         plt.figure(figsize=(8, 6))
         plt.scatter(X_pca[:, 0], X_pca[:, 1], c=labels, cmap='viridis', edgecolor='k')
-        plt.title("Visualisasi Clustering dengan PCA")
+        plt.title("Visualisasi Clustering dengan Spectral Clustering")
         plt.xlabel("PC1")
         plt.ylabel("PC2")
         st.pyplot(plt.gcf())
