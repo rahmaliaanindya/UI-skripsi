@@ -14,13 +14,19 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS untuk tampilan
+# Custom CSS untuk tampilan dengan background image
 def local_css():
     st.markdown(
         """
         <style>
+            body {
+                background-image: url('https://example.com/path/to/your/background.jpg');
+                background-size: cover;
+                background-position: center;
+                background-attachment: fixed;
+            }
             .main {
-                background-color: #feecd0;
+                background-color: rgba(254, 236, 208, 0.7); /* Transparansi untuk kontras teks */
             }
             .block-container {
                 padding-top: 1rem;
@@ -34,23 +40,6 @@ def local_css():
                 font-size: 36px;
                 font-weight: bold;
                 text-align: center;
-            }
-            .description {
-                font-size: 18px;
-                color: #4A90E2;
-                line-height: 1.6;
-            }
-            .section-header {
-                font-size: 24px;
-                font-weight: bold;
-                color: #D44F4A;
-            }
-            .block-container {
-                padding-top: 1rem;
-            }
-            .icon {
-                font-size: 2rem;
-                color: #D44F4A;
             }
         </style>
         """,
