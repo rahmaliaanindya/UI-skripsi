@@ -69,15 +69,64 @@ if menu == "Home":
     📌 Silakan pilih menu di atas untuk memulai analisis.
     """)
 
+import streamlit as st
+import pandas as pd
+
 # 2. UPLOAD DATA
 elif menu == "Upload Data":
     st.header("📤 Upload Data Excel")
+
+    # Deskripsi tentang data yang harus diunggah
+    st.markdown("""
+    ### Ketentuan Data:
+    - Data yang diunggah harus berupa file **Excel (.xlsx)**.
+    - Data harus mencakup kolom-kolom berikut:
+        1. **Persentase Penduduk Miskin (%)**
+        2. **Jumlah Penduduk Miskin (ribu jiwa)**
+        3. **Harapan Lama Sekolah (Tahun)**
+        4. **Rata-Rata Lama Sekolah (Tahun)**
+        5. **Tingkat Pengangguran Terbuka (%)**
+        6. **Tingkat Partisipasi Angkatan Kerja (%)**
+        7. **Angka Harapan Hidup (Tahun)**
+        8. **Garis Kemiskinan (Rupiah/Bulan/Kapita)**
+        9. **Indeks Pembangunan Manusia**
+        10. **Rata-rata Upah/Gaji Bersih Pekerja Informal Berdasarkan Lapangan Pekerjaan Utama (Rp)**
+        11. **Rata-rata Pendapatan Bersih Sebulan Pekerja Informal berdasarkan Pendidikan Tertinggi - Jumlah (Rp)**
+    """)
+
     uploaded_file = st.file_uploader("Unggah file Excel (.xlsx)", type="xlsx")
+
     if uploaded_file:
+        # Membaca file Excel
         df = pd.read_excel(uploaded_file)
+
+        # Menyimpan data ke session state agar bisa digunakan di menu lain
         st.session_state.df = df
-        st.success("Data berhasil dimuat!")
-        st.write(df)
+
+        # List kolom yang harus ada di dalam data
+        required_columns = [
+            "Persentase Penduduk Miskin (%)",
+            "Jumlah Penduduk Miskin (ribu jiwa)",
+            "Harapan Lama Sekolah (Tahun)",
+            "Rata-Rata Lama Sekolah (Tahun)",
+            "Tingkat Pengangguran Terbuka (%)",
+            "Tingkat Partisipasi Angkatan Kerja (%)",
+            "Angka Harapan Hidup (Tahun)",
+            "Garis Kemiskinan (Rupiah/Bulan/Kapita)",
+            "Indeks Pembangunan Manusia",
+            "Rata-rata Upah/Gaji Bersih Pekerja Informal Berdasarkan Lapangan Pekerjaan Utama (Rp)",
+            "Rata-rata Pendapatan Bersih Sebulan Pekerja Informal berdasarkan Pendidikan Tertinggi - Jumlah (Rp)"
+        ]
+
+        # Mengecek apakah semua kolom yang dibutuhkan ada dalam data
+        missing_columns = [col for col in required_columns if col not in df.columns]
+
+        if missing_columns:
+            st.error(f"Data yang diunggah tidak lengkap. Kolom yang hilang: {', '.join(missing_columns)}")
+        else:
+            st.success("Data berhasil dimuat!")
+            st.write(df)
+
 
 # 3. PREPROCESSING
 elif menu == "Preprocessing Data":
