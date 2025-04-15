@@ -125,7 +125,7 @@ elif menu == "Upload Data":
             st.error(f"Data yang diunggah tidak lengkap. Kolom yang hilang: {', '.join(missing_columns)}")
         else:
             st.success("Data berhasil dimuat!")
-            st.write(df)
+            st.write(df))
 
 
 # 3. PREPROCESSING
