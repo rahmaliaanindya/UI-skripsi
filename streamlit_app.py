@@ -9,61 +9,53 @@ from sklearn.metrics import silhouette_score, davies_bouldin_score
 
 # Konfigurasi halaman
 st.set_page_config(
-    page_title="Insight Predict",
+    page_title="Analisis Kemiskinan Jatim",
     page_icon="📊",
     layout="wide"
 )
 
-# CSS Styling
+# Custom CSS untuk tampilan
 def local_css():
     st.markdown(
         """
         <style>
-            [data-testid="stSidebar"] {
-                background-color: #cdd4b1;
-            }
-            [data-testid="stAppViewContainer"] {
+            .main {
                 background-color: #feecd0;
+            }
+            .block-container {
+                padding-top: 1rem;
             }
             h1, h2, h3, h4, h5, h6, p, div, span {
                 color: #4a4a4a !important;
             }
-            .welcome-text {
-                font-size: 22px;
-                font-weight: bold;
-                color: #4a4a4a;
-                text-align: center;
-                background-color: #f5deb3;
-                padding: 15px;
-                border-radius: 10px;
-            }
         </style>
-        """, unsafe_allow_html=True
+        """,
+        unsafe_allow_html=True
     )
 
 local_css()
 
-# Sidebar Menu
-menu = st.sidebar.radio("Navigasi", (
-    "Beranda", 
-    "Upload Data", 
-    "Preprocessing Data", 
-    "Visualisasi Data", 
-    "Hasil Clustering"
-))
+# === Navigasi Menu di Atas ===
+menu = st.radio(
+    "Navigasi Aplikasi:",
+    ("Home", "Upload Data", "Preprocessing", "Visualisasi Data", "Hasil Clustering"),
+    horizontal=True
+)
 
-# Session state untuk menyimpan data antar halaman
-if "df" not in st.session_state:
-    st.session_state.df = None
-if "X_scaled" not in st.session_state:
-    st.session_state.X_scaled = None
-if "labels" not in st.session_state:
-    st.session_state.labels = None
+# === Konten berdasarkan Menu ===
+if menu == "Home":
+    st.markdown("""
+    # 👋 Selamat Datang di Aplikasi Analisis Kemiskinan Jawa Timur 📊
 
-# 1. BERANDA
-if menu == "Beranda":
-    st.markdown('<div class="welcome-text">Selamat datang di aplikasi Insight Predict 📊</div>', unsafe_allow_html=True)
-    st.markdown("Aplikasi ini membantu analisis dan klasterisasi data indikator kemiskinan secara interaktif.")
+    Aplikasi ini dirancang untuk:
+    - 📁 Mengunggah dan mengeksplorasi data indikator kemiskinan
+    - 🧹 Melakukan preprocessing data
+    - 📊 Menampilkan visualisasi
+    - 🤖 Menerapkan metode **Clustering**
+    - 📈 Mengevaluasi hasil pengelompokan
+
+    📌 Silakan pilih menu di atas untuk memulai analisis.
+    """)
 
 # 2. UPLOAD DATA
 elif menu == "Upload Data":
