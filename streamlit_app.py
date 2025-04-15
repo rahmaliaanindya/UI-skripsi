@@ -130,11 +130,16 @@ elif menu == "Hasil Clustering":
             'Davies-Bouldin Index': dbi_scores
         }))
 
-        best_k = max(silhouette_scores, key=silhouette_scores.get)
-        st.success(f"Jumlah cluster optimal berdasarkan Silhouette Score: {best_k}")
+        # Cari jumlah cluster terbaik berdasarkan kedua metrik
+        best_k_silhouette = max(silhouette_scores, key=silhouette_scores.get)
+        best_k_dbi = min(dbi_scores, key=dbi_scores.get)
+
+        # Tampilkan hasil optimal
+        st.success(f"🔹 Jumlah cluster optimal berdasarkan **Silhouette Score**: {best_k_silhouette}")
+        st.success(f"🔸 Jumlah cluster optimal berdasarkan **Davies-Bouldin Index**: {best_k_dbi}")
 
         # Final Clustering
-        final_cluster = SpectralClustering(n_clusters=best_k, affinity='nearest_neighbors', random_state=42)
+        final_cluster = SpectralClustering(n_clusters=k_final, affinity='nearest_neighbors', random_state=42)
         labels = final_cluster.fit_predict(X_scaled)
         st.session_state.labels = labels
 
