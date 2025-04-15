@@ -14,23 +14,16 @@ st.set_page_config(
     layout="wide"
 )
 
-# Fungsi untuk menambahkan CSS untuk tampilan yang lebih estetis
+# Custom CSS untuk tampilan
 def local_css():
     st.markdown(
         """
         <style>
-            body {
-                font-family: 'Helvetica', sans-serif;
-                background-color: #f4f6f9; /* Background halaman yang lembut */
-            }
             .main {
-                background-color: rgba(255, 255, 255, 0.9); /* Transparansi untuk konten */
-                padding: 30px;
-                border-radius: 15px;
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+                background-color: #feecd0; /* Warna latar belakang utama */
             }
             .block-container {
-                padding-top: 2rem;
+                padding-top: 1rem;
             }
             h1, h2, h3, h4, h5, h6, p, div, span {
                 color: #4a4a4a !important;
@@ -38,41 +31,13 @@ def local_css():
             .title {
                 font-family: 'Helvetica', sans-serif;
                 color: #334E68;
-                font-size: 40px;
+                font-size: 36px;
                 font-weight: bold;
                 text-align: center;
-                margin-top: 50px;
-                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+                padding-top: 30px;
             }
-            .description {
-                font-size: 18px;
-                font-weight: lighter;
-                color: #555;
-                text-align: center;
-                margin-top: 20px;
-            }
-            .content {
-                padding-top: 20px;
-                background-color: rgba(255, 255, 255, 0.9); /* Transparency to highlight the content */
-                border-radius: 10px;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                margin-top: 30px;
-            }
-            .btn {
-                background-color: #4CAF50; /* Green background */
-                color: white; /* White text */
-                padding: 10px 20px;
-                border: none;
-                border-radius: 5px;
-                cursor: pointer;
-                transition: background-color 0.3s ease;
-                font-size: 18px;
-                text-align: center;
-                display: block;
-                margin: 20px auto;
-            }
-            .btn:hover {
-                background-color: #45a049; /* Darker green on hover */
+            .sidebar .sidebar-content {
+                background-color: #f0f0f5; /* Warna latar belakang sidebar */
             }
         </style>
         """,
