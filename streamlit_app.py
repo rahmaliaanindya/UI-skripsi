@@ -6,6 +6,9 @@ import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import SpectralClustering
 from sklearn.metrics import silhouette_score, davies_bouldin_score
+from PIL import Image
+import base64
+import io
 
 # Konfigurasi halaman
 st.set_page_config(
@@ -14,39 +17,74 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS untuk tampilan dengan background image
+# Fungsi untuk menampilkan gambar sebagai latar belakang
+def set_background_image(image_data):
+    """Fungsi ini mengubah gambar menjadi format base64 dan menggunakannya sebagai latar belakang"""
+    # Convert image to base64
+    img = Image.open(image_data)
+    buffered = io.BytesIO()
+    img.save(buffered, format="PNG")
+    img_str = base64.b64encode(buffered.getvalue()).decode()
+
+    # CSS untuk latar belakang gambar
+    st.markdown(
+        f"""
+        <style>
+            body {{
+                background-image: url('data:image/png;base64,{img_str}');
+                background-size: cover;
+                background-position: center;
+                background-attachment: fixed;
+            }}
+            .main {{
+                background-color: rgba(254, 236, 208, 0.7); /* Transparansi untuk konten */
+            }}
+            .block-container {{
+                padding-top: 1rem;
+            }}
+            h1, h2, h3, h4, h5, h6, p, div, span {{
+                color: #4a4a4a !important;
+            }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+# Upload gambar untuk latar belakang
+st.header("📤 Upload Gambar untuk Latar Belakang")
+uploaded_image = st.file_uploader("Unggah gambar (.jpg atau .png)", type=["jpg", "png"])
+
+if uploaded_image:
+    set_background_image(uploaded_image)
+    st.success("Gambar berhasil diunggah dan diterapkan sebagai latar belakang.")
+else:
+    st.warning("Silakan unggah gambar untuk latar belakang.")
+
+# Customisasi tampilan utama
 def local_css():
     st.markdown(
         """
         <style>
-            body {
-                background-image: url('https://example.com/path/to/your/background.jpg');
-                background-size: cover;
-                background-position: center;
-                background-attachment: fixed;
-            }
-            .main {
-                background-color: rgba(254, 236, 208, 0.7); /* Transparansi untuk kontras teks */
-            }
-            .block-container {
-                padding-top: 1rem;
-            }
-            h1, h2, h3, h4, h5, h6, p, div, span {
-                color: #4a4a4a !important;
-            }
             .title {
                 font-family: 'Helvetica', sans-serif;
                 color: #334E68;
                 font-size: 36px;
                 font-weight: bold;
                 text-align: center;
+                padding-top: 30px;
             }
         </style>
         """,
         unsafe_allow_html=True
     )
 
+# Menyisipkan CSS
 local_css()
+
+# Menampilkan konten aplikasi
+st.title("📊 Analisis Kemiskinan Jawa Timur")
+st.write("Selamat datang di aplikasi analisis kemiskinan menggunakan **Spectral Clustering**.")
+
 
 # === Navigasi Menu di Atas ===
 menu = st.radio(
