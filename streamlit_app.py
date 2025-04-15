@@ -105,12 +105,6 @@ elif menu == "Visualisasi Data":
         st.pyplot(plt.gcf())
         plt.clf()
 
-        st.subheader("Distribusi Fitur (Histogram)")
-        selected_feature = st.selectbox("Pilih fitur:", numerical_df.columns)
-        plt.hist(df[selected_feature], bins=20, color='skyblue', edgecolor='black')
-        plt.title(f'Distribusi: {selected_feature}')
-        st.pyplot(plt.gcf())
-        plt.clf()
     else:
         st.warning("Silakan upload data terlebih dahulu.")
 
