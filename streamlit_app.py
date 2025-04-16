@@ -22,11 +22,15 @@ def local_css():
     st.markdown(
         """
         <style>
+            body {
+                background-color: #f5f2eb;
+            }
             .main {
-                background: linear-gradient(to bottom right, #ffe6e6, #fff5e6, #e6ffed);
+                background: linear-gradient(to bottom right, #e8ede7, #f5d9c6, #e0eafc);
             }
             .block-container {
                 padding-top: 1rem;
+                background-color: transparent;
             }
             h1, h2, h3, h4, h5, h6, p, div, span {
                 color: #2c3e50 !important;
@@ -34,21 +38,27 @@ def local_css():
             .title {
                 font-family: 'Helvetica', sans-serif;
                 color: #1f3a93;
-                font-size: 36px;
+                font-size: 38px;
                 font-weight: bold;
                 text-align: center;
-                padding-top: 30px;
-                margin-bottom: 20px;
+                padding: 30px 0 10px 0;
             }
             .sidebar .sidebar-content {
                 background-color: #fef9e7;
             }
             .legend-box {
-                padding: 10px;
+                padding: 15px;
                 border-radius: 10px;
                 background-color: #ffffffdd;
-                box-shadow: 0px 2px 5px rgba(0,0,0,0.1);
+                box-shadow: 0px 2px 10px rgba(0,0,0,0.05);
                 margin-top: 20px;
+            }
+            .info-card {
+                background-color: #ffffffaa;
+                padding: 20px;
+                border-radius: 12px;
+                margin-bottom: 25px;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
             }
         </style>
         """,
