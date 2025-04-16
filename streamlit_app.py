@@ -23,10 +23,10 @@ def local_css():
         """
         <style>
             body {
-                background-color: #f5f2eb;
+                background-color: #fdf0ed;
             }
             .main {
-                background: linear-gradient(to bottom right, #e8ede7, #f5d9c6, #e0eafc);
+                background: linear-gradient(to bottom right, #e74c3c, #f39c12, #f8c471);
             }
             .block-container {
                 padding-top: 1rem;
@@ -44,7 +44,7 @@ def local_css():
                 padding: 30px 0 10px 0;
             }
             .sidebar .sidebar-content {
-                background-color: #fef9e7;
+                background-color: #fef5e7;
             }
             .legend-box {
                 padding: 15px;
