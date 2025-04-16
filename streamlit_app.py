@@ -7,6 +7,9 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import SpectralClustering
 from sklearn.metrics import silhouette_score, davies_bouldin_score
 
+import streamlit as st
+from PIL import Image
+
 # Konfigurasi halaman
 st.set_page_config(
     page_title="Analisis Kemiskinan Jatim",
@@ -14,37 +17,45 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS untuk tampilan
+# CSS Styling
 def local_css():
     st.markdown(
         """
         <style>
             .main {
-                background-color: #feecd0; /* Warna latar belakang utama */
+                background: linear-gradient(to bottom right, #ffe6e6, #fff5e6, #e6ffed);
             }
             .block-container {
                 padding-top: 1rem;
             }
             h1, h2, h3, h4, h5, h6, p, div, span {
-                color: #4a4a4a !important;
+                color: #2c3e50 !important;
             }
             .title {
                 font-family: 'Helvetica', sans-serif;
-                color: #334E68;
+                color: #1f3a93;
                 font-size: 36px;
                 font-weight: bold;
                 text-align: center;
                 padding-top: 30px;
+                margin-bottom: 20px;
             }
             .sidebar .sidebar-content {
-                background-color: #f0f0f5; /* Warna latar belakang sidebar */
+                background-color: #fef9e7;
+            }
+            .legend-box {
+                padding: 10px;
+                border-radius: 10px;
+                background-color: #ffffffdd;
+                box-shadow: 0px 2px 5px rgba(0,0,0,0.1);
+                margin-top: 20px;
             }
         </style>
         """,
         unsafe_allow_html=True
     )
 
-# Menyisipkan CSS
+# Terapkan CSS
 local_css()
 
 # === Navigasi Menu di Atas ===
