@@ -6,7 +6,6 @@ import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import SpectralClustering
 from sklearn.metrics import silhouette_score, davies_bouldin_score
-
 from PIL import Image
 
 # Konfigurasi halaman
@@ -70,6 +69,17 @@ local_css()
 # === Menyimpan status tahap dalam session state ===
 if 'step' not in st.session_state:
     st.session_state.step = 1
+
+# Sidebar untuk navigasi
+menu = ["Home", "Upload Data", "Preprocessing", "Visualisasi", "Hasil Clustering"]
+current_step = menu[st.session_state.step - 1]
+
+st.sidebar.title("Menu Navigasi")
+for idx, item in enumerate(menu, 1):
+    if idx == st.session_state.step:
+        st.sidebar.markdown(f"**{item} (Step {idx})**")
+    else:
+        st.sidebar.markdown(f"{item} (Step {idx})")
 
 # === Konten berdasarkan Step ===
 if st.session_state.step == 1:
