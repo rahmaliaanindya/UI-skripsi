@@ -6,6 +6,7 @@ import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import SpectralClustering
 from sklearn.metrics import silhouette_score, davies_bouldin_score
+from sklearn.decomposition import PCA
 from PIL import Image
 
 # Konfigurasi halaman
@@ -20,14 +21,30 @@ def local_css():
     st.markdown(
         """
         <style>
-            body { background-color: #fdf0ed; }
-            .main { background: linear-gradient(to bottom right, #e74c3c, #f39c12, #f8c471); }
-            .block-container { padding-top: 1rem; background-color: transparent; }
-            h1, h2, h3, h4, h5, h6, p, div, span { color: #2c3e50 !important; }
-            .title { font-family: 'Helvetica', sans-serif; color: #1f3a93; font-size: 38px; font-weight: bold; text-align: center; padding: 30px 0 10px 0; }
-            .sidebar .sidebar-content { background-color: #fef5e7; }
-            .legend-box { padding: 15px; border-radius: 10px; background-color: #ffffffdd; box-shadow: 0px 2px 10px rgba(0,0,0,0.05); margin-top: 20px; }
-            .info-card { background-color: #ffffffaa; padding: 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); }
+            body {
+                background-color: #fdf0ed;
+            }
+            .main {
+                background: linear-gradient(to bottom right, #e74c3c, #f39c12, #f8c471);
+            }
+            .block-container {
+                padding-top: 1rem;
+                background-color: transparent;
+            }
+            h1, h2, h3, h4, h5, h6, p, div, span {
+                color: #2c3e50 !important;
+            }
+            .title {
+                font-family: 'Helvetica', sans-serif;
+                color: #1f3a93;
+                font-size: 38px;
+                font-weight: bold;
+                text-align: center;
+                padding: 30px 0 10px 0;
+            }
+            .sidebar .sidebar-content {
+                background-color: #fef5e7;
+            }
         </style>
         """,
         unsafe_allow_html=True
@@ -35,17 +52,23 @@ def local_css():
 
 local_css()
 
-# Setup navigasi
-if 'current_page' not in st.session_state:
-    st.session_state.current_page = "Home"
+# Menu navigasi disimpan di session_state
+if "menu" not in st.session_state:
+    st.session_state.menu = "Home"
 
-def go_to(next_page):
-    st.session_state.current_page = next_page
-    st.experimental_rerun()
+menu = st.session_state.menu
 
-menu = st.session_state.current_page
+# === Navigasi Radio Menu (hanya untuk menampilkan posisi sekarang) ===
+st.radio(
+    "Navigasi Aplikasi:",
+    ("Home", "Upload Data", "Preprocessing Data", "Visualisasi Data", "Hasil Clustering"),
+    horizontal=True,
+    index=["Home", "Upload Data", "Preprocessing Data", "Visualisasi Data", "Hasil Clustering"].index(menu),
+    key="menu_display",  # Tidak akan mempengaruhi session_state.menu
+    disabled=True
+)
 
-# === MENU: HOME ===
+# === 1. HOME ===
 if menu == "Home":
     st.markdown("""
     # 👋 Selamat Datang di Aplikasi Analisis Cluster Kemiskinan Jawa Timur 📊
@@ -57,43 +80,38 @@ if menu == "Home":
     - 🤖 Menerapkan metode **Spectral Clustering**
     - 📈 Mengevaluasi hasil pengelompokan
 
-    📌 Silakan pilih tombol di bawah untuk memulai analisis.
+    📌 Silakan klik tombol **Next ➡️** untuk memulai proses analisis.
     """)
-    if st.button("Lanjut ke Upload Data"):
-        go_to("Upload Data")
+    if st.button("Next ➡️"):
+        st.session_state.menu = "Upload Data"
+        st.experimental_rerun()
 
-# === MENU: UPLOAD DATA ===
+# === 2. UPLOAD DATA ===
 elif menu == "Upload Data":
     st.header("📤 Upload Data Excel")
+
     st.markdown("""
     ### Ketentuan Data:
-    - Data berupa file **Excel (.xlsx)**.
-    - Data mencakup kolom-kolom berikut:
-        1. **Persentase Penduduk Miskin (%)**
-        2. **Jumlah Penduduk Miskin (ribu jiwa)**
-        3. **Harapan Lama Sekolah (Tahun)**
-        4. **Rata-Rata Lama Sekolah (Tahun)**
-        5. **Tingkat Pengangguran Terbuka (%)**
-        6. **Tingkat Partisipasi Angkatan Kerja (%)**
-        7. **Angka Harapan Hidup (Tahun)**
-        8. **Garis Kemiskinan (Rupiah/Bulan/Kapita)**
-        9. **Indeks Pembangunan Manusia**
-        10. **Rata-rata Upah/Gaji Bersih Pekerja Informal Berdasarkan Lapangan Pekerjaan Utama (Rp)**
-        11. **Rata-rata Pendapatan Bersih Sebulan Pekerja Informal berdasarkan Pendidikan Tertinggi - Jumlah (Rp)**
+    - File **Excel (.xlsx)**
+    - Kolom harus mencakup indikator kemiskinan sesuai petunjuk
     """)
+
     uploaded_file = st.file_uploader("Unggah file Excel (.xlsx)", type="xlsx")
     
     if uploaded_file:
         df = pd.read_excel(uploaded_file)
         st.session_state.df = df
-        st.success("Data berhasil dimuat!")
+        st.success("✅ Data berhasil dimuat!")
         st.write(df)
-        if st.button("Lanjut ke Preprocessing"):
-            go_to("Preprocessing Data")
 
-# === MENU: PREPROCESSING ===
+        if st.button("Next ➡️"):
+            st.session_state.menu = "Preprocessing Data"
+            st.experimental_rerun()
+
+# === 3. PREPROCESSING DATA ===
 elif menu == "Preprocessing Data":
     st.header("⚙️ Preprocessing Data")
+    
     if 'df' in st.session_state:
         df = st.session_state.df
         st.subheader("Cek Missing Values")
@@ -112,16 +130,18 @@ elif menu == "Preprocessing Data":
         X_scaled = scaler.fit_transform(X)
 
         st.session_state.X_scaled = X_scaled
-        st.success("Fitur telah dinormalisasi dan disimpan.")
+        st.success("✅ Fitur telah dinormalisasi dan disimpan.")
 
-        if st.button("Lanjut ke Visualisasi Data"):
-            go_to("Visualisasi Data")
+        if st.button("Next ➡️"):
+            st.session_state.menu = "Visualisasi Data"
+            st.experimental_rerun()
     else:
-        st.warning("Silakan upload data terlebih dahulu.")
+        st.warning("⚠️ Silakan upload data terlebih dahulu.")
 
-# === MENU: VISUALISASI DATA ===
+# === 4. VISUALISASI DATA ===
 elif menu == "Visualisasi Data":
     st.header("📊 Visualisasi Data")
+
     if 'df' in st.session_state:
         df = st.session_state.df
         numerical_df = df.select_dtypes(include=['float64', 'int64'])
@@ -132,12 +152,13 @@ elif menu == "Visualisasi Data":
         st.pyplot(plt.gcf())
         plt.clf()
 
-        if st.button("Lanjut ke Hasil Clustering"):
-            go_to("Hasil Clustering")
+        if st.button("Next ➡️"):
+            st.session_state.menu = "Hasil Clustering"
+            st.experimental_rerun()
     else:
-        st.warning("Silakan upload data terlebih dahulu.")
+        st.warning("⚠️ Silakan upload data terlebih dahulu.")
 
-# === MENU: HASIL CLUSTERING ===
+# === 5. HASIL CLUSTERING ===
 elif menu == "Hasil Clustering":
     st.header("🧩 Hasil Clustering")
 
@@ -164,8 +185,8 @@ elif menu == "Hasil Clustering":
         best_k_silhouette = max(silhouette_scores, key=silhouette_scores.get)
         best_k_dbi = min(dbi_scores, key=dbi_scores.get)
 
-        st.success(f"🔹 Jumlah cluster optimal berdasarkan **Silhouette Score**: {best_k_silhouette}")
-        st.success(f"🔸 Jumlah cluster optimal berdasarkan **Davies-Bouldin Index**: {best_k_dbi}")
+        st.success(f"🔹 Optimal cluster (Silhouette): {best_k_silhouette}")
+        st.success(f"🔸 Optimal cluster (DBI): {best_k_dbi}")
 
         st.subheader("Pilih Jumlah Cluster untuk Clustering Final")
         k_final = st.number_input("Jumlah Cluster (k):", min_value=2, max_value=10, value=best_k_silhouette, step=1)
@@ -174,7 +195,7 @@ elif menu == "Hasil Clustering":
         labels = final_cluster.fit_predict(X_scaled)
         st.session_state.labels = labels
 
-        from sklearn.decomposition import PCA
+        # Visualisasi dengan PCA
         pca = PCA(n_components=2)
         X_pca = pca.fit_transform(X_scaled)
 
@@ -187,6 +208,7 @@ elif menu == "Hasil Clustering":
         st.pyplot(plt.gcf())
         plt.clf()
 
+        # Tampilkan DataFrame hasil clustering
         if 'df' in st.session_state:
             df = st.session_state.df.copy()
             df['Cluster'] = labels
