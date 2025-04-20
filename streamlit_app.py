@@ -17,34 +17,190 @@ st.set_page_config(
     layout="wide"
 )
 
-# === CSS Styling ===
 def local_css():
     st.markdown(
         """
         <style>
-            body {
-                background-color: #fdf0ed;
+            /* Base Styles */
+            html, body, [class*="css"] {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                line-height: 1.6;
+                color: #2c3e50;
             }
+            
+            /* Main Container */
             .main {
-                background: linear-gradient(to bottom right, #e74c3c, #f39c12, #f8c471);
+                background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+                padding: 2rem;
             }
-            .block-container {
-                padding-top: 1rem;
-                background-color: transparent;
-            }
-            h1, h2, h3, h4, h5, h6, p, div, span {
-                color: #2c3e50 !important;
-            }
-            .title {
-                font-family: 'Helvetica', sans-serif;
+            
+            /* Header Styles */
+            h1 {
                 color: #1f3a93;
-                font-size: 38px;
-                font-weight: bold;
+                font-size: 2.5rem;
+                font-weight: 700;
+                margin-bottom: 1.5rem;
+                border-bottom: 3px solid #3498db;
+                padding-bottom: 0.5rem;
                 text-align: center;
-                padding: 30px 0 10px 0;
+                background: linear-gradient(to right, #1f3a93, #3498db);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
             }
-            .sidebar .sidebar-content {
-                background-color: #fef5e7;
+            
+            h2 {
+                color: #2980b9;
+                font-size: 1.8rem;
+                margin-top: 2rem;
+                margin-bottom: 1rem;
+                position: relative;
+                padding-left: 1rem;
+            }
+            
+            h2:before {
+                content: "";
+                position: absolute;
+                left: 0;
+                top: 0;
+                height: 100%;
+                width: 5px;
+                background: linear-gradient(to bottom, #3498db, #2ecc71);
+                border-radius: 3px;
+            }
+            
+            h3 {
+                color: #16a085;
+                font-size: 1.4rem;
+                margin-top: 1.5rem;
+            }
+            
+            /* Cards and Containers */
+            .block-container {
+                background-color: rgba(255, 255, 255, 0.9);
+                border-radius: 12px;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+                padding: 2rem;
+                margin-bottom: 2rem;
+                border: 1px solid rgba(0, 0, 0, 0.05);
+            }
+            
+            .info-card {
+                background: white;
+                border-radius: 10px;
+                padding: 1.5rem;
+                margin-bottom: 1.5rem;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+                border-left: 4px solid #3498db;
+            }
+            
+            /* Buttons and Interactive Elements */
+            .stButton>button {
+                border-radius: 8px;
+                border: none;
+                background: linear-gradient(135deg, #3498db 0%, #2ecc71 100%);
+                color: white;
+                font-weight: 600;
+                padding: 0.5rem 1.5rem;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            }
+            
+            .stButton>button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+                background: linear-gradient(135deg, #2980b9 0%, #27ae60 100%);
+            }
+            
+            /* Radio Buttons */
+            .stRadio>div {
+                flex-direction: row !important;
+                align-items: center;
+                background: white;
+                padding: 0.5rem;
+                border-radius: 8px;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            }
+            
+            .stRadio>div>label {
+                margin-right: 15px;
+                padding: 0.5rem 1rem;
+                border-radius: 6px;
+                transition: all 0.2s ease;
+            }
+            
+            .stRadio>div>label:hover {
+                background-color: #f8f9fa;
+            }
+            
+            /* Dataframes */
+            .dataframe {
+                border-radius: 8px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            }
+            
+            /* Navigation Buttons */
+            .nav-button {
+                display: flex;
+                justify-content: space-between;
+                margin-top: 2rem;
+            }
+            
+            /* Custom Scrollbar */
+            ::-webkit-scrollbar {
+                width: 8px;
+            }
+            
+            ::-webkit-scrollbar-track {
+                background: #f1f1f1;
+                border-radius: 10px;
+            }
+            
+            ::-webkit-scrollbar-thumb {
+                background: linear-gradient(#3498db, #2ecc71);
+                border-radius: 10px;
+            }
+            
+            /* Tooltips */
+            .tooltip {
+                position: relative;
+                display: inline-block;
+            }
+            
+            .tooltip .tooltiptext {
+                visibility: hidden;
+                width: 200px;
+                background-color: #2c3e50;
+                color: #fff;
+                text-align: center;
+                border-radius: 6px;
+                padding: 5px;
+                position: absolute;
+                z-index: 1;
+                bottom: 125%;
+                left: 50%;
+                margin-left: -100px;
+                opacity: 0;
+                transition: opacity 0.3s;
+            }
+            
+            .tooltip:hover .tooltiptext {
+                visibility: visible;
+                opacity: 1;
+            }
+            
+            /* Responsive Design */
+            @media (max-width: 768px) {
+                .main {
+                    padding: 1rem;
+                }
+                
+                h1 {
+                    font-size: 2rem;
+                }
+                
+                .block-container {
+                    padding: 1rem;
+                }
             }
         </style>
         """,
