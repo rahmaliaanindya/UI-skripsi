@@ -121,6 +121,10 @@ elif menu == "Step 1: Upload Data":
         st.session_state.df = df
         st.success("Data berhasil dimuat!")
         st.write(df)
+        
+    # Add a "Next" button for navigation
+    if st.button("Next: Preprocessing Data"):
+        menu = "Step 2: Preprocessing Data"
 
 # 3. PREPROCESSING
 elif menu == "Step 2: Preprocessing Data":
@@ -144,8 +148,10 @@ elif menu == "Step 2: Preprocessing Data":
 
         st.session_state.X_scaled = X_scaled
         st.write("Fitur telah dinormalisasi dan disimpan.")
-    else:
-        st.warning("Silakan upload data terlebih dahulu.")
+        
+    # Add a "Next" button for navigation
+    if st.button("Next: Visualisasi Data"):
+        menu = "Step 3: Visualisasi Data"
 
 # 4. VISUALISASI DATA
 elif menu == "Step 3: Visualisasi Data":
@@ -160,8 +166,9 @@ elif menu == "Step 3: Visualisasi Data":
         st.pyplot(plt.gcf())
         plt.clf()
 
-    else:
-        st.warning("Silakan upload data terlebih dahulu.")
+    # Add a "Next" button for navigation
+    if st.button("Next: Hasil Clustering"):
+        menu = "Step 4: Hasil Clustering"
 
 # 5. HASIL CLUSTERING
 elif menu == "Step 4: Hasil Clustering":
