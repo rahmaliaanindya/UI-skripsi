@@ -21,35 +21,21 @@ steps = [
 current_step = st.session_state.step
 menu = steps[current_step]
 
-# Sidebar Navigasi
-st.sidebar.title("Navigasi")
-st.sidebar.markdown(f"**Tahap saat ini:** `{menu}`")
-
-col1, col2 = st.sidebar.columns([1, 1])
-with col1:
-    if current_step > 0:
-        if st.button("⬅️ Kembali"):
-            st.session_state.step -= 1
-with col2:
-    if current_step < len(steps) - 1:
-        if st.button("➡️ Selanjutnya"):
-            st.session_state.step += 1
-
 # Variabel Global untuk Simpan Data
 if 'uploaded_data' not in st.session_state:
     st.session_state.uploaded_data = None
 
-# Step 1: Home
+st.title("📊 Aplikasi Analisis Clustering Kemiskinan di Jawa Timur")
+st.markdown(f"**Tahap Saat Ini:** `{menu}`")
+
+# STEP 1: Home
 if menu == "Home":
-    st.title("📊 Aplikasi Analisis Clustering Kemiskinan di Jawa Timur")
     st.markdown("""
     Selamat datang di aplikasi analisis clustering kemiskinan berbasis **Spectral Clustering**.  
-    Aplikasi ini membantu mengelompokkan kabupaten/kota di Jawa Timur berdasarkan berbagai indikator sosial-ekonomi.
-    
-    Silakan klik tombol **Selanjutnya** di sidebar untuk memulai 🚀
+    Aplikasi ini akan membantumu menganalisis dan memetakan tingkat kemiskinan berdasarkan indikator sosial ekonomi.
     """)
-
-# Step 2: Upload Data
+    
+# STEP 2: Upload Data
 elif menu == "Upload Data":
     st.header("📤 Upload Data Excel")
     uploaded_file = st.file_uploader("Unggah file Excel Anda", type=["xlsx"])
@@ -59,7 +45,7 @@ elif menu == "Upload Data":
         st.success("✅ Data berhasil diunggah!")
         st.dataframe(df)
 
-# Step 3: Preprocessing
+# STEP 3: Preprocessing Data
 elif menu == "Preprocessing Data":
     st.header("🔍 Preprocessing Data")
     if st.session_state.uploaded_data is not None:
@@ -80,10 +66,10 @@ elif menu == "Preprocessing Data":
     else:
         st.warning("⚠️ Silakan upload data terlebih dahulu.")
 
-# Step 4: Visualisasi Data
+# STEP 4: Visualisasi Data
 elif menu == "Visualisasi Data":
     st.header("📈 Visualisasi Data")
-    if 'uploaded_data' in st.session_state and st.session_state.uploaded_data is not None:
+    if st.session_state.uploaded_data is not None:
         df = st.session_state.uploaded_data
         selected_columns = st.multiselect("Pilih Kolom untuk Visualisasi", df.columns, default=df.columns[:2])
         if len(selected_columns) >= 2:
@@ -95,7 +81,7 @@ elif menu == "Visualisasi Data":
     else:
         st.warning("⚠️ Silakan upload data terlebih dahulu.")
 
-# Step 5: Hasil Clustering
+# STEP 5: Hasil Clustering
 elif menu == "Hasil Clustering":
     st.header("🔮 Hasil Clustering")
     if 'scaled_data' in st.session_state:
@@ -128,3 +114,15 @@ elif menu == "Hasil Clustering":
         st.dataframe(result_df)
     else:
         st.warning("⚠️ Silakan lakukan preprocessing data terlebih dahulu.")
+
+# TOMBOL NAVIGASI BAWAH
+st.markdown("---")
+col1, col2 = st.columns([1, 1])
+with col1:
+    if current_step > 0:
+        if st.button("⬅️ Kembali"):
+            st.session_state.step -= 1
+with col2:
+    if current_step < len(steps) - 1:
+        if st.button("➡️ Selanjutnya"):
+            st.session_state.step += 1
