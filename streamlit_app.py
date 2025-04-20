@@ -67,10 +67,13 @@ def local_css():
 local_css()
 
 # === Navigasi Menu di Atas ===
-menu = st.radio(
+if 'menu' not in st.session_state:
+    st.session_state.menu = "Home"  # Default to "Home"
+
+menu = st.selectbox(
     "Navigasi Aplikasi:",
-    ("Home", "Upload Data", "Preprocessing Data", "Visualisasi Data", "Hasil Clustering"),
-    horizontal=True
+    ["Home", "Upload Data", "Preprocessing Data", "Visualisasi Data", "Hasil Clustering"],
+    index=["Home", "Upload Data", "Preprocessing Data", "Visualisasi Data", "Hasil Clustering"].index(st.session_state.menu)
 )
 
 # === Konten berdasarkan Menu ===
@@ -87,13 +90,9 @@ if menu == "Home":
 
     📌 Silakan pilih menu di atas untuk memulai analisis.
     """)
-    
-    # Tambahkan tombol untuk melanjutkan ke step berikutnya
-    st.markdown("---")
-    st.markdown("**Klik tombol di bawah ini untuk melanjutkan ke langkah berikutnya**")
 
-    if st.button("➡️ Lanjut"):
-        st.query_params(menu="Upload Data")
+    # Update session state to reflect the current page
+    st.session_state.menu = "Upload Data"
 
 # 2. UPLOAD DATA
 elif menu == "Upload Data":
@@ -125,12 +124,8 @@ elif menu == "Upload Data":
         st.success("Data berhasil dimuat!")
         st.write(df)
 
-        # Tambahkan tombol untuk melanjutkan ke step berikutnya
-        st.markdown("---")
-        st.markdown("**Klik tombol di bawah ini untuk melanjutkan ke langkah berikutnya**")
-
-        if st.button("➡️ Lanjut"):
-            st.query_params(menu="Preprocessing Data")
+        # Update session state to reflect the current page
+        st.session_state.menu = "Preprocessing Data"
 
 # 3. PREPROCESSING
 elif menu == "Preprocessing Data":
@@ -155,12 +150,9 @@ elif menu == "Preprocessing Data":
         st.session_state.X_scaled = X_scaled
         st.write("Fitur telah dinormalisasi dan disimpan.")
 
-        # Tambahkan tombol untuk melanjutkan ke step berikutnya
-        st.markdown("---")
-        st.markdown("**Klik tombol di bawah ini untuk melanjutkan ke langkah berikutnya**")
+        # Update session state to reflect the current page
+        st.session_state.menu = "Visualisasi Data"
 
-        if st.button("➡️ Lanjut"):
-            st.query_params(menu="Visualisasi Data")
     else:
         st.warning("Silakan upload data terlebih dahulu.")
 
@@ -177,12 +169,9 @@ elif menu == "Visualisasi Data":
         st.pyplot(plt.gcf())
         plt.clf()
 
-        # Tambahkan tombol untuk melanjutkan ke step berikutnya
-        st.markdown("---")
-        st.markdown("**Klik tombol di bawah ini untuk melanjutkan ke langkah berikutnya**")
+        # Update session state to reflect the current page
+        st.session_state.menu = "Hasil Clustering"
 
-        if st.button("➡️ Lanjut"):
-            st.query_params(menu="Hasil Clustering")
     else:
         st.warning("Silakan upload data terlebih dahulu.")
 
