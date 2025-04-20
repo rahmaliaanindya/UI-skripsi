@@ -7,6 +7,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import SpectralClustering
 from sklearn.metrics import silhouette_score, davies_bouldin_score
 from PIL import Image
+from sklearn.decomposition import PCA
 
 # Konfigurasi halaman
 st.set_page_config(
@@ -66,24 +67,15 @@ def local_css():
 # Terapkan CSS
 local_css()
 
-# === Inisialisasi Session State untuk Melacak Tahap ===
-if 'step' not in st.session_state:
-    st.session_state.step = 0
-
 # === Navigasi Menu di Atas ===
 menu = st.radio(
     "Navigasi Aplikasi:",
-    ("Home", "Upload Data", "Preprocessing Data", "Visualisasi Data", "Hasil Clustering"),
+    ("Step 1: Home", "Step 2: Upload Data", "Step 3: Preprocessing Data", "Step 4: Visualisasi Data", "Step 5: Hasil Clustering"),
     horizontal=True
 )
 
-# === Fungsi Navigasi Next ===
-def next_step():
-    if st.session_state.step < 4:
-        st.session_state.step += 1
-
 # === Konten berdasarkan Menu ===
-if menu == "Home":
+if menu == "Step 1: Home":
     st.markdown("""
     # 👋 Selamat Datang di Aplikasi Analisis Cluster Kemiskinan Jawa Timur 📊
 
@@ -97,8 +89,12 @@ if menu == "Home":
     📌 Silakan pilih menu di atas untuk memulai analisis.
     """)
 
-# 2. UPLOAD DATA
-elif menu == "Upload Data" and st.session_state.step == 0:
+    # Tombol "Next" untuk melanjutkan ke langkah berikutnya
+    if st.button("Next"):
+        menu = "Step 2: Upload Data"
+
+# Step 2: UPLOAD DATA
+elif menu == "Step 2: Upload Data":
     st.header("📤 Upload Data Excel")
 
     # Deskripsi tentang data yang harus diunggah
@@ -127,12 +123,12 @@ elif menu == "Upload Data" and st.session_state.step == 0:
         st.success("Data berhasil dimuat!")
         st.write(df)
 
-    # Tombol Next
+    # Tombol "Next" untuk melanjutkan ke langkah berikutnya
     if st.button("Next"):
-        next_step()
+        menu = "Step 3: Preprocessing Data"
 
-# 3. PREPROCESSING
-elif menu == "Preprocessing Data" and st.session_state.step == 1:
+# Step 3: PREPROCESSING
+elif menu == "Step 3: Preprocessing Data":
     st.header("⚙️ Preprocessing Data")
     if 'df' in st.session_state:
         df = st.session_state.df
@@ -156,12 +152,12 @@ elif menu == "Preprocessing Data" and st.session_state.step == 1:
     else:
         st.warning("Silakan upload data terlebih dahulu.")
 
-    # Tombol Next
+    # Tombol "Next" untuk melanjutkan ke langkah berikutnya
     if st.button("Next"):
-        next_step()
+        menu = "Step 4: Visualisasi Data"
 
-# 4. VISUALISASI DATA
-elif menu == "Visualisasi Data" and st.session_state.step == 2:
+# Step 4: VISUALISASI DATA
+elif menu == "Step 4: Visualisasi Data":
     st.header("📊 Visualisasi Data")
     if 'df' in st.session_state:
         df = st.session_state.df
@@ -176,12 +172,12 @@ elif menu == "Visualisasi Data" and st.session_state.step == 2:
     else:
         st.warning("Silakan upload data terlebih dahulu.")
 
-    # Tombol Next
+    # Tombol "Next" untuk melanjutkan ke langkah berikutnya
     if st.button("Next"):
-        next_step()
+        menu = "Step 5: Hasil Clustering"
 
-# 5. HASIL CLUSTERING
-elif menu == "Hasil Clustering" and st.session_state.step == 3:
+# Step 5: HASIL CLUSTERING
+elif menu == "Step 5: Hasil Clustering":
     st.header("🧩 Hasil Clustering")
     
     if 'X_scaled' in st.session_state:
@@ -222,7 +218,6 @@ elif menu == "Hasil Clustering" and st.session_state.step == 3:
         st.session_state.labels = labels
 
         # Visualisasi 2D menggunakan PCA
-        from sklearn.decomposition import PCA
         pca = PCA(n_components=2)
         X_pca = pca.fit_transform(X_scaled)
 
@@ -255,8 +250,3 @@ elif menu == "Hasil Clustering" and st.session_state.step == 3:
 
     else:
         st.warning("⚠️ Data belum diproses. Silakan lakukan preprocessing terlebih dahulu.")
-
-    # Tombol Next (Final)
-    if st.button("Finish"):
-        st.success("Analisis selesai!")
-
