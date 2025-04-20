@@ -241,9 +241,13 @@ elif menu == "Step 5: Analisis Hasil":
         labels = st.session_state.labels
         df['Cluster'] = labels
 
+        # Hanya ambil kolom numerik untuk analisis
+        numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns
+        df_numeric = df[numeric_cols]
+
         # Analisis distribusi cluster
         st.subheader("Analisis Distribusi Cluster")
-        cluster_summary = df.groupby('Cluster').mean()
+        cluster_summary = df_numeric.groupby('Cluster').mean()
         st.write(cluster_summary)
 
         # Visualisasi distribusi cluster
