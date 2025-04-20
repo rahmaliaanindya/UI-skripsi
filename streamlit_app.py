@@ -266,18 +266,44 @@ elif menu == "Step 4: Hasil Clustering":
             st.pyplot(plt.gcf())
             plt.clf()
 
-            # Menyajikan kesimpulan dari hasil clustering
-            st.subheader("💡 Kesimpulan & Interpretasi Hasil")
+            # ===========================
+# Kesimpulan
+# ===========================
+elif selected_step == "Kesimpulan":
+    st.title("📊 Kesimpulan Clustering Kemiskinan")
 
-            # Menampilkan 3 kota dengan tingkat kemiskinan terendah dan tertinggi
-            top_3_lowest = df.sort_values(by='Cluster').head(3)
-            top_3_highest = df.sort_values(by='Cluster', ascending=False).head(3)
+    # Menampilkan jumlah kabupaten/kota per cluster
+    st.subheader("Jumlah Kabupaten/Kota per Cluster")
+    cluster_counts = df['Cluster'].value_counts().sort_index()
+    cluster_counts_df = pd.DataFrame({
+        'Cluster': cluster_counts.index,
+        'Jumlah Kabupaten/Kota': cluster_counts.values
+    })
+    st.dataframe(cluster_counts_df, use_container_width=True)
 
-            st.write("### 3 Kota Dengan Tingkat Kemiskinan Terendah")
-            st.dataframe(top_3_lowest[['Kabupaten/Kota', 'Cluster']])
+    # Menghitung rata-rata persentase kemiskinan tiap cluster
+    st.subheader("Rata-rata Persentase Kemiskinan per Cluster")
+    cluster_means = df.groupby('Cluster')['Persentase Penduduk Miskin (%)'].mean().sort_values()
+    cluster_means_df = cluster_means.reset_index().rename(columns={'Persentase Penduduk Miskin (%)': 'Rata-rata (%)'})
+    st.dataframe(cluster_means_df, use_container_width=True)
 
-            st.write("### 3 Kota Dengan Tingkat Kemiskinan Tertinggi")
-            st.dataframe(top_3_highest[['Kabupaten/Kota', 'Cluster']])
+    # Buat ranking berdasarkan kemiskinan (0 = terendah)
+    cluster_order = cluster_means.index
+    cluster_rank = {cluster: rank for rank, cluster in enumerate(cluster_order)}
+    df['Kemiskinan_Rank'] = df['Cluster'].map(cluster_rank)
 
-    else:
-        st.warning("⚠️ Data belum diproses. Silakan lakukan preprocessing terlebih dahulu.")
+    # 3 terendah
+    st.subheader("🟢 3 Kabupaten/Kota dengan Tingkat Kemiskinan Terendah")
+    top_3_lowest = df[df['Kemiskinan_Rank'] == 0][['Kabupaten/Kota', 'Cluster', 'Persentase Penduduk Miskin (%)']].sort_values(by='Persentase Penduduk Miskin (%)').head(3)
+    st.dataframe(top_3_lowest, use_container_width=True)
+
+    # 3 tertinggi
+    st.subheader("🔴 3 Kabupaten/Kota dengan Tingkat Kemiskinan Tertinggi")
+    highest_rank = df['Kemiskinan_Rank'].max()
+    top_3_highest = df[df['Kemiskinan_Rank'] == highest_rank][['Kabupaten/Kota', 'Cluster', 'Persentase Penduduk Miskin (%)']].sort_values(by='Persentase Penduduk Miskin (%)', ascending=False).head(3)
+    st.dataframe(top_3_highest, use_container_width=True)
+
+    # Tambahan ringkasan visual (jika mau)
+    st.markdown("---")
+    st.markdown("✅ **Cluster dengan tingkat kemiskinan terendah adalah Cluster {}**".format(cluster_order[0]))
+    st.markdown("❌ **Cluster dengan tingkat kemiskinan tertinggi adalah Cluster {}**".format(cluster_order[-1]))
