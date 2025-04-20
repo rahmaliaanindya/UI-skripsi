@@ -1,85 +1,13 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.preprocessing import StandardScaler
-from sklearn.cluster import SpectralClustering
-from sklearn.metrics import silhouette_score, davies_bouldin_score
-
-import streamlit as st
-from PIL import Image
-
-# Konfigurasi halaman
-st.set_page_config(
-    page_title="Analisis Kemiskinan Jatim",
-    page_icon="📊",
-    layout="wide"
-)
-
-# CSS Styling
-def local_css():
-    st.markdown(
-        """
-        <style>
-            body {
-                background-color: #fdf0ed;
-            }
-            .main {
-                background: linear-gradient(to bottom right, #e74c3c, #f39c12, #f8c471);
-            }
-            .block-container {
-                padding-top: 1rem;
-                background-color: transparent;
-            }
-            h1, h2, h3, h4, h5, h6, p, div, span {
-                color: #2c3e50 !important;
-            }
-            .title {
-                font-family: 'Helvetica', sans-serif;
-                color: #1f3a93;
-                font-size: 38px;
-                font-weight: bold;
-                text-align: center;
-                padding: 30px 0 10px 0;
-            }
-            .sidebar .sidebar-content {
-                background-color: #fef5e7;
-            }
-            .legend-box {
-                padding: 15px;
-                border-radius: 10px;
-                background-color: #ffffffdd;
-                box-shadow: 0px 2px 10px rgba(0,0,0,0.05);
-                margin-top: 20px;
-            }
-            .info-card {
-                background-color: #ffffffaa;
-                padding: 20px;
-                border-radius: 12px;
-                margin-bottom: 25px;
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-            }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
-# Terapkan CSS
-local_css()
-
 # === Navigasi Menu di Atas ===
 menu = st.radio(
     "Navigasi Aplikasi:",
-    ("Home", "Step 1: Upload Data", "Step 2: Preprocessing Data", "Step 3: Visualisasi Data", "Step 4: Hasil Clustering"),
+    ("Home", "Step 1: Upload Data", "Step 2: Preprocessing Data", "Step 3: Visualisasi Data", "Step 4: Hasil Clustering", "Step 5: Analisis Hasil"),
     horizontal=True
 )
 
 # === Konten berdasarkan Menu ===
 if menu == "Home":
-    st.markdown("""
-    # 👋 Selamat Datang di Aplikasi Analisis Cluster Kemiskinan Jawa Timur 📊
-
+    st.markdown(""" # 👋 Selamat Datang di Aplikasi Analisis Cluster Kemiskinan Jawa Timur 📊
     Aplikasi ini dirancang untuk:
     - 📁 Mengunggah dan mengeksplorasi data indikator kemiskinan
     - 🧹 Melakukan preprocessing data
@@ -90,37 +18,15 @@ if menu == "Home":
     📌 Silakan pilih menu di atas untuk memulai analisis.
     """)
 
-# 2. UPLOAD DATA
 elif menu == "Step 1: Upload Data":
     st.header("📤 Upload Data Excel")
-
-    # Deskripsi tentang data yang harus diunggah
-    st.markdown("""
-    ### Ketentuan Data:
-    - Data berupa file **Excel (.xlsx)**.
-    - Data mencakup kolom-kolom berikut:
-        1. **Persentase Penduduk Miskin (%)**
-        2. **Jumlah Penduduk Miskin (ribu jiwa)**
-        3. **Harapan Lama Sekolah (Tahun)**
-        4. **Rata-Rata Lama Sekolah (Tahun)**
-        5. **Tingkat Pengangguran Terbuka (%)**
-        6. **Tingkat Partisipasi Angkatan Kerja (%)**
-        7. **Angka Harapan Hidup (Tahun)**
-        8. **Garis Kemiskinan (Rupiah/Bulan/Kapita)**
-        9. **Indeks Pembangunan Manusia**
-        10. **Rata-rata Upah/Gaji Bersih Pekerja Informal Berdasarkan Lapangan Pekerjaan Utama (Rp)**
-        11. **Rata-rata Pendapatan Bersih Sebulan Pekerja Informal berdasarkan Pendidikan Tertinggi - Jumlah (Rp)**
-    """)
-
     uploaded_file = st.file_uploader("Unggah file Excel (.xlsx)", type="xlsx")
-    
     if uploaded_file:
         df = pd.read_excel(uploaded_file)
         st.session_state.df = df
         st.success("Data berhasil dimuat!")
         st.write(df)
 
-# 3. PREPROCESSING
 elif menu == "Step 2: Preprocessing Data":
     st.header("⚙️ Preprocessing Data")
     if 'df' in st.session_state:
@@ -145,7 +51,6 @@ elif menu == "Step 2: Preprocessing Data":
     else:
         st.warning("Silakan upload data terlebih dahulu.")
 
-# 4. VISUALISASI DATA
 elif menu == "Step 3: Visualisasi Data":
     st.header("📊 Visualisasi Data")
     if 'df' in st.session_state:
@@ -157,18 +62,14 @@ elif menu == "Step 3: Visualisasi Data":
         sns.heatmap(numerical_df.corr(), annot=True, cmap="coolwarm", fmt=".2f")
         st.pyplot(plt.gcf())
         plt.clf()
-
     else:
         st.warning("Silakan upload data terlebih dahulu.")
 
-# 5. HASIL CLUSTERING
 elif menu == "Step 4: Hasil Clustering":
     st.header("🧩 Hasil Clustering")
-    
     if 'X_scaled' in st.session_state:
         X_scaled = st.session_state.X_scaled
         st.subheader("Evaluasi Jumlah Cluster (Silhouette & DBI)")
-
         clusters_range = range(2, 10)
         silhouette_scores = {}
         dbi_scores = {}
@@ -236,3 +137,36 @@ elif menu == "Step 4: Hasil Clustering":
 
     else:
         st.warning("⚠️ Data belum diproses. Silakan lakukan preprocessing terlebih dahulu.")
+
+# 6. ANALISIS HASIL (Menu Baru)
+elif menu == "Step 5: Analisis Hasil":
+    st.header("🔍 Analisis Hasil Clustering")
+    
+    if 'labels' in st.session_state and 'df' in st.session_state:
+        df = st.session_state.df.copy()
+        labels = st.session_state.labels
+
+        # Menambahkan kolom cluster ke dalam DataFrame
+        df['Cluster'] = labels
+
+        st.subheader("Analisis Statistik per Cluster")
+        cluster_summary = df.groupby('Cluster').describe()
+        st.write(cluster_summary)
+
+        # Visualisasi distribusi setiap cluster untuk variabel tertentu
+        st.subheader("Distribusi Variabel per Cluster")
+        selected_feature = st.selectbox("Pilih variabel untuk distribusi:", df.columns[:-1])  # Kolom cluster tidak termasuk
+        plt.figure(figsize=(8, 6))
+        sns.boxplot(x='Cluster', y=selected_feature, data=df)
+        st.pyplot(plt.gcf())
+        plt.clf()
+
+        # Interpretasi hasil clustering
+        st.subheader("Interpretasi Hasil Clustering")
+        st.write("""
+        Analisis ini menunjukkan bagaimana setiap cluster berperilaku berdasarkan indikator-indikator kemiskinan.
+        Cluster yang lebih besar atau memiliki nilai-nilai ekstrem dapat menunjukkan daerah dengan tingkat kemiskinan yang lebih tinggi atau lebih rendah.
+        Perbandingan antar cluster dapat memberikan wawasan mengenai pola kemiskinan di Jawa Timur.
+        """)
+    else:
+        st.warning("⚠️ Hasil clustering belum tersedia. Silakan lakukan clustering terlebih dahulu.")
