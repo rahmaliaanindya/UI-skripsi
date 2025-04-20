@@ -120,6 +120,12 @@ elif st.session_state.menu == "Step 4: Hasil Clustering":
         optimal_k = best_k_silhouette
         clustering = SpectralClustering(n_clusters=optimal_k, affinity='nearest_neighbors', random_state=42)
         labels = clustering.fit_predict(X_scaled)
+
+        # Memastikan df telah terdefinisi sebelum menambahkan kolom 'Cluster'
+        if 'df' not in st.session_state:
+            st.session_state.df = pd.DataFrame(X_scaled, columns=st.session_state.features)
+        
+        df = st.session_state.df
         df['Cluster'] = labels
         st.write(df)
         st.session_state.df_clustered = df
