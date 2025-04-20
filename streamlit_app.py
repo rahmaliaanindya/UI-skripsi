@@ -66,32 +66,21 @@ def local_css():
 # Terapkan CSS
 local_css()
 
-# Tangkap query parameter untuk navigasi otomatis
-query_params = st.experimental_get_query_params()
-default_menu = query_params.get("menu", ["Home"])[0]
+# === Navigasi Menu di Atas ===
+query_params = st.query_params
+menu = query_params.get("menu", ["Home"])[0]
 
-# Navigasi Menu
-menu = st.radio(
-    "Navigasi Aplikasi:",
-    ("Home", "Step 1: Upload Data", "Step 2: Preprocessing Data", "Step 3: Visualisasi Data", "Step 4: Hasil Clustering"),
-    horizontal=True,
-    index=["Home", "Step 1: Upload Data", "Step 2: Preprocessing Data", "Step 3: Visualisasi Data", "Step 4: Hasil Clustering"].index(default_menu)
-)
-
-# Fungsi untuk mengarahkan ke langkah berikutnya
+# Fungsi untuk mengganti langkah navigasi
 def next_step():
-    next_step = {
-        "Home": "Step 1: Upload Data",
-        "Step 1: Upload Data": "Step 2: Preprocessing Data",
-        "Step 2: Preprocessing Data": "Step 3: Visualisasi Data",
-        "Step 3: Visualisasi Data": "Step 4: Hasil Clustering",
-        "Step 4: Hasil Clustering": None  # Tidak ada langkah setelah clustering
-    }
-    if next_step[menu]:
-        if st.button("➡️ Lanjut ke Tahap Berikutnya"):
-            # Menggunakan st.query_params untuk navigasi
-            st.experimental_set_query_params(menu=next_step[menu])
-            st.experimental_rerun()
+    current_step = query_params.get("menu", ["Home"])[0]
+    if current_step == "Home":
+        st.experimental_set_query_params(menu="Step 1: Upload Data")
+    elif current_step == "Step 1: Upload Data":
+        st.experimental_set_query_params(menu="Step 2: Preprocessing Data")
+    elif current_step == "Step 2: Preprocessing Data":
+        st.experimental_set_query_params(menu="Step 3: Visualisasi Data")
+    elif current_step == "Step 3: Visualisasi Data":
+        st.experimental_set_query_params(menu="Step 4: Hasil Clustering")
 
 # === Konten berdasarkan Menu ===
 if menu == "Home":
@@ -107,7 +96,6 @@ if menu == "Home":
 
     📌 Silakan pilih menu di atas untuk memulai analisis.
     """)
-    next_step()
 
 # 2. UPLOAD DATA
 elif menu == "Step 1: Upload Data":
@@ -138,7 +126,6 @@ elif menu == "Step 1: Upload Data":
         st.session_state.df = df
         st.success("Data berhasil dimuat!")
         st.write(df)
-    next_step()
 
 # 3. PREPROCESSING
 elif menu == "Step 2: Preprocessing Data":
@@ -164,7 +151,6 @@ elif menu == "Step 2: Preprocessing Data":
         st.write("Fitur telah dinormalisasi dan disimpan.")
     else:
         st.warning("Silakan upload data terlebih dahulu.")
-    next_step()
 
 # 4. VISUALISASI DATA
 elif menu == "Step 3: Visualisasi Data":
@@ -178,9 +164,9 @@ elif menu == "Step 3: Visualisasi Data":
         sns.heatmap(numerical_df.corr(), annot=True, cmap="coolwarm", fmt=".2f")
         st.pyplot(plt.gcf())
         plt.clf()
+
     else:
         st.warning("Silakan upload data terlebih dahulu.")
-    next_step()
 
 # 5. HASIL CLUSTERING
 elif menu == "Step 4: Hasil Clustering":
@@ -256,4 +242,3 @@ elif menu == "Step 4: Hasil Clustering":
 
     else:
         st.warning("⚠️ Data belum diproses. Silakan lakukan preprocessing terlebih dahulu.")
-    next_step()
