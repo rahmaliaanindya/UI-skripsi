@@ -6,8 +6,7 @@ import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import SpectralClustering
 from sklearn.metrics import silhouette_score, davies_bouldin_score
-
-import streamlit as st
+from sklearn.decomposition import PCA
 from PIL import Image
 
 # Konfigurasi halaman
@@ -65,18 +64,26 @@ def local_css():
         unsafe_allow_html=True
     )
 
-# Terapkan CSS
 local_css()
 
-# === Navigasi Menu di Atas ===
-menu = st.radio(
-    "Navigasi Aplikasi:",
-    ("Home", "Step 1: Upload Data", "Step 2: Preprocessing Data", "Step 3: Visualisasi Data", "Step 4: Hasil Clustering"),
-    horizontal=True
-)
+# Session State untuk navigasi next-step
+if "step" not in st.session_state:
+    st.session_state.step = 0
 
-# === Konten berdasarkan Menu ===
-if menu == "Home":
+# Navigasi otomatis menggunakan "Next"
+def next_step():
+    if st.session_state.step < 4:
+        st.session_state.step += 1
+
+def prev_step():
+    if st.session_state.step > 0:
+        st.session_state.step -= 1
+
+# === Menampilkan Konten Berdasarkan Langkah ===
+step = st.session_state.step
+
+# === STEP 0: HOME ===
+if step == 0:
     st.markdown("""
     # 👋 Selamat Datang di Aplikasi Analisis Cluster Kemiskinan Jawa Timur 📊
 
@@ -87,29 +94,21 @@ if menu == "Home":
     - 🤖 Menerapkan metode **Spectral Clustering**
     - 📈 Mengevaluasi hasil pengelompokan
 
-    📌 Silakan pilih menu di atas untuk memulai analisis.
+    📌 Klik tombol "Next" di bawah untuk memulai analisis.
     """)
+    st.button("Next ➡️", on_click=next_step)
 
-# 2. UPLOAD DATA
-elif menu == "Step 1: Upload Data":
+# === STEP 1: UPLOAD DATA ===
+elif step == 1:
     st.header("📤 Upload Data Excel")
-
-    # Deskripsi tentang data yang harus diunggah
     st.markdown("""
     ### Ketentuan Data:
     - Data berupa file **Excel (.xlsx)**.
-    - Data mencakup kolom-kolom berikut:
-        1. **Persentase Penduduk Miskin (%)**
-        2. **Jumlah Penduduk Miskin (ribu jiwa)**
-        3. **Harapan Lama Sekolah (Tahun)**
-        4. **Rata-Rata Lama Sekolah (Tahun)**
-        5. **Tingkat Pengangguran Terbuka (%)**
-        6. **Tingkat Partisipasi Angkatan Kerja (%)**
-        7. **Angka Harapan Hidup (Tahun)**
-        8. **Garis Kemiskinan (Rupiah/Bulan/Kapita)**
-        9. **Indeks Pembangunan Manusia**
-        10. **Rata-rata Upah/Gaji Bersih Pekerja Informal Berdasarkan Lapangan Pekerjaan Utama (Rp)**
-        11. **Rata-rata Pendapatan Bersih Sebulan Pekerja Informal berdasarkan Pendidikan Tertinggi - Jumlah (Rp)**
+    - Data mencakup indikator seperti:
+        - Persentase Penduduk Miskin
+        - Harapan Lama Sekolah
+        - Indeks Pembangunan Manusia
+        - ...dll
     """)
 
     uploaded_file = st.file_uploader("Unggah file Excel (.xlsx)", type="xlsx")
@@ -117,14 +116,18 @@ elif menu == "Step 1: Upload Data":
     if uploaded_file:
         df = pd.read_excel(uploaded_file)
         st.session_state.df = df
-        st.success("Data berhasil dimuat!")
+        st.success("✅ Data berhasil dimuat!")
         st.write(df)
+        st.button("Next ➡️", on_click=next_step)
+    else:
+        st.warning("⚠️ Silakan unggah file Excel.")
 
-# 3. PREPROCESSING
-elif menu == "Step 2: Preprocessing Data":
+# === STEP 2: PREPROCESSING ===
+elif step == 2:
     st.header("⚙️ Preprocessing Data")
     if 'df' in st.session_state:
         df = st.session_state.df
+
         st.subheader("Cek Missing Values")
         st.write(df.isnull().sum())
 
@@ -141,12 +144,13 @@ elif menu == "Step 2: Preprocessing Data":
         X_scaled = scaler.fit_transform(X)
 
         st.session_state.X_scaled = X_scaled
-        st.write("Fitur telah dinormalisasi dan disimpan.")
+        st.success("✅ Fitur telah dinormalisasi dan disimpan.")
+        st.button("Next ➡️", on_click=next_step)
     else:
-        st.warning("Silakan upload data terlebih dahulu.")
+        st.warning("⚠️ Silakan upload data terlebih dahulu.")
 
-# 4. VISUALISASI DATA
-elif menu == "Step 3: Visualisasi Data":
+# === STEP 3: VISUALISASI ===
+elif step == 3:
     st.header("📊 Visualisasi Data")
     if 'df' in st.session_state:
         df = st.session_state.df
@@ -157,12 +161,12 @@ elif menu == "Step 3: Visualisasi Data":
         sns.heatmap(numerical_df.corr(), annot=True, cmap="coolwarm", fmt=".2f")
         st.pyplot(plt.gcf())
         plt.clf()
-
+        st.button("Next ➡️", on_click=next_step)
     else:
-        st.warning("Silakan upload data terlebih dahulu.")
+        st.warning("⚠️ Silakan upload data terlebih dahulu.")
 
-# 5. HASIL CLUSTERING
-elif menu == "Step 4: Hasil Clustering":
+# === STEP 4: CLUSTERING ===
+elif step == 4:
     st.header("🧩 Hasil Clustering")
     
     if 'X_scaled' in st.session_state:
@@ -186,53 +190,42 @@ elif menu == "Step 4: Hasil Clustering":
         })
         st.line_chart(score_df)
 
-        # Menentukan cluster terbaik dari dua metrik
         best_k_silhouette = max(silhouette_scores, key=silhouette_scores.get)
         best_k_dbi = min(dbi_scores, key=dbi_scores.get)
 
-        st.success(f"🔹 Jumlah cluster optimal berdasarkan **Silhouette Score**: {best_k_silhouette}")
-        st.success(f"🔸 Jumlah cluster optimal berdasarkan **Davies-Bouldin Index**: {best_k_dbi}")
+        st.success(f"🔹 Cluster terbaik berdasarkan **Silhouette Score**: {best_k_silhouette}")
+        st.success(f"🔸 Cluster terbaik berdasarkan **Davies-Bouldin Index**: {best_k_dbi}")
 
-        # Pilihan manual untuk k_final atau default ke Silhouette
-        st.subheader("Pilih Jumlah Cluster untuk Clustering Final")
-        k_final = st.number_input("Jumlah Cluster (k):", min_value=2, max_value=10, value=best_k_silhouette, step=1)
-
-        # Final Clustering
+        k_final = st.number_input("Pilih Jumlah Cluster Final:", min_value=2, max_value=10, value=best_k_silhouette, step=1)
         final_cluster = SpectralClustering(n_clusters=k_final, affinity='nearest_neighbors', random_state=42)
         labels = final_cluster.fit_predict(X_scaled)
         st.session_state.labels = labels
 
-        # Visualisasi 2D menggunakan PCA
-        from sklearn.decomposition import PCA
+        # PCA untuk visualisasi
         pca = PCA(n_components=2)
         X_pca = pca.fit_transform(X_scaled)
 
         st.subheader("Visualisasi Clustering (PCA)")
         plt.figure(figsize=(8, 6))
         plt.scatter(X_pca[:, 0], X_pca[:, 1], c=labels, cmap='viridis', edgecolor='k')
-        plt.title("Visualisasi Clustering dengan Spectral Clustering")
+        plt.title("Visualisasi Clustering")
         plt.xlabel("PC1")
         plt.ylabel("PC2")
         st.pyplot(plt.gcf())
         plt.clf()
 
-        # Menampilkan hasil clustering
         if 'df' in st.session_state:
             df = st.session_state.df.copy()
             df['Cluster'] = labels
-
-            st.subheader("📄 Hasil Cluster pada Data")
-
-            # Urutkan data berdasarkan 'Cluster'
             df_sorted = df.sort_values(by='Cluster')
 
-            # Tampilkan DataFrame yang sudah diurutkan
+            st.subheader("📄 Hasil Cluster pada Data")
             st.dataframe(df_sorted)
 
-            # Tampilkan jumlah anggota tiap cluster
             st.subheader("📊 Jumlah Anggota per Cluster")
             cluster_counts = df['Cluster'].value_counts().sort_index()
             st.bar_chart(cluster_counts)
 
+            st.success("✅ Clustering selesai! Anda dapat menyimpan atau mengunduh hasil.")
     else:
-        st.warning("⚠️ Data belum diproses. Silakan lakukan preprocessing terlebih dahulu.")
+        st.warning("⚠️ Lakukan preprocessing terlebih dahulu.")
