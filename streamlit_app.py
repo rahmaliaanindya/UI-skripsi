@@ -66,21 +66,14 @@ def local_css():
 # Terapkan CSS
 local_css()
 
-# === Navigasi Menu di Atas ===
-if 'menu' not in st.session_state:
-    st.session_state.menu = "Home"  # Default to "Home"
+# Inisialisasi sesi
+if 'step' not in st.session_state:
+    st.session_state.step = 1
 
-menu = st.selectbox(
-    "Navigasi Aplikasi:",
-    ["Home", "Upload Data", "Preprocessing Data", "Visualisasi Data", "Hasil Clustering"],
-    index=["Home", "Upload Data", "Preprocessing Data", "Visualisasi Data", "Hasil Clustering"].index(st.session_state.menu)
-)
-
-# === Konten berdasarkan Menu ===
-if menu == "Home":
+# Navigasi dengan tombol Next
+if st.session_state.step == 1:
+    st.markdown("""# 👋 Selamat Datang di Aplikasi Analisis Cluster Kemiskinan Jawa Timur 📊""")
     st.markdown("""
-    # 👋 Selamat Datang di Aplikasi Analisis Cluster Kemiskinan Jawa Timur 📊
-
     Aplikasi ini dirancang untuk:
     - 📁 Mengunggah dan mengeksplorasi data indikator kemiskinan
     - 🧹 Melakukan preprocessing data
@@ -88,19 +81,14 @@ if menu == "Home":
     - 🤖 Menerapkan metode **Spectral Clustering**
     - 📈 Mengevaluasi hasil pengelompokan
 
-    📌 Silakan pilih menu di atas untuk memulai analisis.
+    📌 Klik tombol di bawah untuk mulai.
     """)
+    if st.button("Next"):
+        st.session_state.step = 2
 
-    # Update session state to reflect the current page
-    st.session_state.menu = "Upload Data"
-
-# 2. UPLOAD DATA
-elif menu == "Upload Data":
+elif st.session_state.step == 2:
     st.header("📤 Upload Data Excel")
-
-    # Deskripsi tentang data yang harus diunggah
-    st.markdown("""
-    ### Ketentuan Data:
+    st.markdown("""### Ketentuan Data:
     - Data berupa file **Excel (.xlsx)**.
     - Data mencakup kolom-kolom berikut:
         1. **Persentase Penduduk Miskin (%)**
@@ -115,26 +103,24 @@ elif menu == "Upload Data":
         10. **Rata-rata Upah/Gaji Bersih Pekerja Informal Berdasarkan Lapangan Pekerjaan Utama (Rp)**
         11. **Rata-rata Pendapatan Bersih Sebulan Pekerja Informal berdasarkan Pendidikan Tertinggi - Jumlah (Rp)**
     """)
-
-    uploaded_file = st.file_uploader("Unggah file Excel (.xlsx)", type="xlsx")
     
+    uploaded_file = st.file_uploader("Unggah file Excel (.xlsx)", type="xlsx")
     if uploaded_file:
         df = pd.read_excel(uploaded_file)
         st.session_state.df = df
         st.success("Data berhasil dimuat!")
         st.write(df)
+    
+    if st.button("Next"):
+        st.session_state.step = 3
 
-        # Update session state to reflect the current page
-        st.session_state.menu = "Preprocessing Data"
-
-# 3. PREPROCESSING
-elif menu == "Preprocessing Data":
+elif st.session_state.step == 3:
     st.header("⚙️ Preprocessing Data")
     if 'df' in st.session_state:
         df = st.session_state.df
         st.subheader("Cek Missing Values")
         st.write(df.isnull().sum())
-
+        
         st.subheader("Cek Duplikat")
         st.write(f"Jumlah duplikat: {df.duplicated().sum()}")
 
@@ -149,15 +135,11 @@ elif menu == "Preprocessing Data":
 
         st.session_state.X_scaled = X_scaled
         st.write("Fitur telah dinormalisasi dan disimpan.")
+    
+    if st.button("Next"):
+        st.session_state.step = 4
 
-        # Update session state to reflect the current page
-        st.session_state.menu = "Visualisasi Data"
-
-    else:
-        st.warning("Silakan upload data terlebih dahulu.")
-
-# 4. VISUALISASI DATA
-elif menu == "Visualisasi Data":
+elif st.session_state.step == 4:
     st.header("📊 Visualisasi Data")
     if 'df' in st.session_state:
         df = st.session_state.df
@@ -169,16 +151,11 @@ elif menu == "Visualisasi Data":
         st.pyplot(plt.gcf())
         plt.clf()
 
-        # Update session state to reflect the current page
-        st.session_state.menu = "Hasil Clustering"
+    if st.button("Next"):
+        st.session_state.step = 5
 
-    else:
-        st.warning("Silakan upload data terlebih dahulu.")
-
-# 5. HASIL CLUSTERING
-elif menu == "Hasil Clustering":
+elif st.session_state.step == 5:
     st.header("🧩 Hasil Clustering")
-    
     if 'X_scaled' in st.session_state:
         X_scaled = st.session_state.X_scaled
         st.subheader("Evaluasi Jumlah Cluster (Silhouette & DBI)")
