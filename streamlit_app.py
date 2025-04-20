@@ -7,7 +7,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import SpectralClustering
 from sklearn.metrics import silhouette_score, davies_bouldin_score
 from PIL import Image
-from sklearn.decomposition import PCA
 
 # Konfigurasi halaman
 st.set_page_config(
@@ -59,6 +58,9 @@ def local_css():
                 margin-bottom: 25px;
                 box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
             }
+            .streamlit-expanderHeader {
+                font-size: 20px;
+            }
         </style>
         """,
         unsafe_allow_html=True
@@ -67,10 +69,12 @@ def local_css():
 # Terapkan CSS
 local_css()
 
-# === Navigasi Menu di Sidebar ===
-menu = st.sidebar.radio(
+# === Navigasi Menu di Atas ===
+menu = st.radio(
     "Navigasi Aplikasi:",
-    ("Home", "Step 1: Upload Data", "Step 2: Preprocessing Data", "Step 3: Visualisasi Data", "Step 4: Hasil Clustering")
+    ("Home", "Step 1: Upload Data", "Step 2: Preprocessing Data", "Step 3: Visualisasi Data", "Step 4: Hasil Clustering"),
+    horizontal=True,
+    index=0
 )
 
 # === Konten berdasarkan Menu ===
@@ -201,6 +205,7 @@ elif menu == "Step 4: Hasil Clustering":
         st.session_state.labels = labels
 
         # Visualisasi 2D menggunakan PCA
+        from sklearn.decomposition import PCA
         pca = PCA(n_components=2)
         X_pca = pca.fit_transform(X_scaled)
 
