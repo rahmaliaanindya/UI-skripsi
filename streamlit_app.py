@@ -75,6 +75,22 @@ def next_stage():
     if st.session_state.stage < 4:
         st.session_state.stage += 1
 
+# === Menu Navigasi di Sidebar ===
+menu = ["Home", "Upload Data", "Preprocessing", "Visualisasi", "Hasil Clustering"]
+selection = st.sidebar.radio("Pilih Tahap", menu, index=st.session_state.stage)
+
+# Fungsi untuk menentukan tampilan berdasarkan menu yang dipilih
+if selection == "Home":
+    st.session_state.stage = 0
+elif selection == "Upload Data":
+    st.session_state.stage = 1
+elif selection == "Preprocessing":
+    st.session_state.stage = 2
+elif selection == "Visualisasi":
+    st.session_state.stage = 3
+elif selection == "Hasil Clustering":
+    st.session_state.stage = 4
+
 # === Konten berdasarkan Menu ===
 if st.session_state.stage == 0:
     st.markdown(""" 
