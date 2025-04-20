@@ -6,7 +6,7 @@ import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import SpectralClustering
 from sklearn.metrics import silhouette_score, davies_bouldin_score
-from PIL import Image
+from sklearn.decomposition import PCA
 
 # Konfigurasi halaman
 st.set_page_config(
@@ -66,29 +66,38 @@ def local_css():
 # Terapkan CSS
 local_css()
 
-# Inisialisasi sesi
-if 'step' not in st.session_state:
-    st.session_state.step = 1
+# === Variabel Navigasi Manual ===
+if 'stage' not in st.session_state:
+    st.session_state.stage = 0  # Mulai dari tahap 0 (Home)
 
-# Navigasi dengan tombol Next
-if st.session_state.step == 1:
-    st.markdown("""# 👋 Selamat Datang di Aplikasi Analisis Cluster Kemiskinan Jawa Timur 📊""")
-    st.markdown("""
+# Fungsi untuk melanjutkan ke tahap berikutnya
+def next_stage():
+    if st.session_state.stage < 4:
+        st.session_state.stage += 1
+
+# === Konten berdasarkan Menu ===
+if st.session_state.stage == 0:
+    st.markdown(""" 
+    # 👋 Selamat Datang di Aplikasi Analisis Cluster Kemiskinan Jawa Timur 📊
+    
     Aplikasi ini dirancang untuk:
     - 📁 Mengunggah dan mengeksplorasi data indikator kemiskinan
     - 🧹 Melakukan preprocessing data
     - 📊 Menampilkan visualisasi
     - 🤖 Menerapkan metode **Spectral Clustering**
     - 📈 Mengevaluasi hasil pengelompokan
-
-    📌 Klik tombol di bawah untuk mulai.
+    
+    📌 Silakan pilih menu di atas untuk memulai analisis.
     """)
-    if st.button("Next"):
-        st.session_state.step = 2
+    if st.button('Next'):
+        next_stage()
 
-elif st.session_state.step == 2:
+elif st.session_state.stage == 1:
     st.header("📤 Upload Data Excel")
-    st.markdown("""### Ketentuan Data:
+
+    # Deskripsi tentang data yang harus diunggah
+    st.markdown("""
+    ### Ketentuan Data:
     - Data berupa file **Excel (.xlsx)**.
     - Data mencakup kolom-kolom berikut:
         1. **Persentase Penduduk Miskin (%)**
@@ -105,22 +114,23 @@ elif st.session_state.step == 2:
     """)
     
     uploaded_file = st.file_uploader("Unggah file Excel (.xlsx)", type="xlsx")
+    
     if uploaded_file:
         df = pd.read_excel(uploaded_file)
         st.session_state.df = df
         st.success("Data berhasil dimuat!")
         st.write(df)
-    
-    if st.button("Next"):
-        st.session_state.step = 3
 
-elif st.session_state.step == 3:
+    if st.button('Next'):
+        next_stage()
+
+elif st.session_state.stage == 2:
     st.header("⚙️ Preprocessing Data")
     if 'df' in st.session_state:
         df = st.session_state.df
         st.subheader("Cek Missing Values")
         st.write(df.isnull().sum())
-        
+
         st.subheader("Cek Duplikat")
         st.write(f"Jumlah duplikat: {df.duplicated().sum()}")
 
@@ -136,10 +146,10 @@ elif st.session_state.step == 3:
         st.session_state.X_scaled = X_scaled
         st.write("Fitur telah dinormalisasi dan disimpan.")
     
-    if st.button("Next"):
-        st.session_state.step = 4
+    if st.button('Next'):
+        next_stage()
 
-elif st.session_state.step == 4:
+elif st.session_state.stage == 3:
     st.header("📊 Visualisasi Data")
     if 'df' in st.session_state:
         df = st.session_state.df
@@ -150,12 +160,13 @@ elif st.session_state.step == 4:
         sns.heatmap(numerical_df.corr(), annot=True, cmap="coolwarm", fmt=".2f")
         st.pyplot(plt.gcf())
         plt.clf()
+    
+    if st.button('Next'):
+        next_stage()
 
-    if st.button("Next"):
-        st.session_state.step = 5
-
-elif st.session_state.step == 5:
+elif st.session_state.stage == 4:
     st.header("🧩 Hasil Clustering")
+    
     if 'X_scaled' in st.session_state:
         X_scaled = st.session_state.X_scaled
         st.subheader("Evaluasi Jumlah Cluster (Silhouette & DBI)")
@@ -194,7 +205,6 @@ elif st.session_state.step == 5:
         st.session_state.labels = labels
 
         # Visualisasi 2D menggunakan PCA
-        from sklearn.decomposition import PCA
         pca = PCA(n_components=2)
         X_pca = pca.fit_transform(X_scaled)
 
@@ -224,6 +234,3 @@ elif st.session_state.step == 5:
             st.subheader("📊 Jumlah Anggota per Cluster")
             cluster_counts = df['Cluster'].value_counts().sort_index()
             st.bar_chart(cluster_counts)
-
-    else:
-        st.warning("⚠️ Data belum diproses. Silakan lakukan preprocessing terlebih dahulu.")
