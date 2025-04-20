@@ -256,11 +256,74 @@ elif menu == "Step 5: Analisis Hasil":
         st.bar_chart(cluster_counts)
 
         # Insight berdasarkan cluster
-        st.subheader("Insight")
+        st.subheader("Insight per Cluster")
         for cluster_num in df['Cluster'].unique():
             st.write(f"Cluster {cluster_num}:")
             cluster_data = df[df['Cluster'] == cluster_num]
             st.write(cluster_data.describe())
+
+        # --- Feature Importance using RandomForestClassifier ---
+        # Cek apakah 'cluster_sorted' ada dalam dataframe
+        if "cluster_sorted" in df.columns:  # Change df_cleaned to df
+            df = df.drop(columns=["cluster_sorted"])
+
+        # Definisi variabel X dan y
+        X = df.drop(columns=["Kabupaten/Kota", "Cluster"], errors="ignore")  # Change df_cleaned to df, Hapus "Cluster" jika ada
+        y = df["Cluster"]  # Change df_cleaned to df, Gunakan "Cluster" sebagai target
+
+        # Import the RandomForestClassifier
+        from sklearn.ensemble import RandomForestClassifier
+
+        # Inisialisasi dan pelatihan model RandomForest
+        rf = RandomForestClassifier(n_estimators=100, random_state=42)
+        rf.fit(X, y)
+
+        # Menampilkan feature importance
+        importances = pd.Series(rf.feature_importances_, index=X.columns).sort_values(ascending=False)
+
+        # Visualisasi Feature Importance
+        st.subheader("Pentingnya Fitur (Feature Importance)")
+        plt.figure(figsize=(10,5))
+        sns.barplot(x=importances.values, y=importances.index, palette="viridis")
+        plt.title("Feature Importance (Indikator Paling Berpengaruh)")
+        plt.xlabel("Tingkat Pengaruh")
+        st.pyplot()
+
+        # --- Principal Component Analysis (PCA) ---
+        from sklearn.decomposition import PCA
+        from sklearn.preprocessing import StandardScaler
+
+        # Standarisasi data
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X)
+
+        # PCA dengan 2 komponen utama
+        pca = PCA(n_components=2)
+        principal_components = pca.fit_transform(X_scaled)
+
+        # Visualisasi kontribusi indikator terhadap komponen utama
+        st.subheader("Kontribusi Indikator terhadap Komponen Utama dengan PCA")
+        plt.figure(figsize=(8,6))
+        plt.bar(range(len(X.columns)), pca.components_[0], tick_label=X.columns)
+        plt.xticks(rotation=90)
+        plt.title("Kontribusi Indikator terhadap Komponen Utama")
+        plt.ylabel("Kontribusi")
+        st.pyplot()
+
+        # --- Menampilkan 3 Kota Termiskin dan 3 Kota Terbaik ---
+        # Menampilkan 3 Kota Termiskin dan 3 Kota Terbaik berdasarkan "Cluster"
+        cluster_0 = df[df['Cluster'] == 0]  # Cluster 0 adalah kelompok yang memiliki tingkat kemiskinan tinggi
+        cluster_1 = df[df['Cluster'] == 1]  # Cluster 1 adalah kelompok yang memiliki tingkat kemiskinan rendah
+
+        # 3 Kota Termiskin (Cluster 0)
+        st.subheader("3 Kota Termiskin (Cluster 0)")
+        top_3_poor = cluster_0[['Kabupaten/Kota', 'Persentase Penduduk Miskin (%)']].sort_values(by="Persentase Penduduk Miskin (%)", ascending=False).head(3)
+        st.write(top_3_poor)
+
+        # 3 Kota Tidak Miskin (Cluster 1)
+        st.subheader("3 Kota Tidak Miskin (Cluster 1)")
+        top_3_rich = cluster_1[['Kabupaten/Kota', 'Persentase Penduduk Miskin (%)']].sort_values(by="Persentase Penduduk Miskin (%)", ascending=True).head(3)
+        st.write(top_3_rich)
 
     else:
         st.warning("⚠️ Hasil clustering belum ada. Silakan lakukan clustering terlebih dahulu.")
