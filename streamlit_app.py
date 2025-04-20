@@ -79,19 +79,31 @@ def local_css():
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
             }
             
+            /* Navigation Buttons */
+            .nav-button {
+                background: linear-gradient(135deg, #9b59b6 0%, #3498db 100%) !important;
+                margin-top: 2rem;
+            }
+            
             /* Dataframes */
             .dataframe {
                 border-radius: 8px;
                 box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
             }
             
-            /* Radio Buttons */
+            /* Radio Buttons - Hidden Label */
+            .stRadio > label {
+                display: none !important;
+            }
+            
             .stRadio>div {
                 flex-direction: row !important;
                 background: white;
                 padding: 0.5rem;
                 border-radius: 8px;
                 box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+                justify-content: center;
+                margin-bottom: 1.5rem;
             }
             
             /* Success/Warning Messages */
@@ -119,6 +131,23 @@ def local_css():
                 background: #3498db;
                 border-radius: 10px;
             }
+            
+            /* Progress Bar */
+            .stProgress > div > div > div > div {
+                background: linear-gradient(90deg, #3498db 0%, #2ecc71 100%);
+            }
+            
+            /* Tab Styling */
+            .stTabs > div > div > button {
+                border-radius: 8px 8px 0 0 !important;
+                padding: 0.5rem 1rem !important;
+                font-weight: 600 !important;
+            }
+            
+            .stTabs > div > div > button[aria-selected="true"] {
+                background-color: #3498db !important;
+                color: white !important;
+            }
         </style>
         """,
         unsafe_allow_html=True
@@ -128,7 +157,7 @@ local_css()
 
 # === MENU NAVIGASI ===
 menu = st.radio(
-    "PILIH MENU:",
+    "",
     ("Home", "Step 1: Upload Data", "Step 2: Preprocessing Data", "Step 3: Visualisasi Data", "Step 4: Hasil Clustering"),
     horizontal=True
 )
@@ -147,6 +176,9 @@ if menu == "Home":
     - 📈 Mengevaluasi hasil pengelompokan
     </div>
     """, unsafe_allow_html=True)
+    
+    if st.button("Mulai Analisis →", key="home_next", help="Klik untuk mulai analisis"):
+        menu = "Step 1: Upload Data"
 
 # === UPLOAD DATA ===
 elif menu == "Step 1: Upload Data":
@@ -178,6 +210,14 @@ elif menu == "Step 1: Upload Data":
         
         with st.expander("Lihat Data", expanded=True):
             st.dataframe(df.style.background_gradient(cmap='Blues'))
+    
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("← Kembali ke Home", key="upload_back"):
+            menu = "Home"
+    with col2:
+        if uploaded_file and st.button("Lanjut ke Preprocessing →", key="upload_next", help="Klik untuk lanjut ke step preprocessing"):
+            menu = "Step 2: Preprocessing Data"
 
 # === PREPROCESSING DATA ===
 elif menu == "Step 2: Preprocessing Data":
@@ -213,6 +253,14 @@ elif menu == "Step 2: Preprocessing Data":
                 st.success("✅ Fitur telah dinormalisasi dan disimpan!")
     else:
         st.warning("⚠️ Silakan upload data terlebih dahulu.")
+    
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col1:
+        if st.button("← Kembali ke Upload Data", key="preprocess_back"):
+            menu = "Step 1: Upload Data"
+    with col3:
+        if 'X_scaled' in st.session_state and st.button("Lanjut ke Visualisasi →", key="preprocess_next"):
+            menu = "Step 3: Visualisasi Data"
 
 # === VISUALISASI ===
 elif menu == "Step 3: Visualisasi Data":
@@ -227,8 +275,24 @@ elif menu == "Step 3: Visualisasi Data":
             fig, ax = plt.subplots(figsize=(12, 8))
             sns.heatmap(numerical_df.corr(), annot=True, cmap="coolwarm", fmt=".2f", ax=ax)
             st.pyplot(fig)
+            
+        with st.container():
+            st.subheader("Distribusi Data")
+            selected_column = st.selectbox("Pilih kolom untuk dilihat distribusinya:", numerical_df.columns)
+            fig, ax = plt.subplots(figsize=(10, 5))
+            sns.histplot(numerical_df[selected_column], kde=True, ax=ax)
+            plt.title(f"Distribusi {selected_column}")
+            st.pyplot(fig)
     else:
         st.warning("⚠️ Silakan upload data terlebih dahulu.")
+    
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col1:
+        if st.button("← Kembali ke Preprocessing", key="visual_back"):
+            menu = "Step 2: Preprocessing Data"
+    with col3:
+        if 'df' in st.session_state and st.button("Lanjut ke Clustering →", key="visual_next"):
+            menu = "Step 4: Hasil Clustering"
 
 # === CLUSTERING ===
 elif menu == "Step 4: Hasil Clustering":
@@ -360,3 +424,11 @@ elif menu == "Step 4: Hasil Clustering":
                 """)
     else:
         st.warning("⚠️ Silakan lakukan preprocessing data terlebih dahulu.")
+    
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("← Kembali ke Visualisasi", key="cluster_back"):
+            menu = "Step 3: Visualisasi Data"
+    with col2:
+        if st.button("Selesai 🎉", key="cluster_finish"):
+            menu = "Home"
