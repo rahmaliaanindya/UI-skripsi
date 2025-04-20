@@ -71,7 +71,7 @@ if 'step' not in st.session_state:
     st.session_state.step = "Home"
 
 # Sinkronisasi menu dengan step state
-menu = st.sidebar.radio(
+menu = st.selectbox(
     "Navigasi Aplikasi:",
     ("Home", "Step 1: Upload Data", "Step 2: Preprocessing Data", "Step 3: Visualisasi Data", "Step 4: Hasil Clustering"),
     index=("Home", "Step 1: Upload Data", "Step 2: Preprocessing Data", "Step 3: Visualisasi Data", "Step 4: Hasil Clustering").index(st.session_state.step)
