@@ -6,9 +6,8 @@ import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import SpectralClustering
 from sklearn.metrics import silhouette_score, davies_bouldin_score
-
-import streamlit as st
-from PIL import Image
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.decomposition import PCA
 
 # Konfigurasi halaman
 st.set_page_config(
@@ -203,7 +202,6 @@ elif menu == "Step 4: Hasil Clustering":
         st.session_state.labels = labels
 
         # Visualisasi 2D menggunakan PCA
-        from sklearn.decomposition import PCA
         pca = PCA(n_components=2)
         X_pca = pca.fit_transform(X_scaled)
 
@@ -233,6 +231,53 @@ elif menu == "Step 4: Hasil Clustering":
             st.subheader("📊 Jumlah Anggota per Cluster")
             cluster_counts = df['Cluster'].value_counts().sort_index()
             st.bar_chart(cluster_counts)
+
+            # Menambahkan evaluasi variabel yang paling berpengaruh menggunakan RandomForest
+            X = df.drop(columns=["Kabupaten/Kota", "Cluster"], errors="ignore")
+            y = df["Cluster"]
+
+            # Inisialisasi dan pelatihan model RandomForest
+            rf = RandomForestClassifier(n_estimators=100, random_state=42)
+            rf.fit(X, y)
+
+            # Menampilkan feature importance
+            importances = pd.Series(rf.feature_importances_, index=X.columns).sort_values(ascending=False)
+
+            # Visualisasi Feature Importance
+            plt.figure(figsize=(10,5))
+            sns.barplot(x=importances.values, y=importances.index, palette="viridis")
+            plt.title("Feature Importance (Indikator Paling Berpengaruh)")
+            plt.xlabel("Tingkat Pengaruh")
+            st.pyplot(plt.gcf())
+            plt.clf()
+
+            # Visualisasi kontribusi terhadap komponen utama dengan PCA
+            scaler = StandardScaler()
+            X_scaled = scaler.fit_transform(X)
+
+            pca = PCA(n_components=2)
+            principal_components = pca.fit_transform(X_scaled)
+
+            plt.figure(figsize=(8,6))
+            plt.bar(range(len(X.columns)), pca.components_[0], tick_label=X.columns)
+            plt.xticks(rotation=90)
+            plt.title("Kontribusi Indikator terhadap Komponen Utama")
+            plt.ylabel("Kontribusi")
+            st.pyplot(plt.gcf())
+            plt.clf()
+
+            # Menyajikan kesimpulan dari hasil clustering
+            st.subheader("💡 Kesimpulan & Interpretasi Hasil")
+
+            # Menampilkan 3 kota dengan tingkat kemiskinan terendah dan tertinggi
+            top_3_lowest = df.sort_values(by='Cluster').head(3)
+            top_3_highest = df.sort_values(by='Cluster', ascending=False).head(3)
+
+            st.write("### 3 Kota Dengan Tingkat Kemiskinan Terendah")
+            st.dataframe(top_3_lowest[['Kabupaten/Kota', 'Cluster']])
+
+            st.write("### 3 Kota Dengan Tingkat Kemiskinan Tertinggi")
+            st.dataframe(top_3_highest[['Kabupaten/Kota', 'Cluster']])
 
     else:
         st.warning("⚠️ Data belum diproses. Silakan lakukan preprocessing terlebih dahulu.")
