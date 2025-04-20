@@ -241,7 +241,6 @@ elif menu == "4. Visualisasi Data":
 elif menu == "5. Hasil Clustering":
     show_clustering_results()
 
-# Tombol Next
+# Tombol Next untuk melanjutkan ke langkah berikutnya
 if st.button('Next'):
     st.session_state.step += 1
-    st.experimental_rerun()
