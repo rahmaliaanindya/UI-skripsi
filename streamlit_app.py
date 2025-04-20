@@ -6,7 +6,9 @@ import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import SpectralClustering
 from sklearn.metrics import silhouette_score, davies_bouldin_score
-from sklearn.decomposition import PCA
+
+import streamlit as st
+from PIL import Image
 
 # Konfigurasi halaman
 st.set_page_config(
@@ -66,21 +68,12 @@ def local_css():
 # Terapkan CSS
 local_css()
 
-# === Navigasi Menu ===
-query_params = st.query_params
-menu = query_params.get("menu", ["Home"])[0]
-
-# Fungsi untuk mengganti langkah navigasi
-def next_step():
-    current_step = query_params.get("menu", ["Home"])[0]
-    if current_step == "Home":
-        st.experimental_set_query_params(menu="Step 1: Upload Data")
-    elif current_step == "Step 1: Upload Data":
-        st.experimental_set_query_params(menu="Step 2: Preprocessing Data")
-    elif current_step == "Step 2: Preprocessing Data":
-        st.experimental_set_query_params(menu="Step 3: Visualisasi Data")
-    elif current_step == "Step 3: Visualisasi Data":
-        st.experimental_set_query_params(menu="Step 4: Hasil Clustering")
+# === Navigasi Menu di Atas ===
+menu = st.radio(
+    "Navigasi Aplikasi:",
+    ("Home", "Step 1: Upload Data", "Step 2: Preprocessing Data", "Step 3: Visualisasi Data", "Step 4: Hasil Clustering"),
+    horizontal=True
+)
 
 # === Konten berdasarkan Menu ===
 if menu == "Home":
@@ -210,6 +203,7 @@ elif menu == "Step 4: Hasil Clustering":
         st.session_state.labels = labels
 
         # Visualisasi 2D menggunakan PCA
+        from sklearn.decomposition import PCA
         pca = PCA(n_components=2)
         X_pca = pca.fit_transform(X_scaled)
 
