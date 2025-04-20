@@ -93,7 +93,7 @@ if menu == "Home":
     st.markdown("**Klik tombol di bawah ini untuk melanjutkan ke langkah berikutnya**")
 
     if st.button("➡️ Lanjut"):
-        st.experimental_set_query_params(menu="Upload Data")
+        st.query_params(menu="Upload Data")
 
 # 2. UPLOAD DATA
 elif menu == "Upload Data":
@@ -130,7 +130,7 @@ elif menu == "Upload Data":
         st.markdown("**Klik tombol di bawah ini untuk melanjutkan ke langkah berikutnya**")
 
         if st.button("➡️ Lanjut"):
-            st.experimental_set_query_params(menu="Preprocessing Data")
+            st.query_params(menu="Preprocessing Data")
 
 # 3. PREPROCESSING
 elif menu == "Preprocessing Data":
@@ -160,7 +160,7 @@ elif menu == "Preprocessing Data":
         st.markdown("**Klik tombol di bawah ini untuk melanjutkan ke langkah berikutnya**")
 
         if st.button("➡️ Lanjut"):
-            st.experimental_set_query_params(menu="Visualisasi Data")
+            st.query_params(menu="Visualisasi Data")
     else:
         st.warning("Silakan upload data terlebih dahulu.")
 
@@ -182,7 +182,7 @@ elif menu == "Visualisasi Data":
         st.markdown("**Klik tombol di bawah ini untuk melanjutkan ke langkah berikutnya**")
 
         if st.button("➡️ Lanjut"):
-            st.experimental_set_query_params(menu="Hasil Clustering")
+            st.query_params(menu="Hasil Clustering")
     else:
         st.warning("Silakan upload data terlebih dahulu.")
 
