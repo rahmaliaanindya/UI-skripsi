@@ -66,25 +66,16 @@ def local_css():
 # Terapkan CSS
 local_css()
 
-# === Menyimpan status tahap dalam session state ===
-if 'step' not in st.session_state:
-    st.session_state.step = 1
+# === Navigasi Menu di Atas ===
+menu = st.radio(
+    "Navigasi Aplikasi:",
+    ("Home", "Upload Data", "Preprocessing Data", "Visualisasi Data", "Hasil Clustering"),
+    horizontal=True
+)
 
-# Sidebar untuk navigasi
-menu = ["Home", "Upload Data", "Preprocessing", "Visualisasi", "Hasil Clustering"]
-current_step = menu[st.session_state.step - 1]
-
-st.sidebar.title("Menu Navigasi")
-for idx, item in enumerate(menu, 1):
-    if idx == st.session_state.step:
-        st.sidebar.markdown(f"**{item} (Step {idx})**")
-    else:
-        st.sidebar.markdown(f"{item} (Step {idx})")
-
-# === Konten berdasarkan Step ===
-if st.session_state.step == 1:
-    # Home Page
-    st.markdown("""
+# === Konten berdasarkan Menu ===
+if menu == "Home":
+    st.markdown("""    
     # 👋 Selamat Datang di Aplikasi Analisis Cluster Kemiskinan Jawa Timur 📊
 
     Aplikasi ini dirancang untuk:
@@ -94,15 +85,12 @@ if st.session_state.step == 1:
     - 🤖 Menerapkan metode **Spectral Clustering**
     - 📈 Mengevaluasi hasil pengelompokan
 
-    📌 Tekan tombol **Next** untuk memulai analisis.
+    📌 Silakan pilih menu di atas untuk memulai analisis.
     """)
-    
-    if st.button('Next'):
-        st.session_state.step = 2
 
-elif st.session_state.step == 2:
-    # Upload Data
-    st.header("📤 Upload Data Excel")
+# 2. UPLOAD DATA
+elif menu == "Upload Data":
+    st.header("📤 Step 1: Upload Data Excel")
 
     # Deskripsi tentang data yang harus diunggah
     st.markdown("""
@@ -129,13 +117,14 @@ elif st.session_state.step == 2:
         st.session_state.df = df
         st.success("Data berhasil dimuat!")
         st.write(df)
-        
-    if st.button('Next') and 'df' in st.session_state:
-        st.session_state.step = 3
 
-elif st.session_state.step == 3:
-    # Preprocessing Data
-    st.header("⚙️ Preprocessing Data")
+        # Next Step Button
+        if st.button("Next Step: Preprocessing Data"):
+            menu = "Preprocessing Data"  # Update menu to next step
+
+# 3. PREPROCESSING
+elif menu == "Preprocessing Data":
+    st.header("⚙️ Step 2: Preprocessing Data")
     if 'df' in st.session_state:
         df = st.session_state.df
         st.subheader("Cek Missing Values")
@@ -156,12 +145,16 @@ elif st.session_state.step == 3:
         st.session_state.X_scaled = X_scaled
         st.write("Fitur telah dinormalisasi dan disimpan.")
         
-    if st.button('Next'):
-        st.session_state.step = 4
+        # Next Step Button
+        if st.button("Next Step: Visualisasi Data"):
+            menu = "Visualisasi Data"  # Update menu to next step
 
-elif st.session_state.step == 4:
-    # Visualisasi Data
-    st.header("📊 Visualisasi Data")
+    else:
+        st.warning("Silakan upload data terlebih dahulu.")
+
+# 4. VISUALISASI DATA
+elif menu == "Visualisasi Data":
+    st.header("📊 Step 3: Visualisasi Data")
     if 'df' in st.session_state:
         df = st.session_state.df
         numerical_df = df.select_dtypes(include=['float64', 'int64'])
@@ -171,13 +164,17 @@ elif st.session_state.step == 4:
         sns.heatmap(numerical_df.corr(), annot=True, cmap="coolwarm", fmt=".2f")
         st.pyplot(plt.gcf())
         plt.clf()
-        
-    if st.button('Next'):
-        st.session_state.step = 5
 
-elif st.session_state.step == 5:
-    # Hasil Clustering
-    st.header("🧩 Hasil Clustering")
+        # Next Step Button
+        if st.button("Next Step: Hasil Clustering"):
+            menu = "Hasil Clustering"  # Update menu to next step
+
+    else:
+        st.warning("Silakan upload data terlebih dahulu.")
+
+# 5. HASIL CLUSTERING
+elif menu == "Hasil Clustering":
+    st.header("🧩 Step 4: Hasil Clustering")
     
     if 'X_scaled' in st.session_state:
         X_scaled = st.session_state.X_scaled
@@ -247,6 +244,6 @@ elif st.session_state.step == 5:
             st.subheader("📊 Jumlah Anggota per Cluster")
             cluster_counts = df['Cluster'].value_counts().sort_index()
             st.bar_chart(cluster_counts)
-    
-    if st.button('Next'):
-        st.session_state.step = 1  # Reset ke awal atau akhir sesuai kebutuhan
+
+    else:
+        st.warning("⚠️ Data belum diproses. Silakan lakukan preprocessing terlebih dahulu.")
