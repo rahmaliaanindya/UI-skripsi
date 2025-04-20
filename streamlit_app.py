@@ -62,7 +62,7 @@ menu = st.radio(
 
 # === HOME ===
 if menu == "Home":
-    st.markdown("""
+    st.markdown(""" 
     # 👋 Selamat Datang di Aplikasi Analisis Cluster Kemiskinan Jawa Timur 📊
     Aplikasi ini dirancang untuk:
     - 📁 Mengunggah dan mengeksplorasi data indikator kemiskinan
@@ -217,27 +217,26 @@ elif menu == "Step 4: Hasil Clustering":
             st.dataframe(cluster_summary)
 
             # === INTERPRETASI TAMBAHAN: Wilayah Miskin Tinggi & Rendah ===
-st.subheader("📌 Tabel Wilayah dengan Kemiskinan Tertinggi dan Terendah")
+            st.subheader("📌 Tabel Wilayah dengan Kemiskinan Tertinggi dan Terendah")
 
-# Pastikan nama kolom kemiskinan benar
-kemiskinan_col = "Persentase Penduduk Miskin (%)"
+            # Pastikan nama kolom kemiskinan benar
+            kemiskinan_col = "Persentase Penduduk Miskin (%)"
 
-if kemiskinan_col in df.columns:
-    top3 = df.sort_values(by=kemiskinan_col, ascending=False)[["Kabupaten/Kota", kemiskinan_col, "Cluster"]].head(3)
-    bottom3 = df.sort_values(by=kemiskinan_col, ascending=True)[["Kabupaten/Kota", kemiskinan_col, "Cluster"]].head(3)
+            if kemiskinan_col in df.columns:
+                top3 = df.sort_values(by=kemiskinan_col, ascending=False)[["Kabupaten/Kota", kemiskinan_col, "Cluster"]].head(3)
+                bottom3 = df.sort_values(by=kemiskinan_col, ascending=True)[["Kabupaten/Kota", kemiskinan_col, "Cluster"]].head(3)
 
-    col1, col2 = st.columns(2)
+                col1, col2 = st.columns(2)
 
-    with col1:
-        st.markdown("#### 🚨 3 Wilayah dengan Tingkat Kemiskinan Tertinggi")
-        st.table(top3.reset_index(drop=True))
+                with col1:
+                    st.markdown("#### 🚨 3 Wilayah dengan Tingkat Kemiskinan Tertinggi")
+                    st.table(top3.reset_index(drop=True))
 
-    with col2:
-        st.markdown("#### 🟢 3 Wilayah dengan Tingkat Kemiskinan Terendah")
-        st.table(bottom3.reset_index(drop=True))
-else:
-    st.warning(f"Kolom '{kemiskinan_col}' tidak ditemukan dalam data.")
-
+                with col2:
+                    st.markdown("#### 🟢 3 Wilayah dengan Tingkat Kemiskinan Terendah")
+                    st.table(bottom3.reset_index(drop=True))
+            else:
+                st.warning(f"Kolom '{kemiskinan_col}' tidak ditemukan dalam data.")
 
             st.markdown("""
             ### Interpretasi Awal:
