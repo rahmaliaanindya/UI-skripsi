@@ -7,6 +7,9 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import SpectralClustering
 from sklearn.metrics import silhouette_score, davies_bouldin_score
 
+import streamlit as st
+from PIL import Image
+
 # Konfigurasi halaman
 st.set_page_config(
     page_title="Analisis Kemiskinan Jatim",
@@ -65,12 +68,15 @@ def local_css():
 # Terapkan CSS
 local_css()
 
-# === Memulai aplikasi dengan Session State ===
-if 'step' not in st.session_state:
-    st.session_state.step = 0  # Langkah awal
+# === Navigasi Menu di Atas ===
+menu = st.radio(
+    "Navigasi Aplikasi:",
+    ("Home", "Step 1: Upload Data", "Step 2: Preprocessing Data", "Step 3: Visualisasi Data", "Step 4: Hasil Clustering"),
+    horizontal=True
+)
 
-# === Navigasi Berdasarkan Step ===
-if st.session_state.step == 0:
+# === Konten berdasarkan Menu ===
+if menu == "Home":
     st.markdown("""
     # 👋 Selamat Datang di Aplikasi Analisis Cluster Kemiskinan Jawa Timur 📊
 
@@ -83,14 +89,30 @@ if st.session_state.step == 0:
 
     📌 Silakan pilih menu di atas untuk memulai analisis.
     """)
+    if st.button("Next"):
+        menu = "Step 1: Upload Data"
 
-    if st.button("Lanjutkan ke Step 1: Upload Data"):
-        st.session_state.step = 1  # Pindah ke step berikutnya
-        st.experimental_rerun()
-
-# Step 1: Upload Data
-elif st.session_state.step == 1:
+# 2. UPLOAD DATA
+elif menu == "Step 1: Upload Data":
     st.header("📤 Upload Data Excel")
+
+    # Deskripsi tentang data yang harus diunggah
+    st.markdown("""
+    ### Ketentuan Data:
+    - Data berupa file **Excel (.xlsx)**.
+    - Data mencakup kolom-kolom berikut:
+        1. **Persentase Penduduk Miskin (%)**
+        2. **Jumlah Penduduk Miskin (ribu jiwa)**
+        3. **Harapan Lama Sekolah (Tahun)**
+        4. **Rata-Rata Lama Sekolah (Tahun)**
+        5. **Tingkat Pengangguran Terbuka (%)**
+        6. **Tingkat Partisipasi Angkatan Kerja (%)**
+        7. **Angka Harapan Hidup (Tahun)**
+        8. **Garis Kemiskinan (Rupiah/Bulan/Kapita)**
+        9. **Indeks Pembangunan Manusia**
+        10. **Rata-rata Upah/Gaji Bersih Pekerja Informal Berdasarkan Lapangan Pekerjaan Utama (Rp)**
+        11. **Rata-rata Pendapatan Bersih Sebulan Pekerja Informal berdasarkan Pendidikan Tertinggi - Jumlah (Rp)**
+    """)
 
     uploaded_file = st.file_uploader("Unggah file Excel (.xlsx)", type="xlsx")
     
@@ -100,12 +122,11 @@ elif st.session_state.step == 1:
         st.success("Data berhasil dimuat!")
         st.write(df)
 
-    if uploaded_file and st.button("Lanjutkan ke Step 2: Preprocessing Data"):
-        st.session_state.step = 2  # Pindah ke step berikutnya
-        st.experimental_rerun()
+    if st.button("Next"):
+        menu = "Step 2: Preprocessing Data"
 
-# Step 2: Preprocessing
-elif st.session_state.step == 2:
+# 3. PREPROCESSING
+elif menu == "Step 2: Preprocessing Data":
     st.header("⚙️ Preprocessing Data")
     if 'df' in st.session_state:
         df = st.session_state.df
@@ -126,15 +147,12 @@ elif st.session_state.step == 2:
 
         st.session_state.X_scaled = X_scaled
         st.write("Fitur telah dinormalisasi dan disimpan.")
+    
+    if st.button("Next"):
+        menu = "Step 3: Visualisasi Data"
 
-        if st.button("Lanjutkan ke Step 3: Visualisasi Data"):
-            st.session_state.step = 3  # Pindah ke step berikutnya
-            st.experimental_rerun()
-    else:
-        st.warning("Silakan upload data terlebih dahulu.")
-
-# Step 3: Visualisasi Data
-elif st.session_state.step == 3:
+# 4. VISUALISASI DATA
+elif menu == "Step 3: Visualisasi Data":
     st.header("📊 Visualisasi Data")
     if 'df' in st.session_state:
         df = st.session_state.df
@@ -146,15 +164,11 @@ elif st.session_state.step == 3:
         st.pyplot(plt.gcf())
         plt.clf()
 
-        if st.button("Lanjutkan ke Step 4: Hasil Clustering"):
-            st.session_state.step = 4  # Pindah ke step berikutnya
-            st.experimental_rerun()
+    if st.button("Next"):
+        menu = "Step 4: Hasil Clustering"
 
-    else:
-        st.warning("Silakan upload data terlebih dahulu.")
-
-# Step 4: Hasil Clustering
-elif st.session_state.step == 4:
+# 5. HASIL CLUSTERING
+elif menu == "Step 4: Hasil Clustering":
     st.header("🧩 Hasil Clustering")
     
     if 'X_scaled' in st.session_state:
@@ -185,6 +199,7 @@ elif st.session_state.step == 4:
         st.success(f"🔹 Jumlah cluster optimal berdasarkan **Silhouette Score**: {best_k_silhouette}")
         st.success(f"🔸 Jumlah cluster optimal berdasarkan **Davies-Bouldin Index**: {best_k_dbi}")
 
+        # Pilihan manual untuk k_final atau default ke Silhouette
         st.subheader("Pilih Jumlah Cluster untuk Clustering Final")
         k_final = st.number_input("Jumlah Cluster (k):", min_value=2, max_value=10, value=best_k_silhouette, step=1)
 
@@ -207,22 +222,23 @@ elif st.session_state.step == 4:
         st.pyplot(plt.gcf())
         plt.clf()
 
+        # Menampilkan hasil clustering
         if 'df' in st.session_state:
             df = st.session_state.df.copy()
             df['Cluster'] = labels
 
             st.subheader("📄 Hasil Cluster pada Data")
+
+            # Urutkan data berdasarkan 'Cluster'
             df_sorted = df.sort_values(by='Cluster')
+
+            # Tampilkan DataFrame yang sudah diurutkan
             st.dataframe(df_sorted)
 
+            # Tampilkan jumlah anggota tiap cluster
             st.subheader("📊 Jumlah Anggota per Cluster")
             cluster_counts = df['Cluster'].value_counts().sort_index()
             st.bar_chart(cluster_counts)
 
-        if st.button("Kembali ke Home"):
-            st.session_state.step = 0  # Kembali ke halaman utama
-            st.experimental_rerun()
-
     else:
         st.warning("⚠️ Data belum diproses. Silakan lakukan preprocessing terlebih dahulu.")
-
