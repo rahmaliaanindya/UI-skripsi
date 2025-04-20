@@ -1,180 +1,277 @@
-elif menu == "Step 5: Analisis Hasil":
-    st.header("🔍 Analisis Hasil Clustering")
+import streamlit as st
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import SpectralClustering
+from sklearn.metrics import silhouette_score, davies_bouldin_score
+from sklearn.decomposition import PCA
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_selection import VarianceThreshold
 
-    if 'labels' in st.session_state and 'df' in st.session_state:
-        df = st.session_state.df.copy()
-        labels = st.session_state.labels
-        df['Cluster'] = labels
+# =============================================
+# KONFIGURASI HALAMAN
+# =============================================
+st.set_page_config(
+    page_title="Analisis Kemiskinan Jatim",
+    page_icon="📊",
+    layout="wide"
+)
 
-        # Hanya ambil kolom numerik untuk analisis
-        numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns
-        df_numeric = df[numeric_cols]
+# CSS Styling
+def local_css():
+    st.markdown("""
+    <style>
+        .main {
+            background-color: #f8f9fa;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .stRadio > div {
+            flex-direction: row !important;
+        }
+        .stRadio > div > label {
+            margin-right: 15px;
+        }
+        .info-box {
+            background-color: #e8f4fc;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
-        # 1. Analisis distribusi cluster
-        st.subheader("📊 Analisis Distribusi Cluster")
-        with st.expander("Lihat Rata-rata Nilai per Cluster"):
-            cluster_summary = df_numeric.groupby('Cluster').mean().T
-            st.dataframe(cluster_summary.style.background_gradient(cmap='Blues'))
-            
-            # Visualisasi heatmap
-            plt.figure(figsize=(10, 6))
-            sns.heatmap(cluster_summary, annot=True, cmap="YlGnBu", fmt=".2f")
-            plt.title("Perbandingan Rata-rata Nilai per Cluster")
-            st.pyplot(plt)
-            plt.clf()
+local_css()
 
-        # 2. Visualisasi distribusi cluster
-        st.subheader("📈 Distribusi Cluster")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            # Pie chart
-            cluster_counts = df['Cluster'].value_counts().sort_index()
-            fig1, ax1 = plt.subplots()
-            ax1.pie(cluster_counts, labels=cluster_counts.index, 
-                   autopct='%1.1f%%', startangle=90, colors=sns.color_palette("viridis"))
-            ax1.axis('equal')
-            ax1.set_title("Persentase Distribusi Cluster")
-            st.pyplot(fig1)
-        
-        with col2:
-            # Bar chart
-            fig2, ax2 = plt.subplots()
-            sns.barplot(x=cluster_counts.index, y=cluster_counts.values, 
-                        palette="viridis", ax=ax2)
-            ax2.set_title("Jumlah Kabupaten/Kota per Cluster")
-            ax2.set_xlabel("Cluster")
-            ax2.set_ylabel("Jumlah")
-            st.pyplot(fig2)
+# =============================================
+# NAVIGASI MENU
+# =============================================
+menu = st.radio(
+    "PILIH MENU:",
+    ("Home", "Upload Data", "Preprocessing", "Visualisasi", "Clustering", "Analisis Hasil"),
+    horizontal=True
+)
 
-        # 3. Insight berdasarkan cluster
-        st.subheader("🔎 Insight per Cluster")
-        tab1, tab2, tab3 = st.tabs(["Statistik Deskriptif", "Karakteristik", "Perbandingan"])
-        
-        with tab1:
-            for cluster_num in sorted(df['Cluster'].unique()):
-                st.markdown(f"### Cluster {cluster_num}")
-                cluster_data = df[df['Cluster'] == cluster_num]
-                st.dataframe(cluster_data[numeric_cols].describe().style.background_gradient(cmap='Greens'))
-        
-        with tab2:
-            for cluster_num in sorted(df['Cluster'].unique()):
-                st.markdown(f"### Karakteristik Cluster {cluster_num}")
-                cluster_data = df[df['Cluster'] == cluster_num]
-                
-                # Ambil 3 indikator tertinggi dan terendah
-                mean_values = cluster_data[numeric_cols].mean().sort_values(ascending=False)
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.markdown("**Indikator Tertinggi:**")
-                    for i, (ind, val) in enumerate(mean_values.head(3).items()):
-                        st.write(f"{i+1}. {ind}: {val:.2f}")
-                
-                with col2:
-                    st.markdown("**Indikator Terendah:**")
-                    for i, (ind, val) in enumerate(mean_values.tail(3).items()):
-                        st.write(f"{i+1}. {ind}: {val:.2f}")
-                
-                st.markdown("**Contoh Kabupaten/Kota:**")
-                st.write(cluster_data['Kabupaten/Kota'].head(5).tolist())
-        
-        with tab3:
-            st.markdown("### Perbandingan Antar Cluster")
-            selected_feature = st.selectbox("Pilih indikator untuk dibandingkan:", numeric_cols)
-            
-            fig3, ax3 = plt.subplots(figsize=(10, 6))
-            sns.boxplot(x='Cluster', y=selected_feature, data=df, palette="viridis", ax=ax3)
-            ax3.set_title(f"Distribusi {selected_feature} per Cluster")
-            st.pyplot(fig3)
+# =============================================
+# HOME PAGE
+# =============================================
+if menu == "Home":
+    st.title("📊 Aplikasi Analisis Cluster Kemiskinan Jawa Timur")
+    
+    st.markdown("""
+    <div class="info-box">
+    <h3>🛠️ Panduan Penggunaan Aplikasi</h3>
+    <ol>
+        <li><b>Upload Data</b>: Unggah dataset dalam format Excel</li>
+        <li><b>Preprocessing</b>: Bersihkan dan persiapkan data</li>
+        <li><b>Visualisasi</b>: Eksplorasi data dengan grafik</li>
+        <li><b>Clustering</b>: Kelompokkan data menggunakan Spectral Clustering</li>
+        <li><b>Analisis Hasil</b>: Interpretasi hasil clustering</li>
+    </ol>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.image("https://i.imgur.com/Jb7WQBW.png", caption="Workflow Analisis Data")
 
-        # 4. Feature Importance
-        st.subheader("📌 Feature Importance")
+# =============================================
+# UPLOAD DATA
+# =============================================
+elif menu == "Upload Data":
+    st.header("📤 Upload Data Excel")
+    
+    uploaded_file = st.file_uploader("Pilih file Excel", type=["xlsx", "xls"])
+    
+    if uploaded_file:
         try:
-            X = df[numeric_cols].drop(columns=['Cluster'], errors='ignore')
-            y = df['Cluster']
+            df = pd.read_excel(uploaded_file)
+            st.session_state.df = df
+            st.success("Data berhasil diunggah!")
             
-            # Hapus kolom dengan variansi rendah
-            from sklearn.feature_selection import VarianceThreshold
-            selector = VarianceThreshold(threshold=0.1)
-            X_selected = selector.fit_transform(X)
-            selected_features = X.columns[selector.get_support()]
-            X = pd.DataFrame(X_selected, columns=selected_features)
+            st.subheader("Preview Data")
+            st.dataframe(df.head())
             
-            # Latih model RandomForest
-            from sklearn.ensemble import RandomForestClassifier
-            rf = RandomForestClassifier(n_estimators=100, random_state=42)
-            rf.fit(X, y)
-
-            # Tampilkan feature importance
-            importances = pd.Series(rf.feature_importances_, index=X.columns).sort_values(ascending=False)
-            
-            fig4, ax4 = plt.subplots(figsize=(10,6))
-            sns.barplot(x=importances.values, y=importances.index, palette="viridis", ax=ax4)
-            ax4.set_title("Indikator Paling Berpengaruh dalam Clustering")
-            ax4.set_xlabel("Tingkat Kepentingan")
-            st.pyplot(fig4)
-            
-            # Tampilkan penjelasan
-            st.markdown(f"**Indikator paling penting:** {importances.index[0]} ({importances.values[0]:.2f})")
-            st.markdown(f"**Indikator paling tidak penting:** {importances.index[-1]} ({importances.values[-1]:.2f})")
-            
-        except Exception as e:
-            st.error(f"Error dalam menghitung feature importance: {str(e)}")
-
-        # 5. Analisis PCA
-        st.subheader("🔄 Analisis PCA")
-        try:
-            from sklearn.decomposition import PCA
-            from sklearn.preprocessing import StandardScaler
-            
-            # Standarisasi data
-            scaler = StandardScaler()
-            X_scaled = scaler.fit_transform(X)
-            
-            # Lakukan PCA
-            pca = PCA(n_components=2)
-            principal_components = pca.fit_transform(X_scaled)
-            
-            # Visualisasi hasil PCA
-            fig5, ax5 = plt.subplots(figsize=(10,8))
-            scatter = ax5.scatter(principal_components[:,0], principal_components[:,1], 
-                                 c=df['Cluster'], cmap='viridis', alpha=0.7)
-            ax5.set_title("Visualisasi Cluster dalam Ruang PCA 2D")
-            ax5.set_xlabel(f"PC1 (Variansi: {pca.explained_variance_ratio_[0]:.2f})")
-            ax5.set_ylabel(f"PC2 (Variansi: {pca.explained_variance_ratio_[1]:.2f})")
-            plt.colorbar(scatter, label='Cluster')
-            st.pyplot(fig5)
-            
-            # Tampilkan kontribusi fitur
-            st.markdown("**Kontribusi Fitur terhadap Komponen Utama:**")
-            pca_loadings = pd.DataFrame(pca.components_.T, columns=['PC1', 'PC2'], index=X.columns)
-            st.dataframe(pca_loadings.style.background_gradient(cmap='RdBu', axis=0))
-            
-        except Exception as e:
-            st.error(f"Error dalam analisis PCA: {str(e)}")
-
-        # 6. Contoh Wilayah Ekstrim
-        st.subheader("🏙️ Contoh Wilayah Ekstrim")
-        
-        if len(df['Cluster'].unique()) == 2:
-            # Untuk kasus 2 cluster
-            poor_cluster = df[df['Cluster'] == df['Cluster'].min()]
-            rich_cluster = df[df['Cluster'] == df['Cluster'].max()]
-            
+            st.subheader("Informasi Dataset")
             col1, col2 = st.columns(2)
             
             with col1:
-                st.markdown("### 3 Wilayah dengan Tingkat Kemiskinan Tertinggi")
-                top_poor = poor_cluster.nlargest(3, 'Persentase Penduduk Miskin (%)')
-                st.dataframe(top_poor[['Kabupaten/Kota', 'Persentase Penduduk Miskin (%)']])
-            
+                st.write("**Dimensi Data:**")
+                st.write(f"{df.shape[0]} baris × {df.shape[1]} kolom")
+                
             with col2:
-                st.markdown("### 3 Wilayah dengan Tingkat Kemiskinan Terendah")
-                top_rich = rich_cluster.nsmallest(3, 'Persentase Penduduk Miskin (%)')
-                st.dataframe(top_rich[['Kabupaten/Kota', 'Persentase Penduduk Miskin (%)']])
-        else:
-            st.warning("Analisis wilayah ekstrim hanya tersedia untuk clustering dengan 2 cluster")
+                st.write("**Kolom Numerik:**")
+                st.write(df.select_dtypes(include=['int64','float64']).columns.tolist())
+                
+        except Exception as e:
+            st.error(f"Error: {str(e)}")
 
+# =============================================
+# PREPROCESSING
+# =============================================
+elif menu == "Preprocessing":
+    st.header("⚙️ Preprocessing Data")
+    
+    if 'df' not in st.session_state:
+        st.warning("Silakan upload data terlebih dahulu di menu Upload Data")
     else:
-        st.warning("⚠️ Hasil clustering belum ada. Silakan lakukan clustering terlebih dahulu.")
+        df = st.session_state.df.copy()
+        
+        st.subheader("1. Pengecekan Data")
+        tab1, tab2, tab3 = st.tabs(["Missing Values", "Duplikat", "Statistik"])
+        
+        with tab1:
+            st.write("**Jumlah Missing Values per Kolom:**")
+            st.write(df.isnull().sum())
+            
+        with tab2:
+            st.write(f"**Jumlah Data Duplikat:** {df.duplicated().sum()}")
+            
+        with tab3:
+            st.write("**Statistik Deskriptif:**")
+            st.write(df.describe())
+        
+        st.subheader("2. Normalisasi Data")
+        if st.button("Lakukan Normalisasi"):
+            numeric_cols = df.select_dtypes(include=['float64','int64']).columns
+            scaler = StandardScaler()
+            df[numeric_cols] = scaler.fit_transform(df[numeric_cols])
+            
+            st.session_state.df_normalized = df
+            st.success("Data berhasil dinormalisasi!")
+            st.write(df.head())
+
+# =============================================
+# VISUALISASI DATA
+# =============================================
+elif menu == "Visualisasi":
+    st.header("📊 Visualisasi Data")
+    
+    if 'df' not in st.session_state:
+        st.warning("Silakan upload data terlebih dahulu")
+    else:
+        df = st.session_state.df
+        
+        st.subheader("1. Heatmap Korelasi")
+        plt.figure(figsize=(12,8))
+        sns.heatmap(df.corr(), annot=True, cmap="coolwarm", fmt=".2f")
+        st.pyplot(plt)
+        
+        st.subheader("2. Distribusi Variabel")
+        selected_col = st.selectbox("Pilih kolom:", df.select_dtypes(include=['float64','int64']).columns)
+        
+        fig, ax = plt.subplots(1,2, figsize=(12,5))
+        sns.histplot(df[selected_col], kde=True, ax=ax[0])
+        sns.boxplot(x=df[selected_col], ax=ax[1])
+        st.pyplot(fig)
+
+# =============================================
+# CLUSTERING
+# =============================================
+elif menu == "Clustering":
+    st.header("🧩 Spectral Clustering")
+    
+    if 'df_normalized' not in st.session_state:
+        st.warning("Silakan lakukan normalisasi data terlebih dahulu")
+    else:
+        df = st.session_state.df_normalized
+        X = df.select_dtypes(include=['float64','int64'])
+        
+        st.subheader("1. Evaluasi Jumlah Cluster Optimal")
+        
+        silhouette_scores = []
+        db_scores = []
+        cluster_range = range(2, 10)
+        
+        for k in cluster_range:
+            sc = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', random_state=42)
+            labels = sc.fit_predict(X)
+            silhouette_scores.append(silhouette_score(X, labels))
+            db_scores.append(davies_bouldin_score(X, labels))
+        
+        fig, ax = plt.subplots(1,2, figsize=(15,5))
+        ax[0].plot(cluster_range, silhouette_scores, marker='o')
+        ax[0].set_title("Silhouette Score")
+        ax[1].plot(cluster_range, db_scores, marker='o')
+        ax[1].set_title("Davies-Bouldin Score")
+        st.pyplot(fig)
+        
+        optimal_k = st.slider("Pilih jumlah cluster:", 2, 10, 3)
+        
+        if st.button("Lakukan Clustering"):
+            sc = SpectralClustering(n_clusters=optimal_k, affinity='nearest_neighbors', random_state=42)
+            labels = sc.fit_predict(X)
+            
+            st.session_state.labels = labels
+            st.session_state.optimal_k = optimal_k
+            st.success(f"Clustering berhasil dengan {optimal_k} cluster!")
+            
+            # Visualisasi PCA
+            pca = PCA(n_components=2)
+            X_pca = pca.fit_transform(X)
+            
+            plt.figure(figsize=(10,6))
+            sns.scatterplot(x=X_pca[:,0], y=X_pca[:,1], hue=labels, palette="viridis", s=100)
+            plt.title("Visualisasi Cluster (PCA)")
+            st.pyplot(plt)
+
+# =============================================
+# ANALISIS HASIL
+# =============================================
+elif menu == "Analisis Hasil":
+    st.header("🔍 Analisis Hasil Clustering")
+    
+    if 'labels' not in st.session_state:
+        st.warning("Silakan lakukan clustering terlebih dahulu")
+    else:
+        df = st.session_state.df.copy()
+        labels = st.session_state.labels
+        optimal_k = st.session_state.optimal_k
+        
+        df['Cluster'] = labels
+        
+        st.subheader("1. Distribusi Cluster")
+        cluster_counts = df['Cluster'].value_counts().sort_index()
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write("**Jumlah Data per Cluster:**")
+            st.write(cluster_counts)
+        
+        with col2:
+            plt.figure(figsize=(8,4))
+            sns.barplot(x=cluster_counts.index, y=cluster_counts.values, palette="viridis")
+            plt.title("Distribusi Cluster")
+            st.pyplot(plt)
+        
+        st.subheader("2. Karakteristik Cluster")
+        
+        # Analisis fitur penting
+        X = df.select_dtypes(include=['float64','int64']).drop('Cluster', axis=1, errors='ignore')
+        y = df['Cluster']
+        
+        rf = RandomForestClassifier(random_state=42)
+        rf.fit(X,y)
+        
+        importance = pd.Series(rf.feature_importances_, index=X.columns).sort_values(ascending=False)
+        
+        plt.figure(figsize=(10,6))
+        sns.barplot(x=importance.values, y=importance.index, palette="viridis")
+        plt.title("Feature Importance")
+        st.pyplot(plt)
+        
+        st.subheader("3. Profil Tiap Cluster")
+        
+        for cluster in range(optimal_k):
+            with st.expander(f"Cluster {cluster}"):
+                cluster_data = df[df['Cluster'] == cluster]
+                
+                st.write(f"**Jumlah Wilayah:** {len(cluster_data)}")
+                st.write("**Contoh Wilayah:**")
+                st.write(cluster_data['Kabupaten/Kota'].head().tolist())
+                
+                st.write("**Rata-rata Indikator:**")
+                st.write(cluster_data.mean(numeric_only=True))
