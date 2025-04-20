@@ -1,9 +1,82 @@
 import streamlit as st
-import time  # Untuk simulasi waktu proses
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import SpectralClustering
+from sklearn.metrics import silhouette_score, davies_bouldin_score
+from sklearn.decomposition import PCA
+from PIL import Image
 
-# Fungsi untuk menampilkan Home
-def show_home():
-    st.markdown(""" 
+# Konfigurasi halaman
+st.set_page_config(
+    page_title="Analisis Kemiskinan Jatim",
+    page_icon="📊",
+    layout="wide"
+)
+
+# CSS Styling
+def local_css():
+    st.markdown(
+        """
+        <style>
+            body {
+                background-color: #fdf0ed;
+            }
+            .main {
+                background: linear-gradient(to bottom right, #e74c3c, #f39c12, #f8c471);
+            }
+            .block-container {
+                padding-top: 1rem;
+                background-color: transparent;
+            }
+            h1, h2, h3, h4, h5, h6, p, div, span {
+                color: #2c3e50 !important;
+            }
+            .title {
+                font-family: 'Helvetica', sans-serif;
+                color: #1f3a93;
+                font-size: 38px;
+                font-weight: bold;
+                text-align: center;
+                padding: 30px 0 10px 0;
+            }
+            .sidebar .sidebar-content {
+                background-color: #fef5e7;
+            }
+            .legend-box {
+                padding: 15px;
+                border-radius: 10px;
+                background-color: #ffffffdd;
+                box-shadow: 0px 2px 10px rgba(0,0,0,0.05);
+                margin-top: 20px;
+            }
+            .info-card {
+                background-color: #ffffffaa;
+                padding: 20px;
+                border-radius: 12px;
+                margin-bottom: 25px;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+# Terapkan CSS
+local_css()
+
+# === Navigasi Menu di Atas ===
+menu = st.radio(
+    "Navigasi Aplikasi:",
+    ("Home", "Upload Data", "Preprocessing Data", "Visualisasi Data", "Hasil Clustering"),
+    horizontal=True
+)
+
+# === Konten berdasarkan Menu ===
+if menu == "Home":
+    st.markdown("""
     # 👋 Selamat Datang di Aplikasi Analisis Cluster Kemiskinan Jawa Timur 📊
 
     Aplikasi ini dirancang untuk:
@@ -16,9 +89,11 @@ def show_home():
     📌 Silakan pilih menu di atas untuk memulai analisis.
     """)
 
-# Fungsi untuk menampilkan Upload Data
-def show_upload_data():
+# 2. UPLOAD DATA
+elif menu == "Upload Data":
     st.header("📤 Upload Data Excel")
+
+    # Deskripsi tentang data yang harus diunggah
     st.markdown("""
     ### Ketentuan Data:
     - Data berupa file **Excel (.xlsx)**.
@@ -35,15 +110,17 @@ def show_upload_data():
         10. **Rata-rata Upah/Gaji Bersih Pekerja Informal Berdasarkan Lapangan Pekerjaan Utama (Rp)**
         11. **Rata-rata Pendapatan Bersih Sebulan Pekerja Informal berdasarkan Pendidikan Tertinggi - Jumlah (Rp)**
     """)
+
     uploaded_file = st.file_uploader("Unggah file Excel (.xlsx)", type="xlsx")
+    
     if uploaded_file:
         df = pd.read_excel(uploaded_file)
         st.session_state.df = df
         st.success("Data berhasil dimuat!")
         st.write(df)
 
-# Fungsi untuk menampilkan Proses Preprocessing
-def show_preprocessing():
+# 3. PREPROCESSING
+elif menu == "Preprocessing Data":
     st.header("⚙️ Preprocessing Data")
     if 'df' in st.session_state:
         df = st.session_state.df
@@ -67,8 +144,8 @@ def show_preprocessing():
     else:
         st.warning("Silakan upload data terlebih dahulu.")
 
-# Fungsi untuk menampilkan Proses Visualisasi Data
-def show_visualization():
+# 4. VISUALISASI DATA
+elif menu == "Visualisasi Data":
     st.header("📊 Visualisasi Data")
     if 'df' in st.session_state:
         df = st.session_state.df
@@ -79,12 +156,14 @@ def show_visualization():
         sns.heatmap(numerical_df.corr(), annot=True, cmap="coolwarm", fmt=".2f")
         st.pyplot(plt.gcf())
         plt.clf()
+
     else:
         st.warning("Silakan upload data terlebih dahulu.")
 
-# Fungsi untuk menampilkan hasil clustering
-def show_clustering_results():
+# 5. HASIL CLUSTERING
+elif menu == "Hasil Clustering":
     st.header("🧩 Hasil Clustering")
+    
     if 'X_scaled' in st.session_state:
         X_scaled = st.session_state.X_scaled
         st.subheader("Evaluasi Jumlah Cluster (Silhouette & DBI)")
@@ -123,7 +202,6 @@ def show_clustering_results():
         st.session_state.labels = labels
 
         # Visualisasi 2D menggunakan PCA
-        from sklearn.decomposition import PCA
         pca = PCA(n_components=2)
         X_pca = pca.fit_transform(X_scaled)
 
@@ -156,24 +234,3 @@ def show_clustering_results():
 
     else:
         st.warning("⚠️ Data belum diproses. Silakan lakukan preprocessing terlebih dahulu.")
-
-# Menampilkan tombol "Next" untuk melanjutkan ke tahap berikutnya
-if st.button('Next'):
-    with st.spinner('Proses sedang berlangsung...'):
-        # Simulasi waktu pemrosesan (misalnya, 3 detik)
-        time.sleep(3)
-        
-        # Update session_state.step untuk navigasi ke halaman berikutnya
-        st.session_state.step += 1
-
-# Mengarahkan ke halaman berikutnya berdasarkan session_state.step
-if st.session_state.step == 0:
-    show_home()
-elif st.session_state.step == 1:
-    show_upload_data()
-elif st.session_state.step == 2:
-    show_preprocessing()
-elif st.session_state.step == 3:
-    show_visualization()
-elif st.session_state.step == 4:
-    show_clustering_results()
