@@ -66,7 +66,7 @@ def local_css():
 # Terapkan CSS
 local_css()
 
-# === Navigasi Menu di Atas ===
+# === Navigasi Menu ===
 query_params = st.query_params
 menu = query_params.get("menu", ["Home"])[0]
 
