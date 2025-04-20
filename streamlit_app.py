@@ -58,9 +58,6 @@ def local_css():
                 margin-bottom: 25px;
                 box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
             }
-            .streamlit-expanderHeader {
-                font-size: 20px;
-            }
         </style>
         """,
         unsafe_allow_html=True
@@ -70,16 +67,24 @@ def local_css():
 local_css()
 
 # === Navigasi Menu di Atas ===
-menu = st.radio(
-    "Navigasi Aplikasi:",
-    ("Home", "Step 1: Upload Data", "Step 2: Preprocessing Data", "Step 3: Visualisasi Data", "Step 4: Hasil Clustering"),
-    horizontal=True,
-    index=0
-)
+if 'step' not in st.session_state:
+    st.session_state.step = 0
+
+# Navigasi berdasarkan step yang ada di session_state
+if st.session_state.step == 0:
+    menu = "Home"
+elif st.session_state.step == 1:
+    menu = "Step 1: Upload Data"
+elif st.session_state.step == 2:
+    menu = "Step 2: Preprocessing Data"
+elif st.session_state.step == 3:
+    menu = "Step 3: Visualisasi Data"
+else:
+    menu = "Step 4: Hasil Clustering"
 
 # === Konten berdasarkan Menu ===
 if menu == "Home":
-    st.markdown(""" 
+    st.markdown("""  
     # 👋 Selamat Datang di Aplikasi Analisis Cluster Kemiskinan Jawa Timur 📊
 
     Aplikasi ini dirancang untuk:
@@ -91,6 +96,10 @@ if menu == "Home":
 
     📌 Silakan pilih menu di atas untuk memulai analisis.
     """)
+
+    # Tombol Next untuk melanjutkan ke langkah berikutnya
+    if st.button('Next'):
+        st.session_state.step = 1
 
 # 2. UPLOAD DATA
 elif menu == "Step 1: Upload Data":
@@ -121,10 +130,10 @@ elif menu == "Step 1: Upload Data":
         st.session_state.df = df
         st.success("Data berhasil dimuat!")
         st.write(df)
-        
-    # Add a "Next" button for navigation
-    if st.button("Next: Preprocessing Data"):
-        menu = "Step 2: Preprocessing Data"
+
+    # Tombol Next untuk melanjutkan ke langkah berikutnya
+    if st.button('Next'):
+        st.session_state.step = 2
 
 # 3. PREPROCESSING
 elif menu == "Step 2: Preprocessing Data":
@@ -148,10 +157,12 @@ elif menu == "Step 2: Preprocessing Data":
 
         st.session_state.X_scaled = X_scaled
         st.write("Fitur telah dinormalisasi dan disimpan.")
-        
-    # Add a "Next" button for navigation
-    if st.button("Next: Visualisasi Data"):
-        menu = "Step 3: Visualisasi Data"
+    else:
+        st.warning("Silakan upload data terlebih dahulu.")
+    
+    # Tombol Next untuk melanjutkan ke langkah berikutnya
+    if st.button('Next'):
+        st.session_state.step = 3
 
 # 4. VISUALISASI DATA
 elif menu == "Step 3: Visualisasi Data":
@@ -166,9 +177,12 @@ elif menu == "Step 3: Visualisasi Data":
         st.pyplot(plt.gcf())
         plt.clf()
 
-    # Add a "Next" button for navigation
-    if st.button("Next: Hasil Clustering"):
-        menu = "Step 4: Hasil Clustering"
+    else:
+        st.warning("Silakan upload data terlebih dahulu.")
+    
+    # Tombol Next untuk melanjutkan ke langkah berikutnya
+    if st.button('Next'):
+        st.session_state.step = 4
 
 # 5. HASIL CLUSTERING
 elif menu == "Step 4: Hasil Clustering":
@@ -245,3 +259,5 @@ elif menu == "Step 4: Hasil Clustering":
 
     else:
         st.warning("⚠️ Data belum diproses. Silakan lakukan preprocessing terlebih dahulu.")
+    
+    # Tidak ada tombol Next di langkah terakhir
