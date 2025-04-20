@@ -6,6 +6,7 @@ import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import SpectralClustering
 from sklearn.metrics import silhouette_score, davies_bouldin_score
+from PIL import Image
 from sklearn.decomposition import PCA
 
 # Konfigurasi halaman
@@ -66,20 +67,15 @@ def local_css():
 # Terapkan CSS
 local_css()
 
-# === Navigasi Menu di Atas ===
-if 'step' not in st.session_state:
-    st.session_state.step = "Home"
-
-# Sinkronisasi menu dengan step state
-menu = st.selectbox(
+# === Navigasi Menu di Sidebar ===
+menu = st.sidebar.radio(
     "Navigasi Aplikasi:",
-    ("Home", "Step 1: Upload Data", "Step 2: Preprocessing Data", "Step 3: Visualisasi Data", "Step 4: Hasil Clustering"),
-    index=("Home", "Step 1: Upload Data", "Step 2: Preprocessing Data", "Step 3: Visualisasi Data", "Step 4: Hasil Clustering").index(st.session_state.step)
+    ("Home", "Step 1: Upload Data", "Step 2: Preprocessing Data", "Step 3: Visualisasi Data", "Step 4: Hasil Clustering")
 )
 
 # === Konten berdasarkan Menu ===
 if menu == "Home":
-    st.markdown("""
+    st.markdown(""" 
     # 👋 Selamat Datang di Aplikasi Analisis Cluster Kemiskinan Jawa Timur 📊
 
     Aplikasi ini dirancang untuk:
@@ -92,9 +88,11 @@ if menu == "Home":
     📌 Silakan pilih menu di atas untuk memulai analisis.
     """)
 
+# 2. UPLOAD DATA
 elif menu == "Step 1: Upload Data":
     st.header("📤 Upload Data Excel")
 
+    # Deskripsi tentang data yang harus diunggah
     st.markdown("""
     ### Ketentuan Data:
     - Data berupa file **Excel (.xlsx)**.
@@ -113,18 +111,14 @@ elif menu == "Step 1: Upload Data":
     """)
 
     uploaded_file = st.file_uploader("Unggah file Excel (.xlsx)", type="xlsx")
-
+    
     if uploaded_file:
         df = pd.read_excel(uploaded_file)
         st.session_state.df = df
         st.success("Data berhasil dimuat!")
         st.write(df)
 
-        # Tombol Next
-        if st.button("Next ⏭️"):
-            st.session_state.step = "Step 2: Preprocessing Data"
-            st.experimental_rerun()
-
+# 3. PREPROCESSING
 elif menu == "Step 2: Preprocessing Data":
     st.header("⚙️ Preprocessing Data")
     if 'df' in st.session_state:
@@ -146,15 +140,10 @@ elif menu == "Step 2: Preprocessing Data":
 
         st.session_state.X_scaled = X_scaled
         st.write("Fitur telah dinormalisasi dan disimpan.")
-
-        # Tombol Next
-        if st.button("Next ⏭️"):
-            st.session_state.step = "Step 3: Visualisasi Data"
-            st.experimental_rerun()
-
     else:
         st.warning("Silakan upload data terlebih dahulu.")
 
+# 4. VISUALISASI DATA
 elif menu == "Step 3: Visualisasi Data":
     st.header("📊 Visualisasi Data")
     if 'df' in st.session_state:
@@ -167,17 +156,13 @@ elif menu == "Step 3: Visualisasi Data":
         st.pyplot(plt.gcf())
         plt.clf()
 
-        # Tombol Next
-        if st.button("Next ⏭️"):
-            st.session_state.step = "Step 4: Hasil Clustering"
-            st.experimental_rerun()
-
     else:
         st.warning("Silakan upload data terlebih dahulu.")
 
+# 5. HASIL CLUSTERING
 elif menu == "Step 4: Hasil Clustering":
     st.header("🧩 Hasil Clustering")
-
+    
     if 'X_scaled' in st.session_state:
         X_scaled = st.session_state.X_scaled
         st.subheader("Evaluasi Jumlah Cluster (Silhouette & DBI)")
