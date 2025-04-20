@@ -89,6 +89,7 @@ def next_step():
     }
     if next_step[menu]:
         if st.button("➡️ Lanjut ke Tahap Berikutnya"):
+            # Menggunakan st.query_params untuk navigasi
             st.experimental_set_query_params(menu=next_step[menu])
             st.experimental_rerun()
 
