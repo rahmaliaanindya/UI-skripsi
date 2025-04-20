@@ -6,7 +6,8 @@ import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import SpectralClustering
 from sklearn.metrics import silhouette_score, davies_bouldin_score
-from sklearn.decomposition import PCA
+
+import streamlit as st
 from PIL import Image
 
 # Konfigurasi halaman
@@ -202,6 +203,7 @@ elif menu == "Step 4: Hasil Clustering":
         st.session_state.labels = labels
 
         # Visualisasi 2D menggunakan PCA
+        from sklearn.decomposition import PCA
         pca = PCA(n_components=2)
         X_pca = pca.fit_transform(X_scaled)
 
