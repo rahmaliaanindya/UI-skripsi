@@ -6,6 +6,7 @@ import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import SpectralClustering
 from sklearn.metrics import silhouette_score, davies_bouldin_score
+from sklearn.decomposition import PCA
 from PIL import Image
 
 # Konfigurasi halaman
@@ -75,7 +76,7 @@ menu = st.radio(
 
 # === Konten berdasarkan Menu ===
 if menu == "Home":
-    st.markdown("""    
+    st.markdown("""
     # 👋 Selamat Datang di Aplikasi Analisis Cluster Kemiskinan Jawa Timur 📊
 
     Aplikasi ini dirancang untuk:
@@ -89,8 +90,8 @@ if menu == "Home":
     """)
 
 # 2. UPLOAD DATA
-elif menu == "Upload Data":
-    st.header("📤 Step 1: Upload Data Excel")
+elif menu == "Step 1: Upload Data":
+    st.header("📤 Upload Data Excel")
 
     # Deskripsi tentang data yang harus diunggah
     st.markdown("""
@@ -118,13 +119,9 @@ elif menu == "Upload Data":
         st.success("Data berhasil dimuat!")
         st.write(df)
 
-        # Next Step Button
-        if st.button("Next Step: Preprocessing Data"):
-            menu = "Preprocessing Data"  # Update menu to next step
-
 # 3. PREPROCESSING
-elif menu == "Preprocessing Data":
-    st.header("⚙️ Step 2: Preprocessing Data")
+elif menu == "Step 2: Preprocessing Data":
+    st.header("⚙️ Preprocessing Data")
     if 'df' in st.session_state:
         df = st.session_state.df
         st.subheader("Cek Missing Values")
@@ -144,17 +141,12 @@ elif menu == "Preprocessing Data":
 
         st.session_state.X_scaled = X_scaled
         st.write("Fitur telah dinormalisasi dan disimpan.")
-        
-        # Next Step Button
-        if st.button("Next Step: Visualisasi Data"):
-            menu = "Visualisasi Data"  # Update menu to next step
-
     else:
         st.warning("Silakan upload data terlebih dahulu.")
 
 # 4. VISUALISASI DATA
-elif menu == "Visualisasi Data":
-    st.header("📊 Step 3: Visualisasi Data")
+elif menu == "Step 3: Visualisasi Data":
+    st.header("📊 Visualisasi Data")
     if 'df' in st.session_state:
         df = st.session_state.df
         numerical_df = df.select_dtypes(include=['float64', 'int64'])
@@ -165,16 +157,12 @@ elif menu == "Visualisasi Data":
         st.pyplot(plt.gcf())
         plt.clf()
 
-        # Next Step Button
-        if st.button("Next Step: Hasil Clustering"):
-            menu = "Hasil Clustering"  # Update menu to next step
-
     else:
         st.warning("Silakan upload data terlebih dahulu.")
 
 # 5. HASIL CLUSTERING
-elif menu == "Hasil Clustering":
-    st.header("🧩 Step 4: Hasil Clustering")
+elif menu == "Step 4: Hasil Clustering":
+    st.header("🧩 Hasil Clustering")
     
     if 'X_scaled' in st.session_state:
         X_scaled = st.session_state.X_scaled
@@ -214,7 +202,6 @@ elif menu == "Hasil Clustering":
         st.session_state.labels = labels
 
         # Visualisasi 2D menggunakan PCA
-        from sklearn.decomposition import PCA
         pca = PCA(n_components=2)
         X_pca = pca.fit_transform(X_scaled)
 
