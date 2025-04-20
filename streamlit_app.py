@@ -71,14 +71,11 @@ if 'step' not in st.session_state:
     st.session_state.step = "Home"
 
 # Sinkronisasi menu dengan step state
-if st.session_state.step != "Home":
-    menu = st.session_state.step
-else:
-    menu = st.radio(
-        "Navigasi Aplikasi:",
-        ("Home", "Step 1: Upload Data", "Step 2: Preprocessing Data", "Step 3: Visualisasi Data", "Step 4: Hasil Clustering"),
-        horizontal=True
-    )
+menu = st.sidebar.radio(
+    "Navigasi Aplikasi:",
+    ("Home", "Step 1: Upload Data", "Step 2: Preprocessing Data", "Step 3: Visualisasi Data", "Step 4: Hasil Clustering"),
+    index=("Home", "Step 1: Upload Data", "Step 2: Preprocessing Data", "Step 3: Visualisasi Data", "Step 4: Hasil Clustering").index(st.session_state.step)
+)
 
 # === Konten berdasarkan Menu ===
 if menu == "Home":
