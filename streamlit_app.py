@@ -1,83 +1,7 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.preprocessing import StandardScaler
-from sklearn.cluster import SpectralClustering
-from sklearn.metrics import silhouette_score, davies_bouldin_score
-from PIL import Image
+import time  # Untuk simulasi waktu proses
 
-# Konfigurasi halaman
-st.set_page_config(
-    page_title="Analisis Kemiskinan Jatim",
-    page_icon="📊",
-    layout="wide"
-)
-
-# CSS Styling
-def local_css():
-    st.markdown(
-        """
-        <style>
-            body {
-                background-color: #fdf0ed;
-            }
-            .main {
-                background: linear-gradient(to bottom right, #e74c3c, #f39c12, #f8c471);
-            }
-            .block-container {
-                padding-top: 1rem;
-                background-color: transparent;
-            }
-            h1, h2, h3, h4, h5, h6, p, div, span {
-                color: #2c3e50 !important;
-            }
-            .title {
-                font-family: 'Helvetica', sans-serif;
-                color: #1f3a93;
-                font-size: 38px;
-                font-weight: bold;
-                text-align: center;
-                padding: 30px 0 10px 0;
-            }
-            .sidebar .sidebar-content {
-                background-color: #fef5e7;
-            }
-            .legend-box {
-                padding: 15px;
-                border-radius: 10px;
-                background-color: #ffffffdd;
-                box-shadow: 0px 2px 10px rgba(0,0,0,0.05);
-                margin-top: 20px;
-            }
-            .info-card {
-                background-color: #ffffffaa;
-                padding: 20px;
-                border-radius: 12px;
-                margin-bottom: 25px;
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-            }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
-# Terapkan CSS
-local_css()
-
-# Inisialisasi session_state untuk menyimpan langkah
-if 'step' not in st.session_state:
-    st.session_state.step = 0  # Mulai dari step pertama
-
-# === Navigasi Menu dengan Angka ===
-menu = st.radio(
-    "Navigasi Aplikasi:",
-    ("1. Home", "2. Upload Data", "3. Preprocessing Data", "4. Visualisasi Data", "5. Hasil Clustering"),
-    horizontal=True
-)
-
-# === Konten berdasarkan Menu ===
+# Fungsi untuk menampilkan Home
 def show_home():
     st.markdown(""" 
     # 👋 Selamat Datang di Aplikasi Analisis Cluster Kemiskinan Jawa Timur 📊
@@ -92,6 +16,7 @@ def show_home():
     📌 Silakan pilih menu di atas untuk memulai analisis.
     """)
 
+# Fungsi untuk menampilkan Upload Data
 def show_upload_data():
     st.header("📤 Upload Data Excel")
     st.markdown("""
@@ -117,6 +42,7 @@ def show_upload_data():
         st.success("Data berhasil dimuat!")
         st.write(df)
 
+# Fungsi untuk menampilkan Proses Preprocessing
 def show_preprocessing():
     st.header("⚙️ Preprocessing Data")
     if 'df' in st.session_state:
@@ -141,6 +67,7 @@ def show_preprocessing():
     else:
         st.warning("Silakan upload data terlebih dahulu.")
 
+# Fungsi untuk menampilkan Proses Visualisasi Data
 def show_visualization():
     st.header("📊 Visualisasi Data")
     if 'df' in st.session_state:
@@ -155,6 +82,7 @@ def show_visualization():
     else:
         st.warning("Silakan upload data terlebih dahulu.")
 
+# Fungsi untuk menampilkan hasil clustering
 def show_clustering_results():
     st.header("🧩 Hasil Clustering")
     if 'X_scaled' in st.session_state:
@@ -229,18 +157,23 @@ def show_clustering_results():
     else:
         st.warning("⚠️ Data belum diproses. Silakan lakukan preprocessing terlebih dahulu.")
 
-# Navigasi step-by-step
-if menu == "1. Home":
-    show_home()
-elif menu == "2. Upload Data":
-    show_upload_data()
-elif menu == "3. Preprocessing Data":
-    show_preprocessing()
-elif menu == "4. Visualisasi Data":
-    show_visualization()
-elif menu == "5. Hasil Clustering":
-    show_clustering_results()
-
-# Tombol Next untuk melanjutkan ke langkah berikutnya
+# Menampilkan tombol "Next" untuk melanjutkan ke tahap berikutnya
 if st.button('Next'):
-    st.session_state.step += 1
+    with st.spinner('Proses sedang berlangsung...'):
+        # Simulasi waktu pemrosesan (misalnya, 3 detik)
+        time.sleep(3)
+        
+        # Update session_state.step untuk navigasi ke halaman berikutnya
+        st.session_state.step += 1
+
+# Mengarahkan ke halaman berikutnya berdasarkan session_state.step
+if st.session_state.step == 0:
+    show_home()
+elif st.session_state.step == 1:
+    show_upload_data()
+elif st.session_state.step == 2:
+    show_preprocessing()
+elif st.session_state.step == 3:
+    show_visualization()
+elif st.session_state.step == 4:
+    show_clustering_results()
