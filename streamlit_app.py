@@ -1,14 +1,57 @@
+# === IMPORT LIBRARY ===
 import streamlit as st
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import SpectralClustering
+from sklearn.metrics import silhouette_score, davies_bouldin_score
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.decomposition import PCA
 
-# === MENYIAPKAN STATE ===
-if 'menu' not in st.session_state:
-    st.session_state.menu = "Home"
-if 'df' not in st.session_state:
-    st.session_state.df = None
-if 'X_scaled' not in st.session_state:
-    st.session_state.X_scaled = None
+# === KONFIGURASI HALAMAN ===
+st.set_page_config(
+    page_title="Analisis Kemiskinan Jatim",
+    page_icon="📊",
+    layout="wide"
+)
+
+# === CSS Styling ===
+def local_css():
+    st.markdown(
+        """
+        <style>
+            body {
+                background-color: #fdf0ed;
+            }
+            .main {
+                background: linear-gradient(to bottom right, #e74c3c, #f39c12, #f8c471);
+            }
+            .block-container {
+                padding-top: 1rem;
+                background-color: transparent;
+            }
+            h1, h2, h3, h4, h5, h6, p, div, span {
+                color: #2c3e50 !important;
+            }
+            .title {
+                font-family: 'Helvetica', sans-serif;
+                color: #1f3a93;
+                font-size: 38px;
+                font-weight: bold;
+                text-align: center;
+                padding: 30px 0 10px 0;
+            }
+            .sidebar .sidebar-content {
+                background-color: #fef5e7;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+local_css()
 
 # === MENU NAVIGASI ===
 menu = st.radio(
@@ -17,19 +60,19 @@ menu = st.radio(
     horizontal=True
 )
 
-# === HALAMAN HOME ===
+# === HOME ===
 if menu == "Home":
-    st.title("Aplikasi Analisis Clustering Kemiskinan di Jawa Timur")
-    st.write("""
-        Selamat datang di aplikasi analisis clustering kemiskinan kabupaten/kota di Jawa Timur.
-        Aplikasi ini menggunakan metode **Spectral Clustering** untuk mengelompokkan kabupaten/kota berdasarkan variabel kemiskinan.
+    st.markdown(""" 
+    # 👋 Selamat Datang di Aplikasi Analisis Cluster Kemiskinan Jawa Timur 📊
+    Aplikasi ini dirancang untuk:
+    - 📁 Mengunggah dan mengeksplorasi data indikator kemiskinan
+    - 🧹 Melakukan preprocessing data
+    - 📊 Menampilkan visualisasi
+    - 🤖 Menerapkan metode **Spectral Clustering**
+    - 📈 Mengevaluasi hasil pengelompokan
     """)
 
-    # Menambahkan tombol Next untuk menuju Step 1
-    if st.button("Next"):
-        st.session_state.menu = "Step 1: Upload Data"
-
-# === STEP 1: UPLOAD DATA ===
+# === UPLOAD DATA ===
 elif menu == "Step 1: Upload Data":
     st.header("📤 Upload Data Excel")
     st.markdown("""
@@ -57,11 +100,8 @@ elif menu == "Step 1: Upload Data":
         st.success("✅ Data berhasil dimuat!")
         st.write(df)
 
-    # Menambahkan tombol Next untuk menuju Step 2
-    if st.button("Next"):
-        st.session_state.menu = "Step 2: Preprocessing Data"
 
-# === STEP 2: PREPROCESSING DATA ===
+# === PREPROCESSING DATA ===
 elif menu == "Step 2: Preprocessing Data":
     st.header("⚙️ Preprocessing Data")
     if 'df' in st.session_state:
@@ -82,63 +122,145 @@ elif menu == "Step 2: Preprocessing Data":
         X_scaled = scaler.fit_transform(X)
         st.session_state.X_scaled = X_scaled
         st.write("✅ Fitur telah dinormalisasi dan disimpan.")
-
     else:
         st.warning("⚠️ Silakan upload data terlebih dahulu.")
-    
-    # Menambahkan tombol Next untuk menuju Step 3
-    if st.button("Next"):
-        st.session_state.menu = "Step 3: Visualisasi Data"
 
-# === STEP 3: VISUALISASI DATA ===
+# === VISUALISASI ===
 elif menu == "Step 3: Visualisasi Data":
     st.header("📊 Visualisasi Data")
-    if 'X_scaled' in st.session_state:
-        import matplotlib.pyplot as plt
-        import seaborn as sns
-
-        df_scaled = pd.DataFrame(st.session_state.X_scaled, columns=df.select_dtypes(include=['float64', 'int64']).columns)
-        
-        st.subheader("Pairplot")
-        fig, ax = plt.subplots()
-        sns.pairplot(df_scaled)
-        st.pyplot(fig)
+    if 'df' in st.session_state:
+        df = st.session_state.df
+        numerical_df = df.select_dtypes(include=['float64', 'int64'])
 
         st.subheader("Heatmap Korelasi")
-        corr = df_scaled.corr()
-        fig, ax = plt.subplots()
-        sns.heatmap(corr, annot=True, cmap='coolwarm')
-        st.pyplot(fig)
+        plt.figure(figsize=(10, 5))
+        sns.heatmap(numerical_df.corr(), annot=True, cmap="coolwarm", fmt=".2f")
+        st.pyplot(plt.gcf())
+        plt.clf()
     else:
-        st.warning("⚠️ Silakan lakukan preprocessing data terlebih dahulu.")
+        st.warning("⚠️ Silakan upload data terlebih dahulu.")
 
-    # Menambahkan tombol Next untuk menuju Step 4
-    if st.button("Next"):
-        st.session_state.menu = "Step 4: Hasil Clustering"
-
-# === STEP 4: HASIL CLUSTERING ===
+# === CLUSTERING ===
 elif menu == "Step 4: Hasil Clustering":
-    st.header("🔍 Hasil Clustering")
+    st.header("🧩 Hasil Clustering")
     if 'X_scaled' in st.session_state:
-        from sklearn.cluster import SpectralClustering
-        import numpy as np
+        X_scaled = st.session_state.X_scaled
 
-        # Menggunakan Spectral Clustering untuk mengelompokkan data
-        clustering = SpectralClustering(n_clusters=3, affinity='nearest_neighbors')
-        labels = clustering.fit_predict(st.session_state.X_scaled)
+        st.subheader("Evaluasi Jumlah Cluster (Silhouette & DBI)")
+        clusters_range = range(2, 10)
+        silhouette_scores = {}
+        dbi_scores = {}
 
-        df_cluster = pd.DataFrame(st.session_state.X_scaled, columns=df.select_dtypes(include=['float64', 'int64']).columns)
-        df_cluster['Cluster'] = labels
+        for k in clusters_range:
+            clustering = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', random_state=42)
+            labels = clustering.fit_predict(X_scaled)
+            silhouette_scores[k] = silhouette_score(X_scaled, labels)
+            dbi_scores[k] = davies_bouldin_score(X_scaled, labels)
 
-        st.subheader("Hasil Pengelompokan")
-        st.write(df_cluster)
+        score_df = pd.DataFrame({
+            'Silhouette Score': silhouette_scores,
+            'Davies-Bouldin Index': dbi_scores
+        })
+        st.line_chart(score_df)
 
-        st.subheader("Visualisasi Hasil Clustering")
-        fig, ax = plt.subplots()
-        sns.scatterplot(x=df_cluster.iloc[:, 0], y=df_cluster.iloc[:, 1], hue=df_cluster['Cluster'], palette='Set1')
-        st.pyplot(fig)
+        best_k_silhouette = max(silhouette_scores, key=silhouette_scores.get)
+        best_k_dbi = min(dbi_scores, key=dbi_scores.get)
 
+        st.success(f"🔹 Jumlah cluster optimal (Silhouette Score): {best_k_silhouette}")
+        st.success(f"🔸 Jumlah cluster optimal (Davies-Bouldin Index): {best_k_dbi}")
+
+        k_final = st.number_input("Jumlah Cluster (k):", min_value=2, max_value=10, value=best_k_silhouette, step=1)
+
+        final_cluster = SpectralClustering(n_clusters=k_final, affinity='nearest_neighbors', random_state=42)
+        labels = final_cluster.fit_predict(X_scaled)
+        st.session_state.labels = labels
+
+        pca = PCA(n_components=2)
+        X_pca = pca.fit_transform(X_scaled)
+
+        st.subheader("Visualisasi Clustering (PCA)")
+        plt.figure(figsize=(8, 6))
+        plt.scatter(X_pca[:, 0], X_pca[:, 1], c=labels, cmap='viridis', edgecolor='k')
+        plt.title("Clustering Visualisasi (PCA)")
+        plt.xlabel("PC1")
+        plt.ylabel("PC2")
+        st.pyplot(plt.gcf())
+        plt.clf()
+
+        # === HASIL CLUSTER ===
+        if 'df' in st.session_state:
+            df = st.session_state.df.copy()
+            df['Cluster'] = labels
+            st.subheader("📄 Hasil Cluster pada Data")
+            st.dataframe(df.sort_values(by='Cluster'))
+
+            st.subheader("📊 Jumlah Anggota per Cluster")
+            cluster_counts = df['Cluster'].value_counts().sort_index()
+            st.bar_chart(cluster_counts)
+
+            # === FEATURE IMPORTANCE ===
+            X = df.drop(columns=["Kabupaten/Kota", "Cluster"], errors="ignore")
+            y = df["Cluster"]
+
+            rf = RandomForestClassifier(n_estimators=100, random_state=42)
+            rf.fit(X, y)
+            importances = pd.Series(rf.feature_importances_, index=X.columns).sort_values(ascending=False)
+
+            st.subheader("🔍 Indikator Paling Berpengaruh (Random Forest)")
+            plt.figure(figsize=(10,5))
+            sns.barplot(x=importances.values, y=importances.index, palette="viridis")
+            plt.title("Feature Importance")
+            plt.xlabel("Tingkat Pengaruh")
+            st.pyplot(plt.gcf())
+            plt.clf()
+
+            # === PCA CONTRIBUTION ===
+            scaler = StandardScaler()
+            X_scaled = scaler.fit_transform(X)
+            pca = PCA(n_components=2)
+            pca.fit(X_scaled)
+
+            st.subheader("🧭 Kontribusi Variabel terhadap PCA")
+            plt.figure(figsize=(10,6))
+            plt.bar(range(len(X.columns)), pca.components_[0], tick_label=X.columns)
+            plt.xticks(rotation=90)
+            plt.ylabel("Kontribusi terhadap Komponen Utama")
+            st.pyplot(plt.gcf())
+            plt.clf()
+
+            # === INTERPRETASI HASIL ===
+            st.subheader("💡 Kesimpulan & Interpretasi Hasil")
+            cluster_summary = df.groupby("Cluster").mean(numeric_only=True)
+            st.write("Rata-rata nilai indikator untuk masing-masing cluster:")
+            st.dataframe(cluster_summary)
+
+            # === INTERPRETASI TAMBAHAN: Wilayah Miskin Tinggi & Rendah ===
+            st.subheader("📌 Tabel Wilayah dengan Kemiskinan Tertinggi dan Terendah")
+
+            # Pastikan nama kolom kemiskinan benar
+            kemiskinan_col = "Persentase Penduduk Miskin (%)"
+
+            if kemiskinan_col in df.columns:
+                top3 = df.sort_values(by=kemiskinan_col, ascending=False)[["Kabupaten/Kota", kemiskinan_col, "Cluster"]].head(3)
+                bottom3 = df.sort_values(by=kemiskinan_col, ascending=True)[["Kabupaten/Kota", kemiskinan_col, "Cluster"]].head(3)
+
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    st.markdown("#### 🚨 3 Wilayah dengan Tingkat Kemiskinan Tertinggi")
+                    st.table(top3.reset_index(drop=True))
+
+                with col2:
+                    st.markdown("#### 🟢 3 Wilayah dengan Tingkat Kemiskinan Terendah")
+                    st.table(bottom3.reset_index(drop=True))
+            else:
+                st.warning(f"Kolom '{kemiskinan_col}' tidak ditemukan dalam data.")
+
+            st.markdown("""
+            ### Interpretasi Awal:
+            - Cluster dengan rata-rata **persentase penduduk miskin paling rendah** bisa dianggap sebagai kategori **kinerja baik**.
+            - Cluster dengan nilai indikator pendidikan dan kesehatan yang rendah mungkin termasuk **kategori rentan/tinggi kemiskinan**.
+            - Data ini bisa menjadi dasar rekomendasi kebijakan untuk setiap kelompok wilayah.
+            """)
     else:
         st.warning("⚠️ Silakan lakukan preprocessing data terlebih dahulu.")
-
-# === MENAMBAHKAN NAVIGASI TOMBOL NEXT UNTUK MASING-MASING LANGKAH ===
