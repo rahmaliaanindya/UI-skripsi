@@ -75,6 +75,23 @@ if menu == "Home":
 # === UPLOAD DATA ===
 elif menu == "Step 1: Upload Data":
     st.header("📤 Upload Data Excel")
+    st.markdown("""
+    **Petunjuk:**
+    1. File yang diunggah harus berupa file **Excel** dengan ekstensi `.xlsx`.
+    2. Data yang diunggah harus memuat variabel berikut:
+        - **Persentase Penduduk Miskin (%)**
+        - **Jumlah Penduduk Miskin (ribu jiwa)**
+        - **Harapan Lama Sekolah (Tahun)**
+        - **Rata-Rata Lama Sekolah (Tahun)**
+        - **Tingkat Pengangguran Terbuka (%)**
+        - **Tingkat Partisipasi Angkatan Kerja (%)**
+        - **Angka Harapan Hidup (Tahun)**
+        - **Garis Kemiskinan (Rupiah/Bulan/Kapita)**
+        - **Indeks Pembangunan Manusia**
+        - **Rata-rata Upah/Gaji Bersih Pekerja Informal Berdasarkan Lapangan Pekerjaan Utama (Rp)**
+        - **Rata-rata Pendapatan Bersih Sebulan Pekerja Informal berdasarkan Pendidikan Tertinggi - Jumlah (Rp)**
+    """)
+
     uploaded_file = st.file_uploader("Unggah file Excel (.xlsx)", type="xlsx")
 
     if uploaded_file:
@@ -82,6 +99,7 @@ elif menu == "Step 1: Upload Data":
         st.session_state.df = df
         st.success("✅ Data berhasil dimuat!")
         st.write(df)
+
 
 # === PREPROCESSING DATA ===
 elif menu == "Step 2: Preprocessing Data":
