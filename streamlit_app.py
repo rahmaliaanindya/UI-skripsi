@@ -283,64 +283,59 @@ def clustering_analysis():
     # =============================================
     st.subheader("1. Evaluasi Jumlah Cluster Optimal")
     
-   # --- Tentukan jumlah cluster optimal dengan Spectral Clustering ---
-silhouette_scores = []
-db_scores = []
-k_range = range(2, 11)
+    # --- Tentukan jumlah cluster optimal dengan Spectral Clustering ---
+    silhouette_scores = []
+    db_scores = []
+    k_range = range(2, 11)
 
-for k in k_range:
-    model = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', random_state=42)
-    labels = model.fit_predict(X_scaled)
-    silhouette_scores.append(silhouette_score(X_scaled, labels))
-    db_scores.append(davies_bouldin_score(X_scaled, labels))
+    for k in k_range:
+        model = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', random_state=42)
+        labels = model.fit_predict(X_scaled)
+        silhouette_scores.append(silhouette_score(X_scaled, labels))
+        db_scores.append(davies_bouldin_score(X_scaled, labels))
 
-# Visualisasi hasil evaluasi jumlah cluster
-plt.figure(figsize=(12, 5))
-plt.subplot(1, 2, 1)
-plt.plot(k_range, silhouette_scores, 'bo-', label='Silhouette Score')
-plt.xlabel('Jumlah Cluster')
-plt.ylabel('Silhouette Score')
-plt.title('Evaluasi Silhouette Score')
-plt.legend()
+    # Visualisasi hasil evaluasi jumlah cluster
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+    ax1.plot(k_range, silhouette_scores, 'bo-', label='Silhouette Score')
+    ax1.set_xlabel('Jumlah Cluster')
+    ax1.set_ylabel('Silhouette Score')
+    ax1.set_title('Evaluasi Silhouette Score')
+    ax1.legend()
 
-plt.subplot(1, 2, 2)
-plt.plot(k_range, db_scores, 'ro-', label='Davies-Bouldin Index')
-plt.xlabel('Jumlah Cluster')
-plt.ylabel('DB Index')
-plt.title('Evaluasi Davies-Bouldin Index')
-plt.legend()
+    ax2.plot(k_range, db_scores, 'ro-', label='Davies-Bouldin Index')
+    ax2.set_xlabel('Jumlah Cluster')
+    ax2.set_ylabel('DB Index')
+    ax2.set_title('Evaluasi Davies-Bouldin Index')
+    ax2.legend()
 
-plt.tight_layout()
-plt.show()
+    st.pyplot(fig)
 
-#Pilih jumlah cluster optimal
-optimal_k = k_range[np.argmax(silhouette_scores)]
+    # Pilih jumlah cluster optimal
+    optimal_k = k_range[np.argmax(silhouette_scores)]
     
     # =============================================
     # 2. PILIH CLUSTER OPTIMAL
     # =============================================
-   best_cluster = None
-best_dbi = float('inf')
-best_silhouette = float('-inf')
+    best_cluster = None
+    best_dbi = float('inf')
+    best_silhouette = float('-inf')
 
-# Define 'clusters_range' before using it
-clusters_range = range(2, 11)  # You can adjust the range as needed
+    clusters_range = range(2, 11)  # You can adjust the range as needed
 
-# Replace 'cluster_range' with 'clusters_range'
-for n_clusters in clusters_range:
-    spectral = SpectralClustering(n_clusters=n_clusters, affinity='nearest_neighbors', random_state=SEED)
-    clusters = spectral.fit_predict(X_scaled) # Use data_scaled which is defined earlier
+    for n_clusters in clusters_range:
+        spectral = SpectralClustering(n_clusters=n_clusters, affinity='nearest_neighbors', random_state=SEED)
+        clusters = spectral.fit_predict(X_scaled)
 
-    # Evaluasi clustering dengan Davies-Bouldin Index dan Silhouette Score
-    dbi_score = davies_bouldin_score(X_scaled, clusters) # Use data_scaled
-    silhouette_avg = silhouette_score(X_scaled, clusters) # Use data_scaled
+        # Evaluasi clustering dengan Davies-Bouldin Index dan Silhouette Score
+        dbi_score = davies_bouldin_score(X_scaled, clusters)
+        silhouette_avg = silhouette_score(X_scaled, clusters)
 
-    print(f'Jumlah Cluster: {n_clusters} | DBI: {dbi_score:.4f} | Silhouette Score: {silhouette_avg:.4f}')
+        st.write(f'Jumlah Cluster: {n_clusters} | DBI: {dbi_score:.4f} | Silhouette Score: {silhouette_avg:.4f}')
 
-    if dbi_score < best_dbi and silhouette_avg > best_silhouette:
-        best_dbi = dbi_score
-        best_silhouette = silhouette_avg
-        best_cluster = n_clusters
+        if dbi_score < best_dbi and silhouette_avg > best_silhouette:
+            best_dbi = dbi_score
+            best_silhouette = silhouette_avg
+            best_cluster = n_clusters
     
     if best_cluster is None:
         st.error("Tidak dapat menentukan cluster optimal")
