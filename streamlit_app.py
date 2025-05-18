@@ -279,16 +279,33 @@ def clustering_analysis():
     # Optimal Cluster Evaluation
     st.subheader("Evaluasi Jumlah Cluster Optimal")
     
-    k_range = range(2, 11)
+    # Kita batasi range cluster untuk mempercepat proses
+    k_range = range(2, 8)  # Mengurangi range dari 2-7 saja
     silhouette_scores = []
     db_scores = []
     
-    with st.spinner("Menghitung metrik untuk berbagai jumlah cluster..."):
-        for k in k_range:
-            model = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', random_state=SEED)
-            labels = model.fit_predict(X_scaled)
+    # Progress bar untuk visualisasi proses
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    
+    for i, k in enumerate(k_range):
+        status_text.text(f"Menghitung metrik untuk k={k}...")
+        progress_bar.progress((i + 1) / len(k_range))
+        
+        model = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', 
+                                 random_state=SEED, n_init=10)
+        labels = model.fit_predict(X_scaled)
+        
+        # Hanya hitung metrics jika clustering berhasil
+        if len(np.unique(labels)) > 1:
             silhouette_scores.append(silhouette_score(X_scaled, labels))
             db_scores.append(davies_bouldin_score(X_scaled, labels))
+        else:
+            silhouette_scores.append(0)
+            db_scores.append(float('inf'))
+    
+    status_text.text("Perhitungan selesai!")
+    progress_bar.empty()
     
     # Plot evaluation metrics
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
@@ -319,49 +336,98 @@ def clustering_analysis():
     
     # Clustering with PSO optimization
     st.subheader("Optimasi Parameter dengan PSO")
-    k_final = st.number_input("Pilih jumlah cluster (k):", min_value=2, max_value=10, value=optimal_k_sil)
+    
+    # Default value menggunakan optimal dari silhouette
+    k_final = st.number_input("Pilih jumlah cluster (k):", 
+                            min_value=2, max_value=7, 
+                            value=optimal_k_sil)
+    
+    # Parameter PSO yang lebih efisien
+    n_particles = st.slider("Jumlah partikel PSO:", 5, 30, 10)
+    iterations = st.slider("Jumlah iterasi PSO:", 10, 100, 30)
     
     if st.button("Jalankan Spectral Clustering dengan PSO"):
         with st.spinner("Menjalankan optimasi PSO..."):
-            # PSO optimization function
+            st.info("Proses optimasi mungkin memakan waktu beberapa menit...")
+            
+            # Cache untuk menyimpan hasil evaluasi
+            cache = {}
+            
             def evaluate_gamma(gamma_array):
                 scores = []
                 for gamma in gamma_array:
                     gamma_val = gamma[0]
-                    try:
-                        W = rbf_kernel(X_scaled, gamma=gamma_val)
+                    
+                    # Cek cache terlebih dahulu
+                    gamma_key = round(gamma_val, 4)
+                    if gamma_key in cache:
+                        scores.append(cache[gamma_key])
+                        continue
                         
-                        # Apply threshold
-                        W[W < 0.01] = 0
+                    try:
+                        # Gunakan subsampling untuk mempercepat
+                        if len(X_scaled) > 1000:
+                            sample_idx = np.random.choice(len(X_scaled), 1000, replace=False)
+                            X_sample = X_scaled[sample_idx]
+                        else:
+                            X_sample = X_scaled
+                            
+                        W = rbf_kernel(X_sample, gamma=gamma_val)
+                        
+                        # Threshold lebih agresif
+                        W[W < np.percentile(W, 90)] = 0
                         
                         L = laplacian(W, normed=True)
-                        eigvals, eigvecs = eigsh(L, k=k_final, which='SM', tol=1e-6)
+                        eigvals, eigvecs = eigsh(L, k=k_final, which='SM', tol=1e-4)
                         U = normalize(eigvecs, norm='l2')
-                        kmeans = KMeans(n_clusters=k_final, random_state=SEED).fit(U)
+                        
+                        # MiniBatch KMeans lebih cepat
+                        kmeans = MiniBatchKMeans(n_clusters=k_final, random_state=SEED).fit(U)
                         labels = kmeans.labels_
                         
-                        sil = silhouette_score(U, labels)
-                        dbi = davies_bouldin_score(U, labels)
-                        scores.append(-sil + dbi)  # Minimize this
+                        if len(np.unique(labels)) > 1:
+                            sil = silhouette_score(U, labels)
+                            dbi = davies_bouldin_score(U, labels)
+                            score = -sil + dbi  # Minimize this
+                        else:
+                            score = 10  # Penalty for single cluster
+                            
                     except:
-                        scores.append(10)  # Penalty for failed cases
+                        score = 10  # Penalty for failed cases
+                    
+                    # Simpan ke cache
+                    cache[gamma_key] = score
+                    scores.append(score)
+                    
                 return np.array(scores)
             
-            # Run PSO
-            options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}
-            bounds = (np.array([0.001]), np.array([5.0]))
-            optimizer = GlobalBestPSO(n_particles=20, dimensions=1, options=options, bounds=bounds)
-            best_cost, best_pos = optimizer.optimize(evaluate_gamma, iters=100)
+            # Run PSO dengan parameter yang lebih efisien
+            options = {'c1': 0.5, 'c2': 0.3, 'w': 0.9}  # Parameter yang lebih stabil
+            bounds = (np.array([0.01]), np.array([1.0]))  # Batas gamma lebih ketat
+            
+            optimizer = GlobalBestPSO(n_particles=n_particles, 
+                                    dimensions=1, 
+                                    options=options, 
+                                    bounds=bounds)
+            
+            # Progress callback
+            def progress_callback(optimizer):
+                st.session_state.pso_progress = optimizer.cost_history
+            
+            best_cost, best_pos = optimizer.optimize(evaluate_gamma, 
+                                                   iters=iterations,
+                                                   verbose=False)
+            
             best_gamma = best_pos[0]
             
             # Store results
             st.session_state.best_gamma = best_gamma
             
-            # Final clustering with optimal gamma
+            # Final clustering dengan seluruh data
             W = rbf_kernel(X_scaled, gamma=best_gamma)
-            W[W < 0.01] = 0  # Thresholding
+            W[W < np.percentile(W, 90)] = 0
             L = laplacian(W, normed=True)
-            eigvals, eigvecs = eigsh(L, k=k_final, which='SM', tol=1e-6)
+            eigvals, eigvecs = eigsh(L, k=k_final, which='SM', tol=1e-4)
             U = normalize(eigvecs, norm='l2')
             kmeans = KMeans(n_clusters=k_final, random_state=SEED).fit(U)
             labels = kmeans.labels_
@@ -382,6 +448,15 @@ def clustering_analysis():
             
             st.success(f"Optimasi selesai! Gamma optimal: {best_gamma:.4f}")
             
+            # Tampilkan progress PSO
+            fig_progress, ax = plt.subplots(figsize=(10, 4))
+            ax.plot(optimizer.cost_history, 'r-')
+            ax.set_xlabel('Iterasi')
+            ax.set_ylabel('Nilai Fitness')
+            ax.set_title('Progress Optimasi PSO')
+            ax.grid(True)
+            st.pyplot(fig_progress)
+            
             col1, col2 = st.columns(2)
             with col1:
                 st.metric("Silhouette Score", f"{sil_score:.4f}")
@@ -395,7 +470,7 @@ def clustering_analysis():
             
             fig, ax = plt.subplots(figsize=(10, 7))
             scatter = ax.scatter(U_pca[:, 0], U_pca[:, 1], c=labels, cmap='viridis')
-            ax.set_title(f"Hasil Clustering (k={k_final})")
+            ax.set_title(f"Hasil Clustering (k={k_final}, γ={best_gamma:.4f})")
             plt.colorbar(scatter, label='Cluster')
             st.pyplot(fig)
 
