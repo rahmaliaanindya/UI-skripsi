@@ -437,7 +437,7 @@ def clustering_analysis():
                 bounds = (np.array([0.001]), np.array([5.0]))
                 
                 optimizer = GlobalBestPSO(
-                    n_particles=20,
+                    n_particles=10,
                     dimensions=1,
                     options=options,
                     bounds=bounds
@@ -445,7 +445,7 @@ def clustering_analysis():
                 
                 best_cost, best_pos = optimizer.optimize(
                     evaluate_gamma_robust,
-                    iters=70,
+                    iters=50,
                     verbose=False
                 )
                 
