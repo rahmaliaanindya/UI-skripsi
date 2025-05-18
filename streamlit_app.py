@@ -280,7 +280,7 @@ def clustering_analysis():
     st.subheader("Evaluasi Jumlah Cluster Optimal")
     
     # Kita batasi range cluster untuk mempercepat proses
-    k_range = range(2, 8)  # Mengurangi range dari 2-7 saja
+    k_range = range(2, 11)
     silhouette_scores = []
     db_scores = []
     
