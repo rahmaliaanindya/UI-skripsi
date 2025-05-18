@@ -60,6 +60,34 @@ st.markdown("""
         border-radius: 10px;
         margin-bottom: 15px;
     }
+    /* Navigation menu at the top */
+    .stHorizontalBlock {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 30px;
+    }
+    .stHorizontalBlock [data-baseweb="tab"] {
+        padding: 10px 20px;
+        background-color: #e8f5e9;
+        border-radius: 5px;
+        margin: 0 5px;
+    }
+    .stHorizontalBlock [aria-selected="true"] {
+        background-color: #4CAF50 !important;
+        color: white !important;
+    }
+    /* Landing page styling */
+    .landing-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .feature-card {
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -67,26 +95,76 @@ st.markdown("""
 # MAIN APP FUNCTIONS
 # ======================
 
-def main():
+def landing_page():
+    st.markdown('<div class="landing-header">', unsafe_allow_html=True)
     st.title("🔍 Spectral Clustering with PSO Optimization")
+    st.markdown("</div>", unsafe_allow_html=True)
     
-    # Navigation menu
-    menu = st.sidebar.radio(
-        "Menu Navigasi",
-        ["Upload Data", "EDA", "Preprocessing", "Clustering", "Results"],
-        index=0
-    )
-
-    if menu == "Upload Data":
-        upload_data()
-    elif menu == "EDA":
-        exploratory_data_analysis()
-    elif menu == "Preprocessing":
-        data_preprocessing()
-    elif menu == "Clustering":
-        clustering_analysis()
-    elif menu == "Results":
-        results_analysis()
+    st.markdown("""
+    <div class="feature-card">
+        <h3>Selamat Datang di Aplikasi Spectral Clustering dengan Optimasi PSO</h3>
+        <p>Aplikasi ini dirancang untuk membantu Anda melakukan analisis clustering menggunakan metode Spectral Clustering yang dioptimasi dengan Particle Swarm Optimization (PSO).</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+        <div class="feature-card">
+            <h4>📊 Fitur Utama</h4>
+            <ul>
+                <li>Exploratory Data Analysis</li>
+                <li>Preprocessing Data Otomatis</li>
+                <li>Spectral Clustering</li>
+                <li>Optimasi Parameter dengan PSO</li>
+                <li>Visualisasi Hasil Clustering</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div class="feature-card">
+            <h4>🔧 Cara Menggunakan</h4>
+            <ol>
+                <li>Upload dataset Anda (format Excel)</li>
+                <li>Lakukan eksplorasi data</li>
+                <li>Bersihkan dan normalisasi data</li>
+                <li>Tentukan parameter clustering</li>
+                <li>Jalankan optimasi PSO</li>
+                <li>Analisis hasil clustering</li>
+            </ol>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown("""
+        <div class="feature-card">
+            <h4>📈 Keunggulan</h4>
+            <ul>
+                <li>Antarmuka yang mudah digunakan</li>
+                <li>Optimasi parameter otomatis</li>
+                <li>Visualisasi interaktif</li>
+                <li>Metrik evaluasi clustering</li>
+                <li>Analisis feature importance</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div class="feature-card">
+        <h4>📌 Contoh Penggunaan</h4>
+        <p>Aplikasi ini cocok untuk berbagai kasus seperti:</p>
+        <ul>
+            <li>Segmentasi pelanggan</li>
+            <li>Pengelompokan wilayah berdasarkan indikator</li>
+            <li>Analisis pola data kompleks</li>
+            <li>Eksplorasi struktur data</li>
+        </ul>
+        <p>Gunakan menu navigasi di atas untuk memulai analisis Anda!</p>
+    </div>
+    """, unsafe_allow_html=True)
 
 def upload_data():
     st.header("📤 Upload Data Excel")
@@ -387,5 +465,29 @@ def results_analysis():
         
         st.pyplot(fig)
 
-if __name__ == "__main__":
-    main()
+# ======================
+# APP LAYOUT
+# ======================
+
+# Navigation menu at the top
+menu_options = {
+    "Beranda": landing_page,
+    "Upload Data": upload_data,
+    "EDA": exploratory_data_analysis,
+    "Preprocessing": data_preprocessing,
+    "Clustering": clustering_analysis,
+    "Results": results_analysis
+}
+
+# Display the appropriate page based on menu selection
+menu_selection = st.radio(
+    "Menu Navigasi",
+    list(menu_options.keys()),
+    index=0,
+    key="menu",
+    horizontal=True,
+    label_visibility="hidden"
+)
+
+# Execute the selected page function
+menu_options[menu_selection]()
