@@ -428,8 +428,9 @@ if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
                             if np.isnan(U).any() or np.isinf(U).any():
                                 raise ValueError("Invalid U.")
 
-                            kmeans = KMeans(n_clusters=2, random_state=SEED, n_init=10.fit(U)
-                            labels = kmeans.labels_
+                            kmeans = KMeans(n_clusters=2, random_state=SEED, n_init=10)
+                            labels = kmeans.fit_predict(U)
+
                             if len(np.unique(labels)) < 2:
                                 raise ValueError("Only one cluster.")
 
@@ -489,8 +490,8 @@ if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
                     U_opt = normalize(eigvecs_opt, norm='l2')
 
                     if not (np.isnan(U_opt).any() or np.isinf(U_opt).any()):
-                        kmeans_opt = KMeans(n_clusters=2, random_state=SEED, n_init=10.fit(U_opt)
-                        labels_opt = kmeans_opt.labels_
+                        kmeans_opt = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
+                        labels_opt = kmeans_opt.fit_predict(U_opt)
 
                         if len(np.unique(labels_opt)) > 1:
                             # Simpan hasil
