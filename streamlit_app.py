@@ -1,4 +1,45 @@
-# ... (keep all previous imports and CSS styling)
+# === MENU NAVIGASI ===
+menu = st.radio(
+    "NAVIGASI APLIKASI",
+    ("Home", "Upload Data", "EDA", "Clustering", "Results"),
+    horizontal=True
+)
+
+# === HOME ===
+if menu == "Home":
+    st.markdown(""" 
+    <div style="text-align:center">
+        <h1 style="color:#2c3e50; font-size:2.5rem; margin-bottom:1.5rem">
+            Spectral Clustering Analysis with PSO Optimization
+        </h1>
+        <p style="font-size:1.1rem; color:#34495e; margin-bottom:2rem">
+            Professional tool for poverty indicator analysis using advanced machine learning techniques
+        </p>
+    </div>
+    
+    <div style="background-color:#f8f9fa; border-radius:12px; padding:2rem; margin-bottom:2rem">
+        <h3 style="color:#2c3e50; border-bottom:1px solid #ecf0f1; padding-bottom:0.5rem">
+            Application Features
+        </h3>
+        <ul style="color:#34495e; line-height:2">
+            <li>📊 Interactive data exploration and visualization</li>
+            <li>⚙️ Robust data preprocessing pipeline</li>
+            <li>🤖 Advanced Spectral Clustering algorithm</li>
+            <li>🔬 Particle Swarm Optimization for parameter tuning</li>
+            <li>📈 Comprehensive cluster evaluation metrics</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
+# === UPLOAD DATA ===
+elif menu == "Upload Data":
+    st.markdown("""
+    <h1 style="color:#2c3e50; font-size:2rem; border-bottom:1px solid #ecf0f1; padding-bottom:0.5rem">
+        Data Upload
+    </h1>
+    """, unsafe_allow_html=True)
+    
+    # Rest of your Upload Data section...
 
 # === EDA ===
 elif menu == "EDA":
@@ -21,7 +62,7 @@ elif menu == "EDA":
         # Show missing values
         st.subheader("Missing Values Check")
         missing_values = df.isnull().sum()
-        st.dataframe(missing_values[missing_values > 0].to_frame("Missing Values").style.background_gradient(cmap='Reds'))
+        st.dataframe(missing_values[missing_values > 0].to_frame("Missing Values"))
         
         # Show duplicates
         st.subheader("Duplicate Check")
@@ -61,43 +102,10 @@ elif menu == "EDA":
         
         # Show descriptive statistics
         st.subheader("Descriptive Statistics")
-        st.dataframe(df.describe().style.format("{:.2f}").background_gradient(cmap='Blues'))
+        st.dataframe(df.describe().style.format("{:.2f}"))
         
-        # === DATA DISTRIBUTION ===
-        st.markdown("""
-        <div style="background-color:#f8f9fa; border-radius:8px; padding:1rem; margin:1.5rem 0">
-            <h3 style="color:#2c3e50">Variable Distribution</h3>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        numeric_columns = df.select_dtypes(include=['float64', 'int64']).columns
-        selected_col = st.selectbox("Select variable:", numeric_columns)
-        
-        fig, ax = plt.subplots(figsize=(10, 5))
-        sns.histplot(df[selected_col], kde=True, bins=30, color='#3498db')
-        ax.set_title(f'Distribution of {selected_col}', fontsize=14)
-        ax.set_facecolor('#f8f9fa')
-        fig.patch.set_facecolor('#f8f9fa')
-        st.pyplot(fig)
-        
-        # === CORRELATION ANALYSIS ===
-        st.markdown("""
-        <div style="background-color:#f8f9fa; border-radius:8px; padding:1rem; margin:1.5rem 0">
-            <h3 style="color:#2c3e50">Feature Correlation</h3>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        numerical_df = df.select_dtypes(include=['number'])
-        fig, ax = plt.subplots(figsize=(12, 8))
-        sns.heatmap(numerical_df.corr(), annot=True, cmap='coolwarm', fmt='.2f', 
-                   center=0, ax=ax, annot_kws={"size": 10})
-        ax.set_facecolor('#f8f9fa')
-        fig.patch.set_facecolor('#f8f9fa')
-        st.pyplot(fig)
-        
-        # Store cleaned data for clustering
-        st.session_state.df_cleaned = df
-        
+        # Rest of your EDA section...
+
     else:
         st.warning("⚠️ Please upload data first.")
 
@@ -109,27 +117,27 @@ elif menu == "Clustering":
     </h1>
     """, unsafe_allow_html=True)
     
-    if 'df_cleaned' in st.session_state:
-        df = st.session_state.df_cleaned
+    if 'df' in st.session_state:
+        df = st.session_state.df
         X = df.drop(columns=['Kabupaten/Kota'])
         
-        # === PREPROCESSING FOR CLUSTERING ===
-        st.markdown("""
-        <div style="background-color:#f8f9fa; border-radius:8px; padding:1rem; margin:1.5rem 0">
-            <h3 style="color:#2c3e50">Data Scaling</h3>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.write("Using RobustScaler to handle potential outliers:")
-        scaler = RobustScaler()
-        X_scaled = scaler.fit_transform(X)
-        st.session_state.X_scaled = X_scaled
-        
-        # Show sample of scaled data
-        st.write("Sample of scaled data (first 5 rows):")
-        st.dataframe(pd.DataFrame(X_scaled, columns=X.columns).head())
-        
-        # Rest of your clustering code...
-        # ... (keep all the existing clustering code from before)
+        # Rest of your Clustering section...
 
-# ... (keep the rest of the code the same)
+    else:
+        st.warning("⚠️ Please upload data first.")
+
+# === RESULTS ===
+elif menu == "Results":
+    st.markdown("""
+    <h1 style="color:#2c3e50; font-size:2rem; border-bottom:1px solid #ecf0f1; padding-bottom:0.5rem">
+        Analysis Results
+    </h1>
+    """, unsafe_allow_html=True)
+    
+    if 'df_with_cluster' in st.session_state:
+        df = st.session_state.df_with_cluster
+        
+        # Rest of your Results section...
+        
+    else:
+        st.warning("⚠️ Please complete clustering analysis first.")
