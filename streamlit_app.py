@@ -603,32 +603,104 @@ def results_analysis():
     ax.set_title("Faktor Paling Berpengaruh dalam Clustering")
     st.pyplot(fig)
     
-    # 4. Pemetaan Kabupaten/Kota
+        # 4. Pemetaan Daerah per Cluster
     if 'Kabupaten/Kota' in df.columns:
         st.subheader("4. Pemetaan Daerah per Cluster")
         
-        # Gabungkan dengan data asli
-        if 'df_cleaned' in st.session_state:
-            merged_df = pd.merge(
-                df[['Kabupaten/Kota', 'Cluster']],
-                st.session_state.df_cleaned,
-                on='Kabupaten/Kota',
-                how='left'
-            )
-            
-            # Urutkan berdasarkan kemiskinan (contoh: PDRB terendah)
-            if 'PDRB' in merged_df.columns:
-                merged_df = merged_df.sort_values(['Cluster', 'PDRB'])
-                st.caption("**Keterangan:** Diurutkan dari PDRB terendah (termiskin) dalam setiap cluster")
-            
-            # Tampilkan kolom-kolom penting
-            important_cols = ['Kabupaten/Kota', 'Cluster', 'PDRB', 'Pengangguran', 'IPM']  # Sesuaikan
-            display_cols = [col for col in important_cols if col in merged_df.columns]
-            
-            st.dataframe(
-                merged_df[display_cols].sort_values(['Cluster', 'PDRB']),
-                height=600
-            )
+        try:
+            # Gabungkan dengan data asli
+            if 'df_cleaned' in st.session_state:
+                merged_df = pd.merge(
+                    df[['Kabupaten/Kota', 'Cluster']],
+                    st.session_state.df_cleaned,
+                    on='Kabupaten/Kota',
+                    how='left'
+                )
+                
+                # Daftar variabel yang tersedia
+                kemiskinan_vars = [
+                    'Persentase Penduduk Miskin (%)',
+                    'Jumlah Penduduk Miskin (ribu jiwa)',
+                    'Garis Kemiskinan (Rupiah/Bulan/Kapita)'
+                ]
+                
+                pendidikan_vars = [
+                    'Harapan Lama Sekolah (Tahun)',
+                    'Rata-Rata Lama Sekolah (Tahun)'
+                ]
+                
+                ketenagakerjaan_vars = [
+                    'Tingkat Pengangguran Terbuka (%)',
+                    'Tingkat Partisipasi Angkatan Kerja (%)',
+                    'Rata-rata Upah/Gaji Bersih Pekerja Informal Berdasarkan Lapangan Pekerjaan Utama (Rp)',
+                    'Rata-rata Pendapatan Bersih Sebulan Pekerja Informal berdasarkan Pendidikan Tertinggi - Jumlah (Rp)'
+                ]
+                
+                kesehatan_vars = [
+                    'Angka Harapan Hidup (Tahun)'
+                ]
+                
+                ipm_vars = [
+                    'Indeks Pembangunan Manusia'
+                ]
+                
+                # Cari variabel yang ada di dataset
+                available_vars = {
+                    'Kemiskinan': [v for v in kemiskinan_vars if v in merged_df.columns],
+                    'Pendidikan': [v for v in pendidikan_vars if v in merged_df.columns],
+                    'Ketenagakerjaan': [v for v in ketenagakerjaan_vars if v in merged_df.columns],
+                    'Kesehatan': [v for v in kesehatan_vars if v in merged_df.columns],
+                    'IPM': [v for v in ipm_vars if v in merged_df.columns]
+                }
+                
+                # Pilih 1 variabel utama per kategori untuk ditampilkan
+                display_cols = ['Kabupaten/Kota', 'Cluster']
+                sort_by = 'Cluster'
+                
+                # Tambahkan variabel terpilih
+                for category, vars_list in available_vars.items():
+                    if vars_list:
+                        display_cols.append(vars_list[0])  # Ambil variabel pertama yang tersedia
+                        if category == 'Kemiskinan':
+                            sort_by = vars_list[0]  # Default sort by first poverty variable
+                
+                # Urutkan data
+                merged_df = merged_df.sort_values([sort_by, 'Kabupaten/Kota'], ascending=[False, True])
+                
+                # Tampilkan data
+                st.dataframe(
+                    merged_df[display_cols],
+                    height=600,
+                    column_config={
+                        'Persentase Penduduk Miskin (%)': st.column_config.NumberColumn(format="%.2f %%"),
+                        'Garis Kemiskinan (Rupiah/Bulan/Kapita)': st.column_config.NumberColumn(format="%,d")
+                    }
+                )
+                
+                # Analisis sederhana per cluster
+                st.subheader("Analisis Indikator per Cluster")
+                
+                # Pilih indikator untuk analisis
+                analysis_var = st.selectbox(
+                    "Pilih indikator untuk analisis cluster:",
+                    options=[v for vars_list in available_vars.values() for v in vars_list]
+                )
+                
+                if analysis_var in merged_df.columns:
+                    cluster_stats = merged_df.groupby('Cluster')[analysis_var].describe()
+                    st.write(f"Statistik {analysis_var} per Cluster:")
+                    st.dataframe(cluster_stats.style.format("{:.2f}"))
+                    
+                    # Visualisasi
+                    fig, ax = plt.subplots(figsize=(10, 6))
+                    sns.boxplot(data=merged_df, x='Cluster', y=analysis_var, palette='viridis')
+                    plt.title(f'Distribusi {analysis_var} per Cluster')
+                    st.pyplot(fig)
+                
+        except Exception as e:
+            st.error(f"Terjadi kesalahan dalam pemetaan: {str(e)}")
+            if 'merged_df' in locals():
+                st.write("Kolom yang tersedia:", merged_df.columns.tolist())
     
     # 5. Perbandingan Sebelum-Sesudah PSO
     st.subheader("5. Perbandingan Hasil Sebelum dan Sesudah Optimasi")
