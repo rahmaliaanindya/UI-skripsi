@@ -277,200 +277,128 @@ def clustering_analysis():
     X_scaled = st.session_state.X_scaled
     
     # Optimal Cluster Evaluation
-    st.subheader("Evaluasi Jumlah Cluster (Silhouette & DBI)")
-
-    # Define cluster range
-    clusters_range = range(2, 11)
-    silhouette_scores = {}
-    dbi_scores = {}
-
+    st.subheader("Evaluasi Jumlah Cluster Optimal")
+    
+    k_range = range(2, 11)
+    silhouette_scores = []
+    db_scores = []
+    
     with st.spinner("Menghitung metrik untuk berbagai jumlah cluster..."):
-        for k in clusters_range:
-            try:
-                clustering = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', 
-                                             random_state=SEED, n_init=10)
-                labels = clustering.fit_predict(X_scaled)
-                
-                # Skip if only one cluster found
-                if len(np.unique(labels)) < 2:
-                    silhouette_scores[k] = -1
-                    dbi_scores[k] = float('inf')
-                    continue
-                    
-                silhouette_scores[k] = silhouette_score(X_scaled, labels)
-                dbi_scores[k] = davies_bouldin_score(X_scaled, labels)
-                
-            except Exception as e:
-                st.warning(f"Error pada k={k}: {str(e)}")
-                silhouette_scores[k] = -1
-                dbi_scores[k] = float('inf')
-
-    # Create dataframe for visualization
-    score_df = pd.DataFrame({
-        'Silhouette Score': silhouette_scores,
-        'Davies-Bouldin Index': dbi_scores
-    })
-
-    # Normalize DBI for better visualization (since lower is better)
-    score_df['DBI Normalized'] = 1 - (score_df['Davies-Bouldin Index'] - score_df['Davies-Bouldin Index'].min()) / (
-        score_df['Davies-Bouldin Index'].max() - score_df['Davies-Bouldin Index'].min())
-
-    # Plot using Streamlit's native line chart
-    st.line_chart(score_df[['Silhouette Score', 'DBI Normalized']], 
-                use_container_width=True,
-                color=['#1f77b4', '#ff7f0e'])
-
+        for k in k_range:
+            model = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', random_state=SEED)
+            labels = model.fit_predict(X_scaled)
+            silhouette_scores.append(silhouette_score(X_scaled, labels))
+            db_scores.append(davies_bouldin_score(X_scaled, labels))
+    
+    # Plot evaluation metrics
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+    
+    ax1.plot(k_range, silhouette_scores, 'bo-')
+    ax1.set_xlabel('Jumlah Cluster')
+    ax1.set_ylabel('Silhouette Score')
+    ax1.set_title('Evaluasi Silhouette Score')
+    ax1.grid(True)
+    
+    ax2.plot(k_range, db_scores, 'ro-')
+    ax2.set_xlabel('Jumlah Cluster')
+    ax2.set_ylabel('Davies-Bouldin Index')
+    ax2.set_title('Evaluasi Davies-Bouldin Index')
+    ax2.grid(True)
+    
+    st.pyplot(fig)
+    
     # Determine optimal clusters
-    best_k_silhouette = max(silhouette_scores, key=silhouette_scores.get)
-    best_k_dbi = min(dbi_scores, key=dbi_scores.get)
-
-    # Display results in columns
+    optimal_k_sil = k_range[np.argmax(silhouette_scores)]
+    optimal_k_dbi = k_range[np.argmin(db_scores)]
+    
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("Optimal Cluster (Silhouette)", 
-                 best_k_silhouette,
-                 help="Nilai lebih tinggi lebih baik")
+        st.metric("Optimal Cluster (Silhouette)", optimal_k_sil)
     with col2:
-        st.metric("Optimal Cluster (DBI)", 
-                 best_k_dbi,
-                 help="Nilai lebih rendah lebih baik")
-
-    # Decision logic for final k
-    if best_k_silhouette == best_k_dbi:
-        st.success(f"✅ Kedua metrik setuju: Jumlah cluster optimal = {best_k_silhouette}")
-        default_k = best_k_silhouette
-    elif abs(best_k_silhouette - best_k_dbi) <= 2:
-        default_k = round((best_k_silhouette + best_k_dbi)/2)
-        st.warning(f"⚠️ Metrik berbeda. Rekomendasi: k={default_k} (rata-rata)")
-    else:
-        default_k = best_k_silhouette
-        st.warning(f"⚠️ Perbedaan besar. Prioritaskan Silhouette: k={default_k}")
-
-    # Let user select final k
-    k_final = st.number_input(
-        "Pilih jumlah cluster (k):", 
-        min_value=2, 
-        max_value=10, 
-        value=default_k,
-        step=1,
-        help="Anda bisa mengabaikan rekomendasi dan memilih manual"
-    )
-
-    # Store optimal k in session state
-    st.session_state.optimal_k = k_final
+        st.metric("Optimal Cluster (DBI)", optimal_k_dbi)
     
     # Clustering with PSO optimization
     st.subheader("Optimasi Parameter dengan PSO")
+    k_final = st.number_input("Pilih jumlah cluster (k):", min_value=2, max_value=10, value=optimal_k_sil)
     
     if st.button("Jalankan Spectral Clustering dengan PSO"):
         with st.spinner("Menjalankan optimasi PSO..."):
-            try:
-                # Improved PSO optimization function
-                def evaluate_gamma(gamma_array):
-                    scores = []
-                    for gamma in gamma_array:
-                        gamma_val = np.clip(gamma[0], 0.001, 5.0)
-                        try:
-                            # Compute similarity matrix with regularization
-                            W = rbf_kernel(X_scaled, gamma=gamma_val)
-                            W = np.maximum(W, 0)  # Ensure non-negative
-                            
-                            # Adaptive thresholding
-                            threshold = np.percentile(W, 95)  # Keep top 5% connections
-                            W[W < threshold] = 0
-                            
-                            # Add small diagonal for numerical stability
-                            W = W + 1e-5 * np.eye(W.shape[0])
-                            
-                            # Compute normalized Laplacian
-                            L = laplacian(W, normed=True)
-                            
-                            # Compute eigenvectors with more robust settings
-                            eigvals, eigvecs = eigsh(L, k=k_final, which='SM', 
-                                                    tol=1e-4, maxiter=10000)
-                            
-                            U = normalize(eigvecs, norm='l2')
-                            kmeans = KMeans(n_clusters=k_final, random_state=SEED, 
-                                          n_init=20).fit(U)
-                            labels = kmeans.labels_
-                            
-                            if len(np.unique(labels)) < 2:
-                                scores.append(10)
-                                continue
-                                
-                            sil = silhouette_score(U, labels)
-                            dbi = davies_bouldin_score(U, labels)
-                            scores.append(-sil + dbi)
-                        except:
-                            scores.append(10)
-                    return np.array(scores)
-                
-                # Run PSO with more conservative parameters
-                options = {'c1': 1.2, 'c2': 1.2, 'w': 0.7}
-                bounds = (np.array([0.001]), np.array([5.0]))
-                optimizer = GlobalBestPSO(n_particles=30, dimensions=1, 
-                                        options=options, bounds=bounds)
-                
-                best_cost, best_pos = optimizer.optimize(evaluate_gamma, iters=50)
-                best_gamma = best_pos[0]
-                
-                # Final clustering with optimal gamma
-                W = rbf_kernel(X_scaled, gamma=best_gamma)
-                threshold = np.percentile(W, 95)
-                W[W < threshold] = 0
-                W = W + 1e-5 * np.eye(W.shape[0])
-                
-                L = laplacian(W, normed=True)
-                eigvals, eigvecs = eigsh(L, k=k_final, which='SM', 
-                                        tol=1e-4, maxiter=10000)
-                U = normalize(eigvecs, norm='l2')
-                
-                kmeans = KMeans(n_clusters=k_final, random_state=SEED, 
-                              n_init=20).fit(U)
-                labels = kmeans.labels_
-                
-                # Store results
-                st.session_state.best_gamma = best_gamma
-                st.session_state.U = U
-                st.session_state.labels = labels
-                st.session_state.eigvecs = eigvecs
-                
-                # Save to dataframe
-                df = st.session_state.df_cleaned.copy()
-                df['Cluster'] = labels
-                st.session_state.df_clustered = df
-                
-                # Metrics
-                sil_score = silhouette_score(U, labels)
-                dbi_score = davies_bouldin_score(U, labels)
-                
-                st.success(f"Optimasi selesai! Gamma optimal: {best_gamma:.4f}")
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.metric("Silhouette Score", f"{sil_score:.4f}")
-                with col2:
-                    st.metric("Davies-Bouldin Index", f"{dbi_score:.4f}")
-                
-                # Cluster visualization
-                st.subheader("Visualisasi Cluster")
-                pca = PCA(n_components=2)
-                U_pca = pca.fit_transform(U)
-                
-                fig, ax = plt.subplots(figsize=(10, 7))
-                scatter = ax.scatter(U_pca[:, 0], U_pca[:, 1], c=labels, cmap='viridis')
-                ax.set_title(f"Hasil Clustering (k={k_final})")
-                plt.colorbar(scatter, label='Cluster')
-                st.pyplot(fig)
-                
-            except Exception as e:
-                st.error(f"Gagal melakukan clustering: {str(e)}")
-                st.error("""
-                Beberapa solusi yang bisa dicoba:
-                1. Gunakan jumlah cluster yang lebih kecil
-                2. Kurangi range gamma (misal 0.001-1.0)
-                3. Periksa apakah data sudah dinormalisasi dengan benar
-                """)
+            # PSO optimization function
+            def evaluate_gamma(gamma_array):
+                scores = []
+                for gamma in gamma_array:
+                    gamma_val = gamma[0]
+                    try:
+                        W = rbf_kernel(X_scaled, gamma=gamma_val)
+                        
+                        # Apply threshold
+                        W[W < 0.01] = 0
+                        
+                        L = laplacian(W, normed=True)
+                        eigvals, eigvecs = eigsh(L, k=k_final, which='SM', tol=1e-6)
+                        U = normalize(eigvecs, norm='l2')
+                        kmeans = KMeans(n_clusters=k_final, random_state=SEED).fit(U)
+                        labels = kmeans.labels_
+                        
+                        sil = silhouette_score(U, labels)
+                        dbi = davies_bouldin_score(U, labels)
+                        scores.append(-sil + dbi)  # Minimize this
+                    except:
+                        scores.append(10)  # Penalty for failed cases
+                return np.array(scores)
+            
+            # Run PSO
+            options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}
+            bounds = (np.array([0.001]), np.array([5.0]))
+            optimizer = GlobalBestPSO(n_particles=20, dimensions=1, options=options, bounds=bounds)
+            best_cost, best_pos = optimizer.optimize(evaluate_gamma, iters=100)
+            best_gamma = best_pos[0]
+            
+            # Store results
+            st.session_state.best_gamma = best_gamma
+            
+            # Final clustering with optimal gamma
+            W = rbf_kernel(X_scaled, gamma=best_gamma)
+            W[W < 0.01] = 0  # Thresholding
+            L = laplacian(W, normed=True)
+            eigvals, eigvecs = eigsh(L, k=k_final, which='SM', tol=1e-6)
+            U = normalize(eigvecs, norm='l2')
+            kmeans = KMeans(n_clusters=k_final, random_state=SEED).fit(U)
+            labels = kmeans.labels_
+            
+            # Store results
+            st.session_state.U = U
+            st.session_state.labels = labels
+            st.session_state.eigvecs = eigvecs
+            
+            # Save to dataframe
+            df = st.session_state.df_cleaned.copy()
+            df['Cluster'] = labels
+            st.session_state.df_clustered = df
+            
+            # Metrics
+            sil_score = silhouette_score(U, labels)
+            dbi_score = davies_bouldin_score(U, labels)
+            
+            st.success(f"Optimasi selesai! Gamma optimal: {best_gamma:.4f}")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Silhouette Score", f"{sil_score:.4f}")
+            with col2:
+                st.metric("Davies-Bouldin Index", f"{dbi_score:.4f}")
+            
+            # Cluster visualization
+            st.subheader("Visualisasi Cluster")
+            pca = PCA(n_components=2)
+            U_pca = pca.fit_transform(U)
+            
+            fig, ax = plt.subplots(figsize=(10, 7))
+            scatter = ax.scatter(U_pca[:, 0], U_pca[:, 1], c=labels, cmap='viridis')
+            ax.set_title(f"Hasil Clustering (k={k_final})")
+            plt.colorbar(scatter, label='Cluster')
+            st.pyplot(fig)
+
 def results_analysis():
     st.header("📊 Hasil Analisis Cluster")
     
