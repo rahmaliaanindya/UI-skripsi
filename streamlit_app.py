@@ -276,77 +276,88 @@ def clustering_analysis():
     
     X_scaled = st.session_state.X_scaled
     
-    # Optimal Cluster Evaluation
-    st.subheader("Evaluasi Jumlah Cluster Optimal")
-    
-    k_range = range(2, 11)
-    silhouette_scores = []
-    db_scores = []
-    
-    with st.spinner("Menghitung metrik untuk berbagai jumlah cluster..."):
-        for k in k_range:
-            try:
-                model = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', 
-                                        random_state=SEED, n_init=10)
-                labels = model.fit_predict(X_scaled)
+# Optimal Cluster Evaluation
+st.subheader("Evaluasi Jumlah Cluster (Silhouette & DBI)")
+
+# Define cluster range
+clusters_range = range(2, 11)
+silhouette_scores = {}
+dbi_scores = {}
+
+with st.spinner("Menghitung metrik untuk berbagai jumlah cluster..."):
+    for k in clusters_range:
+        try:
+            clustering = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', 
+                                         random_state=SEED, n_init=10)
+            labels = clustering.fit_predict(X_scaled)
+            
+            # Skip if only one cluster found
+            if len(np.unique(labels)) < 2:
+                silhouette_scores[k] = -1
+                dbi_scores[k] = float('inf')
+                continue
                 
-                # Skip if only one cluster found
-                if len(np.unique(labels)) < 2:
-                    silhouette_scores.append(-1)
-                    db_scores.append(float('inf'))
-                    continue
-                    
-                silhouette_scores.append(silhouette_score(X_scaled, labels))
-                db_scores.append(davies_bouldin_score(X_scaled, labels))
-            except Exception as e:
-                st.warning(f"Error pada k={k}: {str(e)}")
-                silhouette_scores.append(-1)
-                db_scores.append(float('inf'))
-    
-    # Plot evaluation metrics
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
-    
-    ax1.plot(k_range, silhouette_scores, 'bo-')
-    ax1.set_xlabel('Jumlah Cluster')
-    ax1.set_ylabel('Silhouette Score')
-    ax1.set_title('Evaluasi Silhouette Score (higher better)')
-    ax1.grid(True)
-    
-    ax2.plot(k_range, db_scores, 'ro-')
-    ax2.set_xlabel('Jumlah Cluster')
-    ax2.set_ylabel('Davies-Bouldin Index')
-    ax2.set_title('Evaluasi DBI (lower better)')
-    ax2.grid(True)
-    
-    st.pyplot(fig)
-    
-    # Determine optimal clusters
-    try:
-        optimal_k_sil = k_range[np.argmax(silhouette_scores)]
-        optimal_k_dbi = k_range[np.argmin(db_scores)]
-        
-        # Additional validation
-        if optimal_k_dbi < 2 or optimal_k_dbi > 10:
-            optimal_k_dbi = optimal_k_sil
+            silhouette_scores[k] = silhouette_score(X_scaled, labels)
+            dbi_scores[k] = davies_bouldin_score(X_scaled, labels)
             
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("Optimal Cluster (Silhouette)", optimal_k_sil)
-        with col2:
-            st.metric("Optimal Cluster (DBI)", optimal_k_dbi)
-            
-        # Default to silhouette if disagreement is large
-        if abs(optimal_k_sil - optimal_k_dbi) > 3:
-            optimal_k = optimal_k_sil
-            st.info("Menggunakan rekomendasi Silhouette Score karena perbedaan besar")
-        else:
-            optimal_k = optimal_k_sil
-            
-        st.session_state.optimal_k = optimal_k
-        
-    except Exception as e:
-        st.error(f"Error menentukan cluster optimal: {str(e)}")
-        st.stop()
+        except Exception as e:
+            st.warning(f"Error pada k={k}: {str(e)}")
+            silhouette_scores[k] = -1
+            dbi_scores[k] = float('inf')
+
+# Create dataframe for visualization
+score_df = pd.DataFrame({
+    'Silhouette Score': silhouette_scores,
+    'Davies-Bouldin Index': dbi_scores
+})
+
+# Normalize DBI for better visualization (since lower is better)
+score_df['DBI Normalized'] = 1 - (score_df['Davies-Bouldin Index'] - score_df['Davies-Bouldin Index'].min()) / (
+    score_df['Davies-Bouldin Index'].max() - score_df['Davies-Bouldin Index'].min())
+
+# Plot using Streamlit's native line chart
+st.line_chart(score_df[['Silhouette Score', 'DBI Normalized']], 
+              use_container_width=True,
+              color=['#1f77b4', '#ff7f0e'])
+
+# Determine optimal clusters
+best_k_silhouette = max(silhouette_scores, key=silhouette_scores.get)
+best_k_dbi = min(dbi_scores, key=dbi_scores.get)
+
+# Display results in columns
+col1, col2 = st.columns(2)
+with col1:
+    st.metric("Optimal Cluster (Silhouette)", 
+             best_k_silhouette,
+             help="Nilai lebih tinggi lebih baik")
+with col2:
+    st.metric("Optimal Cluster (DBI)", 
+             best_k_dbi,
+             help="Nilai lebih rendah lebih baik")
+
+# Decision logic for final k
+if best_k_silhouette == best_k_dbi:
+    st.success(f"✅ Kedua metrik setuju: Jumlah cluster optimal = {best_k_silhouette}")
+    default_k = best_k_silhouette
+elif abs(best_k_silhouette - best_k_dbi) <= 2:
+    default_k = round((best_k_silhouette + best_k_dbi)/2)
+    st.warning(f"⚠️ Metrik berbeda. Rekomendasi: k={default_k} (rata-rata)")
+else:
+    default_k = best_k_silhouette
+    st.warning(f"⚠️ Perbedaan besar. Prioritaskan Silhouette: k={default_k}")
+
+# Let user select final k
+k_final = st.number_input(
+    "Pilih jumlah cluster (k):", 
+    min_value=2, 
+    max_value=10, 
+    value=default_k,
+    step=1,
+    help="Anda bisa mengabaikan rekomendasi dan memilih manual"
+)
+
+# Store optimal k in session state
+st.session_state.optimal_k = k_final
     
     # Clustering with PSO optimization
     st.subheader("Optimasi Parameter dengan PSO")
