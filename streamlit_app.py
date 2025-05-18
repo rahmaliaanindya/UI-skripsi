@@ -23,41 +23,103 @@ warnings.filterwarnings("ignore")
 SEED = 42
 np.random.seed(SEED)
 
-# === CSS Styling ===
+# === PROFESSIONAL CSS STYLING ===
 def local_css():
     st.markdown(
         """
         <style>
+            :root {
+                --primary: #2c3e50;
+                --secondary: #34495e;
+                --accent: #3498db;
+                --background: #ffffff;
+                --text: #2c3e50;
+                --light-text: #7f8c8d;
+            }
+            
             body {
-                background-color: #fdf0ed;
+                background-color: var(--background);
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             }
+            
             .main {
-                background: linear-gradient(to bottom right, #e74c3c, #f39c12, #f8c471);
+                background-color: var(--background);
             }
+            
             .block-container {
-                padding-top: 1rem;
-                background-color: transparent;
+                padding-top: 1.5rem;
+                background-color: var(--background);
             }
-            h1, h2, h3, h4, h5, h6, p, div, span {
-                color: #2c3e50 !important;
+            
+            h1, h2, h3, h4, h5, h6 {
+                color: var(--primary) !important;
+                font-weight: 600;
             }
+            
             .title {
-                font-family: 'Helvetica', sans-serif;
-                color: #1f3a93;
-                font-size: 38px;
-                font-weight: bold;
+                font-family: 'Helvetica Neue', sans-serif;
+                color: var(--primary);
+                font-size: 2.5rem;
+                font-weight: 700;
                 text-align: center;
-                padding: 30px 0 10px 0;
+                padding: 2rem 0 1rem 0;
+                border-bottom: 1px solid #ecf0f1;
+                margin-bottom: 1.5rem;
             }
+            
             .sidebar .sidebar-content {
-                background-color: #fef5e7;
+                background-color: var(--background);
+                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
             }
+            
             .stRadio > div {
                 display: flex;
                 justify-content: center;
+                background-color: var(--background);
+                padding: 0.5rem;
+                border-radius: 8px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             }
+            
             .stRadio > div > label {
-                margin: 0 10px;
+                margin: 0 0.5rem;
+                color: var(--text);
+                font-weight: 500;
+            }
+            
+            .stButton>button {
+                background-color: var(--accent);
+                color: white;
+                border-radius: 6px;
+                border: none;
+                padding: 0.5rem 1rem;
+                font-weight: 500;
+                transition: all 0.3s ease;
+            }
+            
+            .stButton>button:hover {
+                background-color: #2980b9;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+            
+            .stSelectbox, .stNumberInput, .stFileUploader {
+                margin-bottom: 1rem;
+            }
+            
+            .metric {
+                background-color: #f8f9fa;
+                border-radius: 8px;
+                padding: 1rem;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            }
+            
+            .stProgress > div > div > div {
+                background-color: var(--accent) !important;
+            }
+            
+            .stAlert {
+                border-radius: 8px;
             }
         </style>
         """,
@@ -68,45 +130,80 @@ local_css()
 
 # === MENU NAVIGASI ===
 menu = st.radio(
-    "Navigasi Aplikasi:",
-    ("Home", "Upload Data", "EDA", "Clustering", "Hasil & Interpretasi"),
+    "NAVIGASI APLIKASI",
+    ("Home", "Upload Data", "EDA", "Clustering", "Results"),
     horizontal=True
 )
 
 # === HOME ===
 if menu == "Home":
     st.markdown(""" 
-    # 👋 Selamat Datang di Aplikasi Spectral Clustering dengan PSO 📊
-    Aplikasi ini dirancang untuk:
-    - 📁 Mengunggah dan mengeksplorasi data indikator kemiskinan
-    - 🧹 Melakukan preprocessing data dengan Robust Scaling
-    - 🤖 Menerapkan metode **Spectral Clustering** dengan optimasi PSO
-    - 🔍 Menentukan parameter gamma optimal menggunakan Particle Swarm Optimization
-    - 📈 Mengevaluasi hasil pengelompokan dengan Silhouette Score dan Davies-Bouldin Index
-    """)
+    <div style="text-align:center">
+        <h1 style="color:#2c3e50; font-size:2.5rem; margin-bottom:1.5rem">
+            Spectral Clustering Analysis with PSO Optimization
+        </h1>
+        <p style="font-size:1.1rem; color:#34495e; margin-bottom:2rem">
+            Professional tool for poverty indicator analysis using advanced machine learning techniques
+        </p>
+    </div>
+    
+    <div style="background-color:#f8f9fa; border-radius:12px; padding:2rem; margin-bottom:2rem">
+        <h3 style="color:#2c3e50; border-bottom:1px solid #ecf0f1; padding-bottom:0.5rem">
+            Application Features
+        </h3>
+        <ul style="color:#34495e; line-height:2">
+            <li>📊 Interactive data exploration and visualization</li>
+            <li>⚙️ Robust data preprocessing pipeline</li>
+            <li>🤖 Advanced Spectral Clustering algorithm</li>
+            <li>🔬 Particle Swarm Optimization for parameter tuning</li>
+            <li>📈 Comprehensive cluster evaluation metrics</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
 
 # === UPLOAD DATA ===
 elif menu == "Upload Data":
-    st.header("📤 Upload Data Excel")
     st.markdown("""
-    **Petunjuk:**
-    1. File yang diunggah harus berupa file **Excel** dengan ekstensi `.xlsx`.
-    2. Data harus memuat kolom 'Kabupaten/Kota' dan variabel numerik lainnya.
-    """)
+    <h1 style="color:#2c3e50; font-size:2rem; border-bottom:1px solid #ecf0f1; padding-bottom:0.5rem">
+        Data Upload
+    </h1>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div style="background-color:#f8f9fa; border-radius:8px; padding:1.5rem; margin-bottom:1.5rem">
+        <h3 style="color:#2c3e50">Instructions</h3>
+        <p style="color:#34495e">
+            Please upload an Excel file (.xlsx) containing your dataset. The file should include:
+        </p>
+        <ul style="color:#34495e">
+            <li>A 'Kabupaten/Kota' column for region names</li>
+            <li>Numerical columns with poverty indicators</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
 
-    uploaded_file = st.file_uploader("Unggah file Excel (.xlsx)", type="xlsx")
+    uploaded_file = st.file_uploader("Choose Excel file", type="xlsx")
 
     if uploaded_file:
         df = pd.read_excel(uploaded_file)
         st.session_state.df = df
-        st.success("✅ Data berhasil dimuat!")
         
-        with st.expander("Lihat Data"):
-            st.write(df)
+        st.success("✅ Data successfully loaded!")
+        
+        with st.expander("View Raw Data", expanded=False):
+            st.dataframe(df.style.set_properties(**{
+                'background-color': '#f8f9fa',
+                'color': '#2c3e50',
+                'border': '1px solid #ecf0f1'
+            }))
 
 # === EDA ===
 elif menu == "EDA":
-    st.header("🔍 Exploratory Data Analysis")
+    st.markdown("""
+    <h1 style="color:#2c3e50; font-size:2rem; border-bottom:1px solid #ecf0f1; padding-bottom:0.5rem">
+        Exploratory Data Analysis
+    </h1>
+    """, unsafe_allow_html=True)
     
     if 'df' in st.session_state:
         df = st.session_state.df
@@ -114,33 +211,60 @@ elif menu == "EDA":
         col1, col2 = st.columns(2)
         
         with col1:
-            st.subheader("Dataset Info")
+            st.markdown("""
+            <div style="background-color:#f8f9fa; border-radius:8px; padding:1rem; margin-bottom:1rem">
+                <h3 style="color:#2c3e50">Dataset Information</h3>
+            </div>
+            """, unsafe_allow_html=True)
             st.write(df.info())
             
         with col2:
-            st.subheader("Descriptive Statistics")
-            st.write(df.describe())
+            st.markdown("""
+            <div style="background-color:#f8f9fa; border-radius:8px; padding:1rem; margin-bottom:1rem">
+                <h3 style="color:#2c3e50">Descriptive Statistics</h3>
+            </div>
+            """, unsafe_allow_html=True)
+            st.dataframe(df.describe().style.format("{:.2f}"))
         
-        st.subheader("Distribusi Variabel")
+        st.markdown("""
+        <div style="background-color:#f8f9fa; border-radius:8px; padding:1rem; margin:1.5rem 0">
+            <h3 style="color:#2c3e50">Variable Distribution</h3>
+        </div>
+        """, unsafe_allow_html=True)
+        
         numeric_columns = df.select_dtypes(include=['float64', 'int64']).columns
+        selected_col = st.selectbox("Select variable:", numeric_columns)
         
-        selected_col = st.selectbox("Pilih variabel untuk dilihat distribusinya:", numeric_columns)
-        fig, ax = plt.subplots(figsize=(8, 4))
-        sns.histplot(df[selected_col], kde=True, bins=30, color='skyblue', ax=ax)
-        ax.set_title(f'Distribusi: {selected_col}')
+        fig, ax = plt.subplots(figsize=(10, 5))
+        sns.histplot(df[selected_col], kde=True, bins=30, color='#3498db')
+        ax.set_title(f'Distribution of {selected_col}', fontsize=14)
+        ax.set_facecolor('#f8f9fa')
+        fig.patch.set_facecolor('#f8f9fa')
         st.pyplot(fig)
         
-        st.subheader("Korelasi Antar Variabel")
+        st.markdown("""
+        <div style="background-color:#f8f9fa; border-radius:8px; padding:1rem; margin:1.5rem 0">
+            <h3 style="color:#2c3e50">Feature Correlation</h3>
+        </div>
+        """, unsafe_allow_html=True)
+        
         numerical_df = df.select_dtypes(include=['number'])
-        fig, ax = plt.subplots(figsize=(10, 8))
-        sns.heatmap(numerical_df.corr(), annot=True, cmap='coolwarm', fmt='.2f', ax=ax)
+        fig, ax = plt.subplots(figsize=(12, 8))
+        sns.heatmap(numerical_df.corr(), annot=True, cmap='coolwarm', fmt='.2f', 
+                   center=0, ax=ax, annot_kws={"size": 10})
+        ax.set_facecolor('#f8f9fa')
+        fig.patch.set_facecolor('#f8f9fa')
         st.pyplot(fig)
     else:
-        st.warning("⚠️ Silakan upload data terlebih dahulu.")
+        st.warning("⚠️ Please upload data first.")
 
 # === CLUSTERING ===
 elif menu == "Clustering":
-    st.header("🤖 Spectral Clustering dengan PSO")
+    st.markdown("""
+    <h1 style="color:#2c3e50; font-size:2rem; border-bottom:1px solid #ecf0f1; padding-bottom:0.5rem">
+        Spectral Clustering with PSO Optimization
+    </h1>
+    """, unsafe_allow_html=True)
     
     if 'df' in st.session_state:
         df = st.session_state.df
@@ -151,7 +275,11 @@ elif menu == "Clustering":
         X_scaled = scaler.fit_transform(X)
         st.session_state.X_scaled = X_scaled
         
-        st.subheader("Evaluasi Jumlah Cluster Optimal")
+        st.markdown("""
+        <div style="background-color:#f8f9fa; border-radius:8px; padding:1rem; margin:1.5rem 0">
+            <h3 style="color:#2c3e50">Optimal Cluster Evaluation</h3>
+        </div>
+        """, unsafe_allow_html=True)
         
         k_range = range(2, 11)
         silhouette_scores = []
@@ -161,38 +289,48 @@ elif menu == "Clustering":
         status_text = st.empty()
         
         for i, k in enumerate(k_range):
-            status_text.text(f"Menghitung untuk k={k}...")
+            status_text.text(f"Calculating for k={k}...")
             model = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', random_state=SEED)
             labels = model.fit_predict(X_scaled)
             silhouette_scores.append(silhouette_score(X_scaled, labels))
             db_scores.append(davies_bouldin_score(X_scaled, labels))
             progress_bar.progress((i + 1) / len(k_range))
         
-        status_text.text("Perhitungan selesai!")
+        status_text.text("Calculation complete!")
         
         # Visualization
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
-        ax1.plot(k_range, silhouette_scores, 'bo-', label='Silhouette Score')
-        ax1.set_xlabel('Jumlah Cluster')
-        ax1.set_ylabel('Silhouette Score')
-        ax1.set_title('Evaluasi Silhouette Score')
-        ax1.legend()
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
         
-        ax2.plot(k_range, db_scores, 'ro-', label='Davies-Bouldin Index')
-        ax2.set_xlabel('Jumlah Cluster')
-        ax2.set_ylabel('DB Index')
-        ax2.set_title('Evaluasi Davies-Bouldin Index')
-        ax2.legend()
+        ax1.plot(k_range, silhouette_scores, 'bo-', color='#3498db')
+        ax1.set_xlabel('Number of Clusters', fontsize=12)
+        ax1.set_ylabel('Silhouette Score', fontsize=12)
+        ax1.set_title('Silhouette Score Evaluation', fontsize=14)
+        ax1.grid(True, linestyle='--', alpha=0.7)
+        ax1.set_facecolor('#f8f9fa')
         
+        ax2.plot(k_range, db_scores, 'ro-', color='#e74c3c')
+        ax2.set_xlabel('Number of Clusters', fontsize=12)
+        ax2.set_ylabel('Davies-Bouldin Index', fontsize=12)
+        ax2.set_title('Davies-Bouldin Index Evaluation', fontsize=14)
+        ax2.grid(True, linestyle='--', alpha=0.7)
+        ax2.set_facecolor('#f8f9fa')
+        
+        fig.patch.set_facecolor('#f8f9fa')
         st.pyplot(fig)
         
         optimal_k = k_range[np.argmax(silhouette_scores)]
-        st.success(f"Jumlah cluster optimal berdasarkan Silhouette Score: {optimal_k}")
+        st.success(f"Optimal number of clusters based on Silhouette Score: **{optimal_k}**")
         
-        k_final = st.number_input("Pilih jumlah cluster (k):", min_value=2, max_value=10, value=optimal_k, step=1)
+        k_final = st.number_input("Select number of clusters (k):", 
+                                 min_value=2, max_value=10, 
+                                 value=optimal_k, step=1)
         
-        if st.button("Optimasi Gamma dengan PSO"):
-            st.subheader("Optimasi Gamma dengan Particle Swarm Optimization")
+        if st.button("Optimize Gamma with PSO"):
+            st.markdown("""
+            <div style="background-color:#f8f9fa; border-radius:8px; padding:1rem; margin:1.5rem 0">
+                <h3 style="color:#2c3e50">Particle Swarm Optimization</h3>
+            </div>
+            """, unsafe_allow_html=True)
             
             def evaluate_gamma_robust(gamma_array):
                 scores = []
@@ -215,7 +353,7 @@ elif menu == "Clustering":
                             if np.any(np.isnan(L.data)) or np.any(np.isinf(L.data)):
                                 raise ValueError("Invalid Laplacian.")
                             
-                            eigvals, eigvecs = eigsh(L, k=2, which='SM', tol=1e-6)
+                            eigvals, eigvecs = eigsh(L, k=k_final, which='SM', tol=1e-6)
                             U = normalize(eigvecs, norm='l2')
                             
                             if np.isnan(U).any() or np.isinf(U).any():
@@ -247,12 +385,12 @@ elif menu == "Clustering":
             options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}
             bounds = (np.array([0.001]), np.array([5.0]))
             
-            with st.spinner('Menjalankan PSO...'):
+            with st.spinner('Running PSO optimization...'):
                 optimizer = GlobalBestPSO(n_particles=20, dimensions=1, options=options, bounds=bounds)
                 best_cost, best_pos = optimizer.optimize(evaluate_gamma_robust, iters=100)
                 best_gamma = best_pos[0]
                 
-            st.success(f"Gamma optimal (robust): {best_gamma:.4f}")
+            st.success(f"Optimal gamma parameter: **{best_gamma:.4f}**")
             st.session_state.best_gamma = best_gamma
             
             # Final clustering with optimized gamma
@@ -269,20 +407,40 @@ elif menu == "Clustering":
             silhouette = silhouette_score(U_opt, labels_opt)
             dbi = davies_bouldin_score(U_opt, labels_opt)
             
-            st.subheader("Hasil Clustering dengan Gamma Optimal")
+            st.markdown("""
+            <div style="background-color:#f8f9fa; border-radius:8px; padding:1rem; margin:1.5rem 0">
+                <h3 style="color:#2c3e50">Clustering Results</h3>
+            </div>
+            """, unsafe_allow_html=True)
+            
             col1, col2 = st.columns(2)
-            col1.metric("Silhouette Score", f"{silhouette:.4f}")
-            col2.metric("Davies-Bouldin Index", f"{dbi:.4f}")
+            col1.markdown(f"""
+            <div class="metric">
+                <h4 style="color:#2c3e50">Silhouette Score</h4>
+                <p style="font-size:1.5rem; color:#3498db; font-weight:bold">{silhouette:.4f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            col2.markdown(f"""
+            <div class="metric">
+                <h4 style="color:#2c3e50">Davies-Bouldin Index</h4>
+                <p style="font-size:1.5rem; color:#e74c3c; font-weight:bold">{dbi:.4f}</p>
+            </div>
+            """, unsafe_allow_html=True)
             
             # Visualization
             pca = PCA(n_components=2)
             X_pca = pca.fit_transform(U_opt)
             
-            fig, ax = plt.subplots(figsize=(8, 6))
-            scatter = ax.scatter(X_pca[:, 0], X_pca[:, 1], c=labels_opt, cmap='viridis', edgecolor='k')
-            ax.set_title(f"Clustering Visualisasi (k={k_final}, γ={best_gamma:.4f})")
-            ax.set_xlabel("PC1")
-            ax.set_ylabel("PC2")
+            fig, ax = plt.subplots(figsize=(10, 7))
+            scatter = ax.scatter(X_pca[:, 0], X_pca[:, 1], c=labels_opt, 
+                               cmap='viridis', edgecolor='k', s=80, alpha=0.8)
+            ax.set_title(f"Cluster Visualization (k={k_final}, γ={best_gamma:.4f})", fontsize=14)
+            ax.set_xlabel("Principal Component 1", fontsize=12)
+            ax.set_ylabel("Principal Component 2", fontsize=12)
+            ax.grid(True, linestyle='--', alpha=0.5)
+            ax.set_facecolor('#f8f9fa')
+            fig.patch.set_facecolor('#f8f9fa')
             plt.colorbar(scatter, label='Cluster')
             st.pyplot(fig)
             
@@ -291,23 +449,54 @@ elif menu == "Clustering":
             st.session_state.df_with_cluster = df
             
     else:
-        st.warning("⚠️ Silakan upload data terlebih dahulu.")
+        st.warning("⚠️ Please upload data first.")
 
-# === HASIL & INTERPRETASI ===
-elif menu == "Hasil & Interpretasi":
-    st.header("📊 Hasil & Interpretasi")
+# === RESULTS ===
+elif menu == "Results":
+    st.markdown("""
+    <h1 style="color:#2c3e50; font-size:2rem; border-bottom:1px solid #ecf0f1; padding-bottom:0.5rem">
+        Analysis Results
+    </h1>
+    """, unsafe_allow_html=True)
     
     if 'df_with_cluster' in st.session_state:
         df = st.session_state.df_with_cluster
         
-        st.subheader("Distribusi Cluster")
+        st.markdown("""
+        <div style="background-color:#f8f9fa; border-radius:8px; padding:1rem; margin:1.5rem 0">
+            <h3 style="color:#2c3e50">Cluster Distribution</h3>
+        </div>
+        """, unsafe_allow_html=True)
+        
         cluster_counts = df['Cluster'].value_counts().sort_index()
-        st.bar_chart(cluster_counts)
+        fig, ax = plt.subplots(figsize=(10, 5))
+        sns.barplot(x=cluster_counts.index, y=cluster_counts.values, 
+                   palette="viridis", ax=ax)
+        ax.set_title('Number of Regions per Cluster', fontsize=14)
+        ax.set_xlabel('Cluster', fontsize=12)
+        ax.set_ylabel('Count', fontsize=12)
+        ax.set_facecolor('#f8f9fa')
+        fig.patch.set_facecolor('#f8f9fa')
+        st.pyplot(fig)
         
-        st.subheader("Data dengan Label Cluster")
-        st.dataframe(df.sort_values(by='Cluster'))
+        st.markdown("""
+        <div style="background-color:#f8f9fa; border-radius:8px; padding:1rem; margin:1.5rem 0">
+            <h3 style="color:#2c3e50">Cluster Members</h3>
+        </div>
+        """, unsafe_allow_html=True)
         
-        st.subheader("Analisis Fitur Penting")
+        st.dataframe(df.sort_values(by='Cluster').style.set_properties(**{
+            'background-color': '#f8f9fa',
+            'color': '#2c3e50',
+            'border': '1px solid #ecf0f1'
+        }))
+        
+        st.markdown("""
+        <div style="background-color:#f8f9fa; border-radius:8px; padding:1rem; margin:1.5rem 0">
+            <h3 style="color:#2c3e50">Feature Importance</h3>
+        </div>
+        """, unsafe_allow_html=True)
+        
         X = df.drop(columns=['Kabupaten/Kota', 'Cluster'], errors='ignore')
         y = df['Cluster']
         
@@ -315,42 +504,85 @@ elif menu == "Hasil & Interpretasi":
         rf.fit(X, y)
         importances = pd.Series(rf.feature_importances_, index=X.columns).sort_values(ascending=False)
         
-        fig, ax = plt.subplots(figsize=(10, 6))
-        sns.barplot(x=importances.values, y=importances.index, palette="viridis", ax=ax)
-        ax.set_title("Feature Importance")
-        ax.set_xlabel("Tingkat Pengaruh")
+        fig, ax = plt.subplots(figsize=(12, 6))
+        sns.barplot(x=importances.values, y=importances.index, 
+                   palette="viridis", ax=ax)
+        ax.set_title("Feature Importance Analysis", fontsize=14)
+        ax.set_xlabel("Importance Score", fontsize=12)
+        ax.set_ylabel("Features", fontsize=12)
+        ax.set_facecolor('#f8f9fa')
+        fig.patch.set_facecolor('#f8f9fa')
         st.pyplot(fig)
         
-        st.subheader("Karakteristik Cluster")
+        st.markdown("""
+        <div style="background-color:#f8f9fa; border-radius:8px; padding:1rem; margin:1.5rem 0">
+            <h3 style="color:#2c3e50">Cluster Characteristics</h3>
+        </div>
+        """, unsafe_allow_html=True)
+        
         cluster_means = df.groupby('Cluster').mean(numeric_only=True)
         
-        fig, ax = plt.subplots(figsize=(10, 6))
-        sns.heatmap(cluster_means, annot=True, cmap='coolwarm', ax=ax)
-        ax.set_title('Rata-rata Fitur per Cluster')
+        fig, ax = plt.subplots(figsize=(12, 8))
+        sns.heatmap(cluster_means, annot=True, cmap='coolwarm', 
+                   fmt=".2f", center=0, ax=ax)
+        ax.set_title('Average Feature Values per Cluster', fontsize=14)
+        ax.set_facecolor('#f8f9fa')
+        fig.patch.set_facecolor('#f8f9fa')
         st.pyplot(fig)
         
-        st.subheader("Wilayah dengan Kemiskinan Tertinggi & Terendah")
+        st.markdown("""
+        <div style="background-color:#f8f9fa; border-radius:8px; padding:1rem; margin:1.5rem 0">
+            <h3 style="color:#2c3e50">Regional Analysis</h3>
+        </div>
+        """, unsafe_allow_html=True)
+        
         kemiskinan_col = "Persentase Penduduk Miskin (%)"
         
         if kemiskinan_col in df.columns:
-            top3 = df.sort_values(by=kemiskinan_col, ascending=False)[["Kabupaten/Kota", kemiskinan_col, "Cluster"]].head(3)
-            bottom3 = df.sort_values(by=kemiskinan_col, ascending=True)[["Kabupaten/Kota", kemiskinan_col, "Cluster"]].head(3)
-            
             col1, col2 = st.columns(2)
             
             with col1:
-                st.markdown("#### 🚨 3 Wilayah dengan Tingkat Kemiskinan Tertinggi")
-                st.table(top3.reset_index(drop=True))
+                st.markdown("""
+                <div style="background-color:#f8f9fa; border-radius:8px; padding:1rem; margin-bottom:1rem">
+                    <h4 style="color:#2c3e50">Highest Poverty Rates</h4>
+                </div>
+                """, unsafe_allow_html=True)
+                top3 = df.sort_values(by=kemiskinan_col, ascending=False)[["Kabupaten/Kota", kemiskinan_col, "Cluster"]].head(3)
+                st.dataframe(top3.style.format({
+                    kemiskinan_col: "{:.2f}"
+                }))
             
             with col2:
-                st.markdown("#### 🟢 3 Wilayah dengan Tingkat Kemiskinan Terendah")
-                st.table(bottom3.reset_index(drop=True))
+                st.markdown("""
+                <div style="background-color:#f8f9fa; border-radius:8px; padding:1rem; margin-bottom:1rem">
+                    <h4 style="color:#2c3e50">Lowest Poverty Rates</h4>
+                </div>
+                """, unsafe_allow_html=True)
+                bottom3 = df.sort_values(by=kemiskinan_col, ascending=True)[["Kabupaten/Kota", kemiskinan_col, "Cluster"]].head(3)
+                st.dataframe(bottom3.style.format({
+                    kemiskinan_col: "{:.2f}"
+                }))
         
-        st.subheader("Kesimpulan")
         st.markdown("""
-        - Cluster dengan rata-rata **persentase penduduk miskin paling rendah** bisa dianggap sebagai kategori **kinerja baik**.
-        - Cluster dengan nilai indikator pendidikan dan kesehatan yang rendah mungkin termasuk **kategori rentan/tinggi kemiskinan**.
-        - Hasil clustering ini dapat digunakan untuk menentukan kebijakan yang tepat sasaran untuk setiap kelompok wilayah.
-        """)
+        <div style="background-color:#f8f9fa; border-radius:8px; padding:1.5rem; margin:1.5rem 0">
+            <h3 style="color:#2c3e50; border-bottom:1px solid #ecf0f1; padding-bottom:0.5rem">
+                Conclusions
+            </h3>
+            <div style="color:#34495e; line-height:1.6">
+                <p><strong>Key Findings:</strong></p>
+                <ul>
+                    <li>Clusters with <strong>lower average poverty rates</strong> typically show better performance across multiple indicators</li>
+                    <li>Regions with <strong>higher poverty rates</strong> often correlate with lower education and health indicators</li>
+                    <li>The clustering results provide clear segmentation for <strong>targeted policy interventions</strong></li>
+                </ul>
+                <p><strong>Recommendations:</strong></p>
+                <ul>
+                    <li>Prioritize resource allocation to clusters with highest poverty indicators</li>
+                    <li>Develop cluster-specific development programs based on characteristic patterns</li>
+                    <li>Monitor progress using the same indicators to measure intervention effectiveness</li>
+                </ul>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
     else:
-        st.warning("⚠️ Silakan lakukan clustering terlebih dahulu.")
+        st.warning("⚠️ Please complete clustering analysis first.")
