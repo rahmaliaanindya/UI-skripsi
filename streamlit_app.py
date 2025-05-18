@@ -365,14 +365,14 @@ def clustering_analysis():
     eigvals, eigvecs = eigh(L_sym)
 
     # Ambil k eigenvector terkecil
-    k = best_cluster  # Assuming best_cluster is defined elsewhere
+    k = 2  # Assuming best_cluster is defined elsewhere
     U = eigvecs[:, :k]
 
     # Normalisasi
     U_norm = U / np.linalg.norm(U, axis=1, keepdims=True)
 
     # KMeans clustering
-    kmeans = KMeans(n_clusters=k, random_state=SEED, n_init=20)
+    kmeans = KMeans(n_clusters=k, random_state=SEED)
     labels = kmeans.fit_predict(U_norm)
 
     # Simpan hasil
