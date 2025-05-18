@@ -277,45 +277,81 @@ def clustering_analysis():
     X_scaled = st.session_state.X_scaled
     
     # Optimal Cluster Evaluation
-    st.subheader("Evaluasi Jumlah Cluster Optimal")
+st.subheader("Evaluasi Jumlah Cluster Optimal")
+
+k_range = range(2, 11)
+silhouette_scores = []
+db_scores = []
+
+with st.spinner("Menghitung metrik untuk berbagai jumlah cluster..."):
+    for k in k_range:
+        model = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', random_state=SEED)
+        labels = model.fit_predict(X_scaled)
+        
+        # Calculate metrics
+        silhouette_scores.append(silhouette_score(X_scaled, labels))
+        db_scores.append(davies_bouldin_score(X_scaled, labels))
     
-    k_range = range(2, 11)
-    silhouette_scores = []
-    db_scores = []
-    
-    with st.spinner("Menghitung metrik untuk berbagai jumlah cluster..."):
-        for k in k_range:
-            model = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', random_state=SEED)
-            labels = model.fit_predict(X_scaled)
-            silhouette_scores.append(silhouette_score(X_scaled, labels))
-            db_scores.append(davies_bouldin_score(X_scaled, labels))
-    
-    # Plot evaluation metrics
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
-    
-    ax1.plot(k_range, silhouette_scores, 'bo-')
-    ax1.set_xlabel('Jumlah Cluster')
-    ax1.set_ylabel('Silhouette Score')
-    ax1.set_title('Evaluasi Silhouette Score')
-    ax1.grid(True)
-    
-    ax2.plot(k_range, db_scores, 'ro-')
-    ax2.set_xlabel('Jumlah Cluster')
-    ax2.set_ylabel('Davies-Bouldin Index')
-    ax2.set_title('Evaluasi Davies-Bouldin Index')
-    ax2.grid(True)
-    
-    st.pyplot(fig)
-    
-    # Determine optimal clusters
+    # Ensure we have valid scores
+    if len(silhouette_scores) == 0 or len(db_scores) == 0:
+        st.error("Gagal menghitung metrik clustering")
+        st.stop()
+
+# Plot evaluation metrics
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+
+# Silhouette Score plot (higher is better)
+ax1.plot(k_range, silhouette_scores, 'bo-')
+ax1.set_xlabel('Jumlah Cluster')
+ax1.set_ylabel('Silhouette Score')
+ax1.set_title('Evaluasi Silhouette Score (higher better)')
+ax1.grid(True)
+
+# Davies-Bouldin Index plot (lower is better)
+ax2.plot(k_range, db_scores, 'ro-')
+ax2.set_xlabel('Jumlah Cluster')
+ax2.set_ylabel('Davies-Bouldin Index')
+ax2.set_title('Evaluasi DBI (lower better)')
+ax2.grid(True)
+
+st.pyplot(fig)
+
+# Determine optimal clusters
+try:
     optimal_k_sil = k_range[np.argmax(silhouette_scores)]
     optimal_k_dbi = k_range[np.argmin(db_scores)]
     
+    # Additional validation to prevent extreme values
+    if optimal_k_dbi < 2 or optimal_k_dbi > 10:
+        optimal_k_dbi = optimal_k_sil  # Fallback to silhouette result
+        
+    # If both metrics agree, we can be more confident
+    if optimal_k_sil == optimal_k_dbi:
+        st.success(f"Metrik setuju: Cluster optimal = {optimal_k_sil}")
+    else:
+        st.warning(f"Metrik berbeda: Silhouette={optimal_k_sil}, DBI={optimal_k_dbi}")
+    
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("Optimal Cluster (Silhouette)", optimal_k_sil)
+        st.metric("Optimal Cluster (Silhouette)", optimal_k_sil,
+                 help="Nilai lebih tinggi lebih baik")
     with col2:
-        st.metric("Optimal Cluster (DBI)", optimal_k_dbi)
+        st.metric("Optimal Cluster (DBI)", optimal_k_dbi,
+                 help="Nilai lebih rendah lebih baik")
+    
+    # Default to silhouette suggestion if there's big discrepancy
+    if abs(optimal_k_sil - optimal_k_dbi) > 3:
+        st.info("Menggunakan rekomendasi Silhouette Score karena perbedaan besar")
+        optimal_k = optimal_k_sil
+    else:
+        # Take average of both suggestions
+        optimal_k = int(np.round((optimal_k_sil + optimal_k_dbi)/2))
+    
+    st.session_state.optimal_k = optimal_k
+    
+except Exception as e:
+    st.error(f"Error menentukan cluster optimal: {str(e)}")
+    st.stop()
     
     # Clustering with PSO optimization
     st.subheader("Optimasi Parameter dengan PSO")
