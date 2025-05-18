@@ -344,54 +344,54 @@ def clustering_analysis():
     st.success(f"**Cluster optimal terpilih:** k={best_cluster} (Silhouette: {best_silhouette:.4f}, DBI: {best_dbi:.4f})")
     
     # =============================================
-   # 3. SPECTRAL CLUSTERING MANUAL DENGAN GAMMA=0.1
-# =============================================
-st.subheader("2. Spectral Clustering Manual (γ=0.1)")
+    # 3. SPECTRAL CLUSTERING MANUAL DENGAN GAMMA=0.1
+    # =============================================
+    st.subheader("2. Spectral Clustering Manual (γ=0.1)")
 
-# Hitung affinity matrix
-gamma = 0.1
-W = rbf_kernel(X_scaled, gamma=gamma)
+    # Hitung affinity matrix
+    gamma = 0.1
+    W = rbf_kernel(X_scaled, gamma=gamma)
 
-# Threshold untuk mengurangi noise
-threshold = 0.01
-W[W < threshold] = 0
+    # Threshold untuk mengurangi noise
+    threshold = 0.01
+    W[W < threshold] = 0
 
-# Hitung degree matrix dan Laplacian
-D = np.diag(W.sum(axis=1))
-D_inv_sqrt = np.diag(1.0 / np.sqrt(W.sum(axis=1)))
-L_sym = np.eye(W.shape[0]) - D_inv_sqrt @ W @ D_inv_sqrt
+    # Hitung degree matrix dan Laplacian
+    D = np.diag(W.sum(axis=1))
+    D_inv_sqrt = np.diag(1.0 / np.sqrt(W.sum(axis=1)))
+    L_sym = np.eye(W.shape[0]) - D_inv_sqrt @ W @ D_inv_sqrt
 
-# Eigen decomposition
-eigvals, eigvecs = eigh(L_sym)
+    # Eigen decomposition
+    eigvals, eigvecs = eigh(L_sym)
 
-# Ambil k eigenvector terkecil
-k = best_cluster  # Assuming best_cluster is defined elsewhere
-U = eigvecs[:, :k]
+    # Ambil k eigenvector terkecil
+    k = best_cluster  # Assuming best_cluster is defined elsewhere
+    U = eigvecs[:, :k]
 
-# Normalisasi
-U_norm = U / np.linalg.norm(U, axis=1, keepdims=True)
+    # Normalisasi
+    U_norm = U / np.linalg.norm(U, axis=1, keepdims=True)
 
-# KMeans clustering
-kmeans = KMeans(n_clusters=k, random_state=SEED, n_init=20)
-labels = kmeans.fit_predict(U_norm)
+    # KMeans clustering
+    kmeans = KMeans(n_clusters=k, random_state=SEED, n_init=20)
+    labels = kmeans.fit_predict(U_norm)
 
-# Simpan hasil
-st.session_state.U_before = U_norm
-st.session_state.labels_before = labels
+    # Simpan hasil
+    st.session_state.U_before = U_norm
+    st.session_state.labels_before = labels
 
-# Hitung metrik
-sil_score = silhouette_score(U_norm, labels)
-dbi_score = davies_bouldin_score(U_norm, labels)
+    # Hitung metrik
+    sil_score = silhouette_score(U_norm, labels)
+    dbi_score = davies_bouldin_score(U_norm, labels)
 
-st.success(f"Clustering manual berhasil! Silhouette: {sil_score:.4f}, DBI: {dbi_score:.4f}")
+    st.success(f"Clustering manual berhasil! Silhouette: {sil_score:.4f}, DBI: {dbi_score:.4f}")
 
-# Visualisasi baseline
-fig = plt.figure(figsize=(8, 6))
-plt.scatter(U_norm[:, 0], U_norm[:, 1], c=labels, cmap='viridis', alpha=0.7)
-plt.title(f'Spectral Clustering Manual (γ=0.1)\nSilhouette: {sil_score:.4f}, DBI: {dbi_score:.4f}')
-plt.xlabel('Eigenvector 1')
-plt.ylabel('Eigenvector 2')
-st.pyplot(fig)
+    # Visualisasi baseline
+    fig = plt.figure(figsize=(8, 6))
+    plt.scatter(U_norm[:, 0], U_norm[:, 1], c=labels, cmap='viridis', alpha=0.7)
+    plt.title(f'Spectral Clustering Manual (γ=0.1)\nSilhouette: {sil_score:.4f}, DBI: {dbi_score:.4f}')
+    plt.xlabel('Eigenvector 1')
+    plt.ylabel('Eigenvector 2')
+    st.pyplot(fig)
 
     # =============================================
     # 4. OPTIMASI GAMMA DENGAN PSO
@@ -500,9 +500,9 @@ st.pyplot(fig)
                 
                 col1, col2 = st.columns(2)
                 col1.metric("Silhouette Score", f"{sil_opt:.4f}", 
-                           f"{(sil_opt - sil_before):.4f} vs baseline")
+                           f"{(sil_opt - sil_score):.4f} vs baseline")
                 col2.metric("Davies-Bouldin Index", f"{dbi_opt:.4f}", 
-                           f"{(dbi_before - dbi_opt):.4f} vs baseline")
+                           f"{(dbi_score - dbi_opt):.4f} vs baseline")
                 
                 # =============================================
                 # 6. VISUALISASI HASIL
@@ -525,7 +525,7 @@ st.pyplot(fig)
                 scatter1 = ax1.scatter(U_before_pca[:,0], U_before_pca[:,1], 
                                      c=st.session_state.labels_before, 
                                      cmap='viridis', s=50, alpha=0.7)
-                ax1.set_title(f"Sebelum PSO (γ=0.1)\nSilhouette: {sil_before:.4f}, DBI: {dbi_before:.4f}")
+                ax1.set_title(f"Sebelum PSO (γ=0.1)\nSilhouette: {sil_score:.4f}, DBI: {dbi_score:.4f}")
                 ax1.set_xlabel("PC1")
                 ax1.set_ylabel("PC2")
                 plt.colorbar(scatter1, ax=ax1, label='Cluster')
