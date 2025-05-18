@@ -560,27 +560,27 @@ if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
         except Exception as e:
             st.error(f"Terjadi kesalahan dalam optimasi PSO: {str(e)}")
                 
-                # =============================================
-                # 7. SIMPAN HASIL KE DATAFRAME
-                # =============================================
-                df = st.session_state.df_cleaned.copy()
-                df['Cluster'] = labels_opt
-                st.session_state.df_clustered = df
-                
-                # Tampilkan distribusi cluster
-                st.subheader("Distribusi Cluster")
-                cluster_counts = df['Cluster'].value_counts().sort_index()
-                st.bar_chart(cluster_counts)
-                
-                # Tampilkan contoh hasil
-                if 'Kabupaten/Kota' in df.columns:
-                    st.subheader("Pemetaan Cluster")
-                    st.dataframe(df[['Kabupaten/Kota', 'Cluster']].sort_values('Cluster'))
-                
-            except Exception as e:
-                st.error(f"Error dalam optimasi PSO: {str(e)}")
-                st.stop()
-    
+def proses_clustering():
+    # =============================================
+    # 7. SIMPAN HASIL KE DATAFRAME
+    # =============================================
+    try:
+        df = st.session_state.df_cleaned.copy()
+        df['Cluster'] = labels_opt
+        st.session_state.df_clustered = df
+        
+        st.subheader("Distribusi Cluster")
+        cluster_counts = df['Cluster'].value_counts().sort_index()
+        st.bar_chart(cluster_counts)
+        
+        if 'Kabupaten/Kota' in df.columns:
+            st.subheader("Pemetaan Cluster")
+            st.dataframe(df[['Kabupaten/Kota', 'Cluster']].sort_values('Cluster'))
+
+    except Exception as e:
+        st.error(f"Error dalam optimasi PSO: {str(e)}")
+        st.stop()
+
 def results_analysis():
     st.header("📊 Hasil Analisis Cluster")
     
