@@ -344,53 +344,55 @@ def clustering_analysis():
     st.success(f"**Cluster optimal terpilih:** k={best_cluster} (Silhouette: {best_silhouette:.4f}, DBI: {best_dbi:.4f})")
     
     # =============================================
-    # 3. SPECTRAL CLUSTERING MANUAL DENGAN GAMMA=0.1
-    # =============================================
-    st.subheader("2. Spectral Clustering Manual (γ=0.1)")
-    
-    # Hitung affinity matrix
-    gamma_before = 0.1
-    W_before = rbf_kernel(X_scaled, gamma=gamma_before)
-    
-    # Threshold untuk mengurangi noise
-    W_before[W_before < 0.01] = 0
-    
-    # Hitung degree matrix dan Laplacian
-    D = np.diag(W_before.sum(axis=1))
-    D_inv_sqrt = np.diag(1.0 / np.sqrt(W_before.sum(axis=1)))
-    L_sym = np.eye(W_before.shape[0]) - D_inv_sqrt @ W_before @ D_inv_sqrt
-    
-    # Eigen decomposition
-    eigvals_before, eigvecs_before = eigh(L_sym)
-    
-    # Ambil k eigenvector terkecil
-    U_before = eigvecs_before[:, :best_cluster]
-    
-    # Normalisasi
-    U_before_norm = U_before / np.linalg.norm(U_before, axis=1, keepdims=True)
-    
-    # KMeans clustering
-    kmeans_before = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=20)
-    labels_before = kmeans_before.fit_predict(U_before_norm)
-    
-    # Simpan hasil
-    st.session_state.U_before = U_before_norm
-    st.session_state.labels_before = labels_before
-    
-    # Hitung metrik
-    sil_before = silhouette_score(U_before_norm, labels_before)
-    dbi_before = davies_bouldin_score(U_before_norm, labels_before)
-    
-    st.success(f"Clustering manual berhasil! Silhouette: {sil_before:.4f}, DBI: {dbi_before:.4f}")
-    
-    # Visualisasi baseline
-    fig_before = plt.figure(figsize=(8, 6))
-    plt.scatter(U_before_norm[:, 0], U_before_norm[:, 1], c=labels_before, cmap='viridis', alpha=0.7)
-    plt.title(f'Spectral Clustering Manual (γ=0.1)\nSilhouette: {sil_before:.4f}, DBI: {dbi_before:.4f}')
-    plt.xlabel('Eigenvector 1')
-    plt.ylabel('Eigenvector 2')
-    st.pyplot(fig_before)
-    
+   # 3. SPECTRAL CLUSTERING MANUAL DENGAN GAMMA=0.1
+# =============================================
+st.subheader("2. Spectral Clustering Manual (γ=0.1)")
+
+# Hitung affinity matrix
+gamma = 0.1
+W = rbf_kernel(X_scaled, gamma=gamma)
+
+# Threshold untuk mengurangi noise
+threshold = 0.01
+W[W < threshold] = 0
+
+# Hitung degree matrix dan Laplacian
+D = np.diag(W.sum(axis=1))
+D_inv_sqrt = np.diag(1.0 / np.sqrt(W.sum(axis=1)))
+L_sym = np.eye(W.shape[0]) - D_inv_sqrt @ W @ D_inv_sqrt
+
+# Eigen decomposition
+eigvals, eigvecs = eigh(L_sym)
+
+# Ambil k eigenvector terkecil
+k = best_cluster  # Assuming best_cluster is defined elsewhere
+U = eigvecs[:, :k]
+
+# Normalisasi
+U_norm = U / np.linalg.norm(U, axis=1, keepdims=True)
+
+# KMeans clustering
+kmeans = KMeans(n_clusters=k, random_state=SEED, n_init=20)
+labels = kmeans.fit_predict(U_norm)
+
+# Simpan hasil
+st.session_state.U_before = U_norm
+st.session_state.labels_before = labels
+
+# Hitung metrik
+sil_score = silhouette_score(U_norm, labels)
+dbi_score = davies_bouldin_score(U_norm, labels)
+
+st.success(f"Clustering manual berhasil! Silhouette: {sil_score:.4f}, DBI: {dbi_score:.4f}")
+
+# Visualisasi baseline
+fig = plt.figure(figsize=(8, 6))
+plt.scatter(U_norm[:, 0], U_norm[:, 1], c=labels, cmap='viridis', alpha=0.7)
+plt.title(f'Spectral Clustering Manual (γ=0.1)\nSilhouette: {sil_score:.4f}, DBI: {dbi_score:.4f}')
+plt.xlabel('Eigenvector 1')
+plt.ylabel('Eigenvector 2')
+st.pyplot(fig)
+
     # =============================================
     # 4. OPTIMASI GAMMA DENGAN PSO
     # =============================================
