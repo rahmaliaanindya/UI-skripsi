@@ -8,7 +8,8 @@ from sklearn.cluster import SpectralClustering, KMeans
 from sklearn.metrics import silhouette_score, davies_bouldin_score
 from sklearn.metrics.pairwise import rbf_kernel
 from scipy.sparse.csgraph import laplacian
-from scipy.sparse.linalg import eigsh
+from scipy.linalg import eigh  # Untuk matriks symmetric
+from scipy.sparse.linalg import eigsh  # Untuk matriks sparse
 from sklearn.preprocessing import normalize
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.decomposition import PCA
