@@ -276,107 +276,46 @@ def clustering_analysis():
     
     X_scaled = st.session_state.X_scaled
     
-# Optimal Cluster Evaluation
-st.subheader("Evaluasi Jumlah Cluster Optimal")
-
-k_range = range(2, 11)
-silhouette_scores = []
-db_scores = []
-
-with st.spinner("Menghitung metrik untuk berbagai jumlah cluster..."):
-    for k in k_range:
-        try:
-            model = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', 
-                                     random_state=SEED, n_init=10)
+    # Optimal Cluster Evaluation
+    st.subheader("Evaluasi Jumlah Cluster Optimal")
+    
+    k_range = range(2, 11)
+    silhouette_scores = []
+    db_scores = []
+    
+    with st.spinner("Menghitung metrik untuk berbagai jumlah cluster..."):
+        for k in k_range:
+            model = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', random_state=SEED)
             labels = model.fit_predict(X_scaled)
-            
-            # Skip if only one cluster found
-            if len(np.unique(labels)) < 2:
-                silhouette_scores.append(-1)
-                db_scores.append(float('inf'))
-                continue
-                
-            # Calculate metrics
             silhouette_scores.append(silhouette_score(X_scaled, labels))
             db_scores.append(davies_bouldin_score(X_scaled, labels))
-            
-        except Exception as e:
-            st.warning(f"Error pada k={k}: {str(e)}")
-            silhouette_scores.append(-1)
-            db_scores.append(float('inf'))
     
-    # Ensure we have valid scores
-    if len(silhouette_scores) == 0 or len(db_scores) == 0:
-        st.error("Gagal menghitung metrik clustering")
-        st.stop()
-
-# Plot evaluation metrics
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
-
-# Silhouette Score (higher is better)
-ax1.plot(k_range, silhouette_scores, 'bo-')
-ax1.set_xlabel('Jumlah Cluster')
-ax1.set_ylabel('Score')
-ax1.set_title('1. Silhouette Score (higher better)')
-ax1.grid(True)
-
-# Davies-Bouldin Index (lower is better)
-ax2.plot(k_range, db_scores, 'ro-')
-ax2.set_xlabel('Jumlah Cluster')
-ax2.set_ylabel('Score')
-ax2.set_title('2. Davies-Bouldin Index (lower better)')
-ax2.grid(True)
-
-plt.tight_layout()
-st.pyplot(fig)
-
-# Determine optimal clusters
-try:
+    # Plot evaluation metrics
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+    
+    ax1.plot(k_range, silhouette_scores, 'bo-')
+    ax1.set_xlabel('Jumlah Cluster')
+    ax1.set_ylabel('Silhouette Score')
+    ax1.set_title('Evaluasi Silhouette Score')
+    ax1.grid(True)
+    
+    ax2.plot(k_range, db_scores, 'ro-')
+    ax2.set_xlabel('Jumlah Cluster')
+    ax2.set_ylabel('Davies-Bouldin Index')
+    ax2.set_title('Evaluasi Davies-Bouldin Index')
+    ax2.grid(True)
+    
+    st.pyplot(fig)
+    
+    # Determine optimal clusters
     optimal_k_sil = k_range[np.argmax(silhouette_scores)]
-    optimal_k_db = k_range[np.argmin(db_scores)]
+    optimal_k_dbi = k_range[np.argmin(db_scores)]
     
-    # Create simple decision rules
-    if optimal_k_sil == optimal_k_db:
-        optimal_k = optimal_k_sil
-        st.success(f"Kedua metrik setuju: Cluster optimal = {optimal_k}")
-    else:
-        # If disagreement, use Silhouette as primary (more reliable for spectral)
-        optimal_k = optimal_k_sil
-        st.warning(f"Metrik berbeda: Silhouette={optimal_k_sil}, DBI={optimal_k_db}. Menggunakan rekomendasi Silhouette Score")
-    
-    # Display recommendations
-    st.subheader("Rekomendasi Jumlah Cluster")
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("Silhouette Score", optimal_k_sil,
-                help="Nilai lebih tinggi menunjukkan clustering lebih baik")
+        st.metric("Optimal Cluster (Silhouette)", optimal_k_sil)
     with col2:
-        st.metric("Davies-Bouldin Index", optimal_k_db,
-                help="Nilai lebih rendah menunjukkan clustering lebih baik")
-    
-    # Store the final optimal k
-    st.session_state.optimal_k = optimal_k
-    
-    # Explain the decision
-    with st.expander("Penjelasan Keputusan"):
-        st.write("""
-        **Metrik Evaluasi:**
-        1. **Silhouette Score**: 
-           - Mengukur seberapa mirip suatu objek dengan clusternya sendiri (cohesion) vs cluster lain (separation)
-           - Range: -1 sampai 1, semakin tinggi semakin baik
-           
-        2. **Davies-Bouldin Index**: 
-           - Mengukur rata-rata similarity antar cluster (ratio jarak intra-cluster vs inter-cluster)
-           - Semakin rendah semakin baik
-           
-        **Aturan Keputusan:**
-        - Jika kedua metrik setuju pada jumlah cluster yang sama, gunakan nilai tersebut
-        - Jika berbeda, prioritaskan Silhouette Score karena lebih robust untuk Spectral Clustering
-        """)
-        
-except Exception as e:
-    st.error(f"Error menentukan cluster optimal: {str(e)}")
-    st.stop()
+        st.metric("Optimal Cluster (DBI)", optimal_k_dbi)
     
     # Clustering with PSO optimization
     st.subheader("Optimasi Parameter dengan PSO")
