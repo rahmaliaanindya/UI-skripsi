@@ -393,88 +393,88 @@ def clustering_analysis():
     plt.ylabel('Eigenvector 2')
     st.pyplot(fig)
 
-# 4. OPTIMASI GAMMA DENGAN PSO
-# =============================================
-st.subheader("3. Optimasi Gamma dengan PSO")
-
-if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
-    with st.spinner("Menjalankan optimasi PSO (mungkin memakan waktu beberapa menit)..."):
-        try:
-            # Fungsi evaluasi gamma yang lebih robust
-            def evaluate_gamma_robust(gamma_array):
-                scores = []
-                data_for_kernel = X_scaled
-                n_runs = 3  # Jumlah run untuk stabilitas
-
-                for gamma in gamma_array:
-                    gamma_val = gamma[0]
-                    sil_list, dbi_list = [], []
-
-                    for _ in range(n_runs):
-                        try:
-                            W = rbf_kernel(data_for_kernel, gamma=gamma_val)
-
-                            if np.allclose(W, 0) or np.any(np.isnan(W)) or np.any(np.isinf(W)):
-                                raise ValueError("Invalid kernel matrix.")
-
-                            L = laplacian(W, normed=True)
-
-                            if np.any(np.isnan(L.data)) or np.any(np.isinf(L.data)):
-                                raise ValueError("Invalid Laplacian.")
-
-                            eigvals, eigvecs = eigsh(L, k=2, which='SM', tol=1e-6)
-                            U = normalize(eigvecs, norm='l2')
-
-                            if np.isnan(U).any() or np.isinf(U).any():
-                                raise ValueError("Invalid U.")
-
-                            kmeans = KMeans(n_clusters=2, random_state=SEED, n_init=10)
-                            labels = kmeans.fit_predict(U)
-
-                            if len(np.unique(labels)) < 2:
-                                raise ValueError("Only one cluster.")
-
-                            sil = silhouette_score(U, labels)
-                            dbi = davies_bouldin_score(U, labels)
-
-                            sil_list.append(sil)
-                            dbi_list.append(dbi)
-
-                        except Exception:
-                            # Penalti berat jika gagal
-                            sil_list.append(0.0)
-                            dbi_list.append(10.0)
-
-                    # Hitung skor rata-rata dari n_runs
-                    mean_sil = np.mean(sil_list)
-                    mean_dbi = np.mean(dbi_list)
-
-                    # Gabungan skor evaluasi (Semakin kecil lebih baik untuk PSO)
-                    fitness_score = -mean_sil + mean_dbi
-                    scores.append(fitness_score)
-
-                return np.array(scores)
-            
-            # Parameter PSO
-            options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}
-            bounds = (np.array([0.001]), np.array([5.0]))  # range gamma
-            
-            # Inisialisasi PSO
-            optimizer = GlobalBestPSO(
-                n_particles=20,
-                dimensions=1,
-                options=options,
-                bounds=bounds
-            )
-            
-            # Jalankan optimasi
-            best_cost, best_pos = optimizer.optimize(
-                evaluate_gamma_robust,
-                iters=100,
-                verbose=False
-            )
-            
-            best_gamma = best_pos[0]
+    # 4. OPTIMASI GAMMA DENGAN PSO
+    # =============================================
+    st.subheader("3. Optimasi Gamma dengan PSO")
+    
+    if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
+        with st.spinner("Menjalankan optimasi PSO (mungkin memakan waktu beberapa menit)..."):
+            try:
+                # Fungsi evaluasi gamma yang lebih robust
+                def evaluate_gamma_robust(gamma_array):
+                    scores = []
+                    data_for_kernel = X_scaled
+                    n_runs = 3  # Jumlah run untuk stabilitas
+    
+                    for gamma in gamma_array:
+                        gamma_val = gamma[0]
+                        sil_list, dbi_list = [], []
+    
+                        for _ in range(n_runs):
+                            try:
+                                W = rbf_kernel(data_for_kernel, gamma=gamma_val)
+    
+                                if np.allclose(W, 0) or np.any(np.isnan(W)) or np.any(np.isinf(W)):
+                                    raise ValueError("Invalid kernel matrix.")
+    
+                                L = laplacian(W, normed=True)
+    
+                                if np.any(np.isnan(L.data)) or np.any(np.isinf(L.data)):
+                                    raise ValueError("Invalid Laplacian.")
+    
+                                eigvals, eigvecs = eigsh(L, k=2, which='SM', tol=1e-6)
+                                U = normalize(eigvecs, norm='l2')
+    
+                                if np.isnan(U).any() or np.isinf(U).any():
+                                    raise ValueError("Invalid U.")
+    
+                                kmeans = KMeans(n_clusters=2, random_state=SEED, n_init=10)
+                                labels = kmeans.fit_predict(U)
+    
+                                if len(np.unique(labels)) < 2:
+                                    raise ValueError("Only one cluster.")
+    
+                                sil = silhouette_score(U, labels)
+                                dbi = davies_bouldin_score(U, labels)
+    
+                                sil_list.append(sil)
+                                dbi_list.append(dbi)
+    
+                            except Exception:
+                                # Penalti berat jika gagal
+                                sil_list.append(0.0)
+                                dbi_list.append(10.0)
+    
+                        # Hitung skor rata-rata dari n_runs
+                        mean_sil = np.mean(sil_list)
+                        mean_dbi = np.mean(dbi_list)
+    
+                        # Gabungan skor evaluasi (Semakin kecil lebih baik untuk PSO)
+                        fitness_score = -mean_sil + mean_dbi
+                        scores.append(fitness_score)
+    
+                    return np.array(scores)
+                
+                # Parameter PSO
+                options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}
+                bounds = (np.array([0.001]), np.array([5.0]))  # range gamma
+                
+                # Inisialisasi PSO
+                optimizer = GlobalBestPSO(
+                    n_particles=20,
+                    dimensions=1,
+                    options=options,
+                    bounds=bounds
+                )
+                
+                # Jalankan optimasi
+                best_cost, best_pos = optimizer.optimize(
+                    evaluate_gamma_robust,
+                    iters=100,
+                    verbose=False
+                )
+                
+                best_gamma = best_pos[0]
             
             # =============================================
             # 5. CLUSTERING DENGAN GAMMA OPTIMAL
