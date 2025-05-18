@@ -276,92 +276,91 @@ def clustering_analysis():
     
     X_scaled = st.session_state.X_scaled
     
-# Optimal Cluster Evaluation
-st.subheader("Evaluasi Jumlah Cluster (Silhouette & DBI)")
+    # Optimal Cluster Evaluation
+    st.subheader("Evaluasi Jumlah Cluster (Silhouette & DBI)")
 
-# Define cluster range
-clusters_range = range(2, 11)
-silhouette_scores = {}
-dbi_scores = {}
+    # Define cluster range
+    clusters_range = range(2, 11)
+    silhouette_scores = {}
+    dbi_scores = {}
 
-with st.spinner("Menghitung metrik untuk berbagai jumlah cluster..."):
-    for k in clusters_range:
-        try:
-            clustering = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', 
-                                         random_state=SEED, n_init=10)
-            labels = clustering.fit_predict(X_scaled)
-            
-            # Skip if only one cluster found
-            if len(np.unique(labels)) < 2:
+    with st.spinner("Menghitung metrik untuk berbagai jumlah cluster..."):
+        for k in clusters_range:
+            try:
+                clustering = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', 
+                                             random_state=SEED, n_init=10)
+                labels = clustering.fit_predict(X_scaled)
+                
+                # Skip if only one cluster found
+                if len(np.unique(labels)) < 2:
+                    silhouette_scores[k] = -1
+                    dbi_scores[k] = float('inf')
+                    continue
+                    
+                silhouette_scores[k] = silhouette_score(X_scaled, labels)
+                dbi_scores[k] = davies_bouldin_score(X_scaled, labels)
+                
+            except Exception as e:
+                st.warning(f"Error pada k={k}: {str(e)}")
                 silhouette_scores[k] = -1
                 dbi_scores[k] = float('inf')
-                continue
-                
-            silhouette_scores[k] = silhouette_score(X_scaled, labels)
-            dbi_scores[k] = davies_bouldin_score(X_scaled, labels)
-            
-        except Exception as e:
-            st.warning(f"Error pada k={k}: {str(e)}")
-            silhouette_scores[k] = -1
-            dbi_scores[k] = float('inf')
 
-# Create dataframe for visualization
-score_df = pd.DataFrame({
-    'Silhouette Score': silhouette_scores,
-    'Davies-Bouldin Index': dbi_scores
-})
+    # Create dataframe for visualization
+    score_df = pd.DataFrame({
+        'Silhouette Score': silhouette_scores,
+        'Davies-Bouldin Index': dbi_scores
+    })
 
-# Normalize DBI for better visualization (since lower is better)
-score_df['DBI Normalized'] = 1 - (score_df['Davies-Bouldin Index'] - score_df['Davies-Bouldin Index'].min()) / (
-    score_df['Davies-Bouldin Index'].max() - score_df['Davies-Bouldin Index'].min())
+    # Normalize DBI for better visualization (since lower is better)
+    score_df['DBI Normalized'] = 1 - (score_df['Davies-Bouldin Index'] - score_df['Davies-Bouldin Index'].min()) / (
+        score_df['Davies-Bouldin Index'].max() - score_df['Davies-Bouldin Index'].min())
 
-# Plot using Streamlit's native line chart
-st.line_chart(score_df[['Silhouette Score', 'DBI Normalized']], 
-              use_container_width=True,
-              color=['#1f77b4', '#ff7f0e'])
+    # Plot using Streamlit's native line chart
+    st.line_chart(score_df[['Silhouette Score', 'DBI Normalized']], 
+                use_container_width=True,
+                color=['#1f77b4', '#ff7f0e'])
 
-# Determine optimal clusters
-best_k_silhouette = max(silhouette_scores, key=silhouette_scores.get)
-best_k_dbi = min(dbi_scores, key=dbi_scores.get)
+    # Determine optimal clusters
+    best_k_silhouette = max(silhouette_scores, key=silhouette_scores.get)
+    best_k_dbi = min(dbi_scores, key=dbi_scores.get)
 
-# Display results in columns
-col1, col2 = st.columns(2)
-with col1:
-    st.metric("Optimal Cluster (Silhouette)", 
-             best_k_silhouette,
-             help="Nilai lebih tinggi lebih baik")
-with col2:
-    st.metric("Optimal Cluster (DBI)", 
-             best_k_dbi,
-             help="Nilai lebih rendah lebih baik")
+    # Display results in columns
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Optimal Cluster (Silhouette)", 
+                 best_k_silhouette,
+                 help="Nilai lebih tinggi lebih baik")
+    with col2:
+        st.metric("Optimal Cluster (DBI)", 
+                 best_k_dbi,
+                 help="Nilai lebih rendah lebih baik")
 
-# Decision logic for final k
-if best_k_silhouette == best_k_dbi:
-    st.success(f"✅ Kedua metrik setuju: Jumlah cluster optimal = {best_k_silhouette}")
-    default_k = best_k_silhouette
-elif abs(best_k_silhouette - best_k_dbi) <= 2:
-    default_k = round((best_k_silhouette + best_k_dbi)/2)
-    st.warning(f"⚠️ Metrik berbeda. Rekomendasi: k={default_k} (rata-rata)")
-else:
-    default_k = best_k_silhouette
-    st.warning(f"⚠️ Perbedaan besar. Prioritaskan Silhouette: k={default_k}")
+    # Decision logic for final k
+    if best_k_silhouette == best_k_dbi:
+        st.success(f"✅ Kedua metrik setuju: Jumlah cluster optimal = {best_k_silhouette}")
+        default_k = best_k_silhouette
+    elif abs(best_k_silhouette - best_k_dbi) <= 2:
+        default_k = round((best_k_silhouette + best_k_dbi)/2)
+        st.warning(f"⚠️ Metrik berbeda. Rekomendasi: k={default_k} (rata-rata)")
+    else:
+        default_k = best_k_silhouette
+        st.warning(f"⚠️ Perbedaan besar. Prioritaskan Silhouette: k={default_k}")
 
-# Let user select final k
-k_final = st.number_input(
-    "Pilih jumlah cluster (k):", 
-    min_value=2, 
-    max_value=10, 
-    value=default_k,
-    step=1,
-    help="Anda bisa mengabaikan rekomendasi dan memilih manual"
-)
+    # Let user select final k
+    k_final = st.number_input(
+        "Pilih jumlah cluster (k):", 
+        min_value=2, 
+        max_value=10, 
+        value=default_k,
+        step=1,
+        help="Anda bisa mengabaikan rekomendasi dan memilih manual"
+    )
 
-# Store optimal k in session state
-st.session_state.optimal_k = k_final
+    # Store optimal k in session state
+    st.session_state.optimal_k = k_final
     
     # Clustering with PSO optimization
     st.subheader("Optimasi Parameter dengan PSO")
-    k_final = st.number_input("Pilih jumlah cluster (k):", min_value=2, max_value=10, value=optimal_k)
     
     if st.button("Jalankan Spectral Clustering dengan PSO"):
         with st.spinner("Menjalankan optimasi PSO..."):
