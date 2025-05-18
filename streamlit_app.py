@@ -253,7 +253,7 @@ def data_preprocessing():
     
     if 'df_cleaned' in st.session_state:
         # Data Scaling
-        st.subheader("Normalisasi Data dengan RobustScaler")
+        st.subheader("Standardisasi (scaling) Data dengan RobustScaler")
         
         X = st.session_state.df_cleaned.drop(columns=['Kabupaten/Kota'], errors='ignore')
         scaler = RobustScaler()
@@ -266,7 +266,7 @@ def data_preprocessing():
         
         # Show scaled data sample
         st.subheader("Contoh Data setelah Scaling")
-        st.dataframe(pd.DataFrame(X_scaled, columns=X.columns).head())
+        st.dataframe(pd.DataFrame(X_scaled, columns=X.columns))
 
 def clustering_analysis():
     st.header("🤖 Spectral Clustering dengan PSO")
