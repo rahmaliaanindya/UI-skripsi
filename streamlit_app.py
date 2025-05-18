@@ -283,70 +283,64 @@ def clustering_analysis():
     # =============================================
     st.subheader("1. Evaluasi Jumlah Cluster Optimal")
     
-    k_range = range(2, 11)
-    silhouette_scores = []
-    db_scores = []
-    
-    with st.expander("Detail Evaluasi Cluster", expanded=False):
-        progress_text = st.empty()
-        progress_bar = st.progress(0)
-        
-        for i, k in enumerate(k_range):
-            progress_text.text(f"Menghitung untuk k={k}...")
-            progress_bar.progress((i+1)/len(k_range))
-            
-            # Gunakan SpectralClustering dari sklearn untuk evaluasi
-            model = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', random_state=SEED)
-            labels = model.fit_predict(X_scaled)
-            
-            if len(np.unique(labels)) > 1:
-                sil = silhouette_score(X_scaled, labels)
-                dbi = davies_bouldin_score(X_scaled, labels)
-                st.write(f'k={k} | Silhouette: {sil:.4f} | DBI: {dbi:.4f}')
-                silhouette_scores.append(sil)
-                db_scores.append(dbi)
-            else:
-                silhouette_scores.append(0)
-                db_scores.append(float('inf'))
-        
-        progress_text.empty()
-        progress_bar.empty()
-    
-    # Visualisasi metrik
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
-    ax1.plot(k_range, silhouette_scores, 'bo-')
-    ax1.set_title('Silhouette Score (higher better)')
-    ax1.set_xlabel('Jumlah Cluster')
-    ax1.grid(True)
-    
-    ax2.plot(k_range, db_scores, 'ro-')
-    ax2.set_title('Davies-Bouldin Index (lower better)')
-    ax2.set_xlabel('Jumlah Cluster')
-    ax2.grid(True)
-    
-    st.pyplot(fig)
+   # --- Tentukan jumlah cluster optimal dengan Spectral Clustering ---
+silhouette_scores = []
+db_scores = []
+k_range = range(2, 11)
+
+for k in k_range:
+    model = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', random_state=42)
+    labels = model.fit_predict(X_scaled)
+    silhouette_scores.append(silhouette_score(X_scaled, labels))
+    db_scores.append(davies_bouldin_score(X_scaled, labels))
+
+# Visualisasi hasil evaluasi jumlah cluster
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+plt.plot(k_range, silhouette_scores, 'bo-', label='Silhouette Score')
+plt.xlabel('Jumlah Cluster')
+plt.ylabel('Silhouette Score')
+plt.title('Evaluasi Silhouette Score')
+plt.legend()
+
+plt.subplot(1, 2, 2)
+plt.plot(k_range, db_scores, 'ro-', label='Davies-Bouldin Index')
+plt.xlabel('Jumlah Cluster')
+plt.ylabel('DB Index')
+plt.title('Evaluasi Davies-Bouldin Index')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+
+#Pilih jumlah cluster optimal
+optimal_k = k_range[np.argmax(silhouette_scores)]
     
     # =============================================
     # 2. PILIH CLUSTER OPTIMAL
     # =============================================
-    best_cluster = None
-    best_dbi = float('inf')
-    best_silhouette = float('-inf')
-    
-    for n_clusters in k_range:
-        model = SpectralClustering(n_clusters=n_clusters, affinity='nearest_neighbors', random_state=SEED)
-        labels = model.fit_predict(X_scaled)
-        
-        if len(np.unique(labels)) > 1:
-            dbi_score = davies_bouldin_score(X_scaled, labels)
-            silhouette_avg = silhouette_score(X_scaled, labels)
-            
-            print(f'Jumlah Cluster: {n_clusters} | DBI: {dbi_score:.4f} | Silhouette Score: {silhouette_avg:.4f}')
-            
-            if dbi_score < best_dbi and silhouette_avg > best_silhouette:
-                best_dbi = dbi_score
-                best_silhouette = silhouette_avg
-                best_cluster = n_clusters
+   best_cluster = None
+best_dbi = float('inf')
+best_silhouette = float('-inf')
+
+# Define 'clusters_range' before using it
+clusters_range = range(2, 11)  # You can adjust the range as needed
+
+# Replace 'cluster_range' with 'clusters_range'
+for n_clusters in clusters_range:
+    spectral = SpectralClustering(n_clusters=n_clusters, affinity='nearest_neighbors', random_state=SEED)
+    clusters = spectral.fit_predict(X_scaled) # Use data_scaled which is defined earlier
+
+    # Evaluasi clustering dengan Davies-Bouldin Index dan Silhouette Score
+    dbi_score = davies_bouldin_score(X_scaled, clusters) # Use data_scaled
+    silhouette_avg = silhouette_score(X_scaled, clusters) # Use data_scaled
+
+    print(f'Jumlah Cluster: {n_clusters} | DBI: {dbi_score:.4f} | Silhouette Score: {silhouette_avg:.4f}')
+
+    if dbi_score < best_dbi and silhouette_avg > best_silhouette:
+        best_dbi = dbi_score
+        best_silhouette = silhouette_avg
+        best_cluster = n_clusters
     
     if best_cluster is None:
         st.error("Tidak dapat menentukan cluster optimal")
