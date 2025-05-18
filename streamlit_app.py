@@ -569,14 +569,16 @@ def proses_clustering():
         df['Cluster'] = labels_opt
         st.session_state.df_clustered = df
         
+        # Tampilkan distribusi cluster
         st.subheader("Distribusi Cluster")
         cluster_counts = df['Cluster'].value_counts().sort_index()
         st.bar_chart(cluster_counts)
         
+        # Tampilkan contoh hasil
         if 'Kabupaten/Kota' in df.columns:
             st.subheader("Pemetaan Cluster")
             st.dataframe(df[['Kabupaten/Kota', 'Cluster']].sort_values('Cluster'))
-
+            
     except Exception as e:
         st.error(f"Error dalam optimasi PSO: {str(e)}")
         st.stop()
