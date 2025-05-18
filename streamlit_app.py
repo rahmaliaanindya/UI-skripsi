@@ -253,7 +253,7 @@ def data_preprocessing():
     
     if 'df_cleaned' in st.session_state:
         # Data Scaling
-        st.subheader("Standardisasi (scaling) Data dengan RobustScaler")
+        st.subheader("Standardisasi (scaling) Data dengan RobustScaler") 
         
         X = st.session_state.df_cleaned.drop(columns=['Kabupaten/Kota'], errors='ignore')
         scaler = RobustScaler()
