@@ -445,7 +445,7 @@ def clustering_analysis():
                 
                 best_cost, best_pos = optimizer.optimize(
                     evaluate_gamma_robust,
-                    iters=50,
+                    iters=70,
                     verbose=False
                 )
                 
@@ -551,18 +551,29 @@ def results_analysis():
     
     df = st.session_state.df_clustered
     
-    # Cluster distribution
-    st.subheader("Distribusi Cluster")
+    # 1. Distribusi Cluster
+    st.subheader("1. Distribusi Cluster")
     cluster_counts = df['Cluster'].value_counts().sort_index()
     st.bar_chart(cluster_counts)
     
-    # Cluster characteristics
-    st.subheader("Karakteristik per Cluster")
-    cluster_means = df.groupby('Cluster').mean(numeric_only=True)
-    st.dataframe(cluster_means.style.format("{:.2f}"))
+    # 2. Karakteristik Cluster
+    st.subheader("2. Karakteristik per Cluster")
     
-    # Feature importance
-    st.subheader("Feature Importance")
+    # Tambahkan kolom asli sebelum scaling
+    if 'df_cleaned' in st.session_state:
+        original_df = st.session_state.df_cleaned
+        numeric_cols = original_df.select_dtypes(include=['float64', 'int64']).columns
+        cluster_means = original_df.groupby('Cluster')[numeric_cols].mean()
+        
+        # Urutkan cluster dari termiskin (asumsi kolom 'PDRB' sebagai indikator)
+        if 'PDRB' in numeric_cols:
+            cluster_order = cluster_means['PDRB'].sort_values().index
+            cluster_means = cluster_means.loc[cluster_order]
+        
+        st.dataframe(cluster_means.style.format("{:.2f}").background_gradient(cmap='Blues'))
+    
+    # 3. Feature Importance
+    st.subheader("3. Feature Importance")
     X = df.drop(columns=['Cluster', 'Kabupaten/Kota'], errors='ignore')
     y = df['Cluster']
     
@@ -572,41 +583,101 @@ def results_analysis():
     
     fig, ax = plt.subplots(figsize=(10, 6))
     sns.barplot(x=importances.values, y=importances.index, palette="viridis")
-    ax.set_title("Feature Importance")
+    ax.set_title("Faktor Paling Berpengaruh dalam Clustering")
     st.pyplot(fig)
     
-    # Cluster mapping
+    # 4. Pemetaan Kabupaten/Kota
     if 'Kabupaten/Kota' in df.columns:
-        st.subheader("Pemetaan Kabupaten/Kota per Cluster")
-        st.dataframe(df[['Kabupaten/Kota', 'Cluster']].sort_values(['Cluster', 'Kabupaten/Kota']))
+        st.subheader("4. Pemetaan Daerah per Cluster")
+        
+        # Gabungkan dengan data asli
+        if 'df_cleaned' in st.session_state:
+            merged_df = pd.merge(
+                df[['Kabupaten/Kota', 'Cluster']],
+                st.session_state.df_cleaned,
+                on='Kabupaten/Kota',
+                how='left'
+            )
+            
+            # Urutkan berdasarkan kemiskinan (contoh: PDRB terendah)
+            if 'PDRB' in merged_df.columns:
+                merged_df = merged_df.sort_values(['Cluster', 'PDRB'])
+                st.caption("**Keterangan:** Diurutkan dari PDRB terendah (termiskin) dalam setiap cluster")
+            
+            # Tampilkan kolom-kolom penting
+            important_cols = ['Kabupaten/Kota', 'Cluster', 'PDRB', 'Pengangguran', 'IPM']  # Sesuaikan
+            display_cols = [col for col in important_cols if col in merged_df.columns]
+            
+            st.dataframe(
+                merged_df[display_cols].sort_values(['Cluster', 'PDRB']),
+                height=600
+            )
     
-    # Before-after PSO comparison
-    if 'U' in st.session_state and 'eigvecs' in st.session_state:
-        st.subheader("Perbandingan Sebelum dan Sesudah Optimasi")
+    # 5. Perbandingan Sebelum-Sesudah PSO
+    st.subheader("5. Perbandingan Hasil Sebelum dan Sesudah Optimasi")
+    
+    if all(key in st.session_state for key in ['U_before', 'labels_before', 'U_opt', 'labels_opt']):
+        col1, col2 = st.columns(2)
         
-        # Before PSO (using default gamma=0.1)
-        W_before = rbf_kernel(st.session_state.X_scaled, gamma=0.1)
-        W_before[W_before < 0.01] = 0
-        L_before = laplacian(W_before, normed=True)
-        eigvals_before, eigvecs_before = eigsh(L_before, k=2, which='SM', tol=1e-6)
-        U_before = normalize(eigvecs_before, norm='l2')
-        kmeans_before = KMeans(n_clusters=2, random_state=SEED).fit(U_before)
-        labels_before = kmeans_before.labels_
+        with col1:
+            st.markdown("**Sebelum Optimasi (γ=0.1):**")
+            st.write(f"- Silhouette Score: {silhouette_score(st.session_state.U_before, st.session_state.labels_before):.4f}")
+            st.write(f"- Davies-Bouldin Index: {davies_bouldin_score(st.session_state.U_before, st.session_state.labels_before):.4f}")
+            
+        with col2:
+            st.markdown(f"**Sesudah Optimasi (γ={st.session_state.get('best_gamma', 0):.4f}):**")
+            st.write(f"- Silhouette Score: {silhouette_score(st.session_state.U_opt, st.session_state.labels_opt):.4f}")
+            st.write(f"- Davies-Bouldin Index: {davies_bouldin_score(st.session_state.U_opt, st.session_state.labels_opt):.4f}")
         
-        # After PSO
-        U_after = st.session_state.U
-        labels_after = st.session_state.labels
+        # Visualisasi
+        fig = plt.figure(figsize=(12, 6))
         
-        # Visualization
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+        plt.subplot(121)
+        plt.scatter(st.session_state.U_before[:, 0], st.session_state.U_before[:, 1], 
+                    c=st.session_state.labels_before, cmap='viridis')
+        plt.title("Sebelum Optimasi")
         
-        ax1.scatter(U_before[:, 0], U_before[:, 1], c=labels_before, cmap='viridis')
-        ax1.set_title("Sebelum Optimasi (γ=0.1)")
-        
-        ax2.scatter(U_after[:, 0], U_after[:, 1], c=labels_after, cmap='viridis')
-        ax2.set_title(f"Sesudah Optimasi (γ={st.session_state.best_gamma:.4f})")
+        plt.subplot(122)
+        plt.scatter(st.session_state.U_opt[:, 0], st.session_state.U_opt[:, 1], 
+                    c=st.session_state.labels_opt, cmap='viridis')
+        plt.title("Sesudah Optimasi")
         
         st.pyplot(fig)
+    
+    # 6. Implementasi dan Rekomendasi
+    st.subheader("6. Implementasi dan Rekomendasi Kebijakan")
+    
+    st.markdown("""
+    **Berdasarkan hasil clustering:**
+    
+    1. **Cluster Termiskin** (Cluster 0):
+    - Fokus pada program pengentasan kemiskinan
+    - Pengembangan UMKM lokal
+    - Peningkatan akses pendidikan dan kesehatan
+    
+    2. **Cluster Menengah** (Cluster 1):
+    - Penguatan sektor produktif
+    - Pelatihan keterampilan kerja
+    - Infrastruktur dasar
+    
+    3. **Cluster Terkaya** (Cluster 2):
+    - Pengembangan industri strategis
+    - Investasi teknologi
+    - Pariwisata berkelanjutan
+    
+    **Strategi Implementasi:**
+    - Prioritas anggaran berdasarkan karakteristik cluster
+    - Program khusus untuk daerah tertinggal
+    - Monitoring evaluasi berbasis indikator cluster
+    """)
+    
+    # Tambahkan tombol download hasil
+    st.download_button(
+        label="📥 Download Hasil Clustering",
+        data=df.to_csv(index=False).encode('utf-8'),
+        file_name='hasil_clustering.csv',
+        mime='text/csv'
+    )
 
 # ======================
 # APP LAYOUT
