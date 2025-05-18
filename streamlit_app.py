@@ -542,6 +542,7 @@ def clustering_analysis():
 
             except Exception as e:
                 st.error(f"Terjadi kesalahan dalam optimasi PSO: {str(e)}")
+                
 def results_analysis():
     st.header("📊 Hasil Analisis Cluster")
     
@@ -559,18 +560,34 @@ def results_analysis():
     # 2. Karakteristik Cluster
     st.subheader("2. Karakteristik per Cluster")
     
-    # Tambahkan kolom asli sebelum scaling
+    # Pastikan kolom Cluster ada di original_df
     if 'df_cleaned' in st.session_state:
-        original_df = st.session_state.df_cleaned
-        numeric_cols = original_df.select_dtypes(include=['float64', 'int64']).columns
-        cluster_means = original_df.groupby('Cluster')[numeric_cols].mean()
+        original_df = st.session_state.df_cleaned.copy()
         
-        # Urutkan cluster dari termiskin (asumsi kolom 'PDRB' sebagai indikator)
-        if 'PDRB' in numeric_cols:
-            cluster_order = cluster_means['PDRB'].sort_values().index
-            cluster_means = cluster_means.loc[cluster_order]
-        
-        st.dataframe(cluster_means.style.format("{:.2f}").background_gradient(cmap='Blues'))
+        # Gabungkan dengan hasil clustering
+        if 'Kabupaten/Kota' in original_df.columns and 'Kabupaten/Kota' in df.columns:
+            original_df = original_df.merge(
+                df[['Kabupaten/Kota', 'Cluster']],
+                on='Kabupaten/Kota',
+                how='left'
+            )
+            
+            numeric_cols = original_df.select_dtypes(include=['float64', 'int64']).columns
+            numeric_cols = [col for col in numeric_cols if col != 'Cluster']  # Exclude Cluster jika ada
+            
+            if 'Cluster' in original_df.columns:
+                cluster_means = original_df.groupby('Cluster')[numeric_cols].mean()
+                
+                # Urutkan cluster dari termiskin (asumsi kolom 'PDRB' sebagai indikator)
+                if 'PDRB' in numeric_cols:
+                    cluster_order = cluster_means['PDRB'].sort_values().index
+                    cluster_means = cluster_means.loc[cluster_order]
+                
+                st.dataframe(cluster_means.style.format("{:.2f}").background_gradient(cmap='Blues'))
+            else:
+                st.warning("Kolom 'Cluster' tidak ditemukan di data asli")
+        else:
+            st.warning("Tidak dapat menggabungkan data karena kolom 'Kabupaten/Kota' tidak ditemukan")
     
     # 3. Feature Importance
     st.subheader("3. Feature Importance")
