@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import RobustScaler, normalize
 from sklearn.cluster import SpectralClustering, KMeans
 from sklearn.metrics import silhouette_score, davies_bouldin_score
 from sklearn.metrics.pairwise import rbf_kernel
@@ -16,7 +16,6 @@ from scipy.sparse.linalg import eigsh
 from collections import Counter
 import pyswarms as ps
 from pyswarms.single.global_best import GlobalBestPSO
-from sklearn.preprocessing import normalize
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -267,7 +266,7 @@ elif menu == "Clustering":
                     L_sym = np.eye(W.shape[0]) - D_inv_sqrt @ W @ D_inv_sqrt
                     eigvals, eigvecs = eigh(L_sym)
                     U = eigvecs[:, :best_k]
-                    U_norm = U / np.linalg.norm(U, axis=1, keepdims=True)
+                    U_norm = normalize(U, norm='l2', axis=1)
                     kmeans = KMeans(n_clusters=best_k, random_state=42)
                     labels = kmeans.fit_predict(U_norm)
                     
