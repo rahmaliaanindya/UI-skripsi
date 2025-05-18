@@ -34,6 +34,7 @@ def local_css():
         <style>
             body {
                 background-color: #f8f9fa;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             }
             .main {
                 background-color: #ffffff;
@@ -82,6 +83,32 @@ def local_css():
                 justify-content: flex-end;
                 margin-top: 30px;
             }
+            .next-button button {
+                background-color: #4a6baf !important;
+                color: white !important;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 16px;
+            }
+            .next-button button:hover {
+                background-color: #3a5683 !important;
+            }
+            .info-box {
+                background-color: #f1f5fd;
+                padding: 20px;
+                border-radius: 10px;
+                border-left: 4px solid #4a6baf;
+                margin-bottom: 20px;
+            }
+            .required-columns {
+                background-color: #fff8e1;
+                padding: 15px;
+                border-radius: 5px;
+                border-left: 4px solid #ffc107;
+                margin: 15px 0;
+            }
         </style>
         """,
         unsafe_allow_html=True
@@ -89,81 +116,98 @@ def local_css():
 
 local_css()
 
-# === MENU NAVIGASI ===
-menu_items = {
-    "Home": "🏠 Home",
-    "Upload Data": "📤 Upload Data",
-    "EDA": "🔍 EDA",
-    "Preprocessing": "⚙️ Preprocessing",
-    "Clustering": "🧩 Clustering",
-    "Hasil & Analisis": "📊 Hasil & Analisis"
-}
+# === SISTEM NAVIGASI ===
+def get_current_page():
+    query_params = st.experimental_get_query_params()
+    return int(query_params.get("page", [0])[0])
 
+def set_page(page_num):
+    st.experimental_set_query_params(page=page_num)
+
+# Daftar halaman
+pages = [
+    "Home",
+    "Upload Data",
+    "EDA",
+    "Preprocessing", 
+    "Clustering",
+    "Hasil & Analisis"
+]
+
+# Fungsi tombol next
+def next_button():
+    current_page = get_current_page()
+    if current_page < len(pages) - 1:
+        st.markdown(
+            f"""
+            <div class="next-button">
+                <button onclick="window.location.href='?page={current_page + 1}'">
+                    Next →
+                </button>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+# === LOGIKA HALAMAN ===
+current_page = get_current_page()
+
+# Tampilkan menu navigasi sebagai radio buttons
 menu = st.radio(
     "Navigasi Aplikasi:",
-    list(menu_items.values()),
-    horizontal=True
+    pages,
+    index=current_page,
+    horizontal=True,
+    key="menu_radio",
+    label_visibility="collapsed" if current_page == 0 else "visible"
 )
 
-# Fungsi untuk tombol next
-def next_button(next_page):
-    st.markdown(
-        f"""
-        <div class="next-button">
-            <button onclick="window.location.href='?page={list(menu_items.keys()).index(next_page)}'" style="background-color: #4a6baf; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
-                Next: {menu_items[next_page]} →
-            </button>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+# Jika menu diubah, update halaman
+if menu != pages[current_page]:
+    set_page(pages.index(menu))
 
-# === HOME ===
-if menu == menu_items["Home"]:
+# === KONTEN HALAMAN ===
+if menu == "Home":
     st.markdown(""" 
-    <div class="title">👋 Selamat Datang di Aplikasi Analisis Cluster Kemiskinan Jawa Timur</div>
+    <div class="title">👋 Aplikasi Analisis Cluster Kemiskinan Jawa Timur</div>
     
     <div style="text-align: center; margin-bottom: 30px;">
         <p style="font-size: 18px; color: #555;">
-            Aplikasi ini dirancang untuk analisis clustering data kemiskinan di Jawa Timur menggunakan metode Spectral Clustering dengan optimasi PSO
+            Aplikasi ini dirancang untuk menganalisis dan mengelompokkan wilayah di Jawa Timur 
+            berdasarkan indikator kemiskinan menggunakan metode Spectral Clustering dengan optimasi PSO
         </p>
     </div>
     
-    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 30px;">
-        <div style="background: #f1f5fd; padding: 20px; border-radius: 10px; border-left: 4px solid #4a6baf;">
-            <h3 style="color: #2c3e50; margin-top: 0;">📁 Upload Data</h3>
-            <p>Unggah dataset indikator kemiskinan dalam format Excel</p>
-        </div>
-        <div style="background: #f1f5fd; padding: 20px; border-radius: 10px; border-left: 4px solid #4a6baf;">
-            <h3 style="color: #2c3e50; margin-top: 0;">🔍 EDA</h3>
-            <p>Exploratory Data Analysis untuk memahami karakteristik data</p>
-        </div>
-        <div style="background: #f1f5fd; padding: 20px; border-radius: 10px; border-left: 4px solid #4a6baf;">
-            <h3 style="color: #2c3e50; margin-top: 0;">⚙️ Preprocessing</h3>
-            <p>Pemrosesan data sebelum analisis clustering</p>
-        </div>
-        <div style="background: #f1f5fd; padding: 20px; border-radius: 10px; border-left: 4px solid #4a6baf;">
-            <h3 style="color: #2c3e50; margin-top: 0;">🧩 Clustering</h3>
-            <p>Analisis clustering dengan Spectral Clustering dan optimasi PSO</p>
+    <div style="display: grid; grid-template-columns: 1fr; gap: 20px; margin-top: 30px;">
+        <div class="info-box">
+            <h3 style="color: #2c3e50; margin-top: 0;">📌 Tentang Aplikasi</h3>
+            <p>Aplikasi ini membantu pemerintah daerah dalam mengidentifikasi pola kemiskinan di Jawa Timur 
+            dengan teknik machine learning untuk mendukung pengambilan keputusan yang lebih tepat.</p>
         </div>
     </div>
     """, unsafe_allow_html=True)
     
-    next_button("Upload Data")
+    next_button()
 
-# === UPLOAD DATA ===
-elif menu == menu_items["Upload Data"]:
+elif menu == "Upload Data":
     st.markdown('<div class="title">📤 Upload Data Excel</div>', unsafe_allow_html=True)
     
     with st.container():
         st.markdown("""
-        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-            <h4 style="margin-top: 0;">Petunjuk:</h4>
-            <ol>
-                <li>File yang diunggah harus berupa file <strong>Excel</strong> dengan ekstensi <code>.xlsx</code></li>
-                <li>Data harus memuat variabel-variabel terkait indikator kemiskinan</li>
-                <li>Pastikan data sudah bersih dan siap diproses</li>
-            </ol>
+        <div class="required-columns">
+            <h4 style="margin-top: 0;">Kolom yang harus ada dalam file Excel:</h4>
+            <ul>
+                <li>Kabupaten/Kota</li>
+                <li>Persentase Penduduk Miskin (%)</li>
+                <li>Jumlah Penduduk Miskin (ribu jiwa)</li>
+                <li>Harapan Lama Sekolah (Tahun)</li>
+                <li>Rata-Rata Lama Sekolah (Tahun)</li>
+                <li>Tingkat Pengangguran Terbuka (%)</li>
+                <li>Tingkat Partisipasi Angkatan Kerja (%)</li>
+                <li>Angka Harapan Hidup (Tahun)</li>
+                <li>Garis Kemiskinan (Rupiah/Bulan/Kapita)</li>
+                <li>Indeks Pembangunan Manusia</li>
+            </ul>
         </div>
         """, unsafe_allow_html=True)
         
@@ -172,26 +216,45 @@ elif menu == menu_items["Upload Data"]:
         if uploaded_file:
             try:
                 df = pd.read_excel(uploaded_file)
-                st.session_state.df = df
-                st.success("✅ Data berhasil dimuat!")
                 
-                with st.expander("Lihat Data"):
-                    st.dataframe(df)
+                # Cek kolom yang diperlukan
+                required_columns = [
+                    "Kabupaten/Kota",
+                    "Persentase Penduduk Miskin (%)",
+                    "Jumlah Penduduk Miskin (ribu jiwa)",
+                    "Harapan Lama Sekolah (Tahun)",
+                    "Rata-Rata Lama Sekolah (Tahun)",
+                    "Tingkat Pengangguran Terbuka (%)",
+                    "Tingkat Partisipasi Angkatan Kerja (%)",
+                    "Angka Harapan Hidup (Tahun)",
+                    "Garis Kemiskinan (Rupiah/Bulan/Kapita)",
+                    "Indeks Pembangunan Manusia"
+                ]
                 
-                # Informasi dasar tentang data
-                cols = st.columns(2)
-                with cols[0]:
-                    st.metric("Jumlah Baris", df.shape[0])
-                with cols[1]:
-                    st.metric("Jumlah Kolom", df.shape[1])
+                missing_columns = [col for col in required_columns if col not in df.columns]
                 
-                next_button("EDA")
+                if missing_columns:
+                    st.error(f"Kolom berikut tidak ditemukan dalam file: {', '.join(missing_columns)}")
+                else:
+                    st.session_state.df = df
+                    st.success("✅ Data berhasil dimuat dan valid!")
+                    
+                    with st.expander("Lihat Data"):
+                        st.dataframe(df)
+                    
+                    # Informasi dasar tentang data
+                    cols = st.columns(2)
+                    with cols[0]:
+                        st.metric("Jumlah Kabupaten/Kota", df.shape[0])
+                    with cols[1]:
+                        st.metric("Jumlah Variabel", df.shape[1])
+                    
+                    next_button()
                 
             except Exception as e:
                 st.error(f"Terjadi kesalahan saat memuat file: {str(e)}")
 
-# === EDA ===
-elif menu == menu_items["EDA"]:
+elif menu == "EDA":
     st.markdown('<div class="title">🔍 Exploratory Data Analysis</div>', unsafe_allow_html=True)
     
     if 'df' not in st.session_state:
@@ -203,7 +266,12 @@ elif menu == menu_items["EDA"]:
         
         with tab1:
             st.subheader("Informasi Dataset")
-            st.write(df.info())
+            
+            cols = st.columns(2)
+            with cols[0]:
+                st.metric("Jumlah Observasi", df.shape[0])
+            with cols[1]:
+                st.metric("Jumlah Variabel", df.shape[1])
             
             st.subheader("Statistik Deskriptif")
             st.dataframe(df.describe())
@@ -229,10 +297,9 @@ elif menu == menu_items["EDA"]:
             sns.heatmap(numerical_df.corr(), annot=True, cmap='coolwarm', fmt='.2f', ax=ax)
             st.pyplot(fig)
         
-        next_button("Preprocessing")
+        next_button()
 
-# === PREPROCESSING ===
-elif menu == menu_items["Preprocessing"]:
+elif menu == "Preprocessing":
     st.markdown('<div class="title">⚙️ Preprocessing Data</div>', unsafe_allow_html=True)
     
     if 'df' not in st.session_state:
@@ -287,13 +354,12 @@ elif menu == menu_items["Preprocessing"]:
                 ax.set_title("Distribusi Data Setelah Scaling")
                 st.pyplot(fig)
                 
-                next_button("Clustering")
+                next_button()
                 
             except Exception as e:
                 st.error(f"Terjadi kesalahan saat preprocessing: {str(e)}")
 
-# === CLUSTERING ===
-elif menu == menu_items["Clustering"]:
+elif menu == "Clustering":
     st.markdown('<div class="title">🧩 Spectral Clustering dengan Optimasi PSO</div>', unsafe_allow_html=True)
     
     if 'X_scaled' not in st.session_state:
@@ -302,11 +368,12 @@ elif menu == menu_items["Clustering"]:
         X_scaled = st.session_state.X_scaled
         
         st.subheader("Evaluasi Jumlah Cluster Optimal")
-        clusters_range = range(2, 11)
-        silhouette_scores = []
-        db_scores = []
-
+        
         with st.spinner("Menghitung metrik evaluasi..."):
+            clusters_range = range(2, 11)
+            silhouette_scores = []
+            db_scores = []
+
             for k in clusters_range:
                 model = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', random_state=42)
                 labels = model.fit_predict(X_scaled)
@@ -453,13 +520,12 @@ elif menu == menu_items["Clustering"]:
                         
                         st.dataframe(eval_df)
                         
-                        next_button("Hasil & Analisis")
+                        next_button()
                 
                 except Exception as e:
                     st.error(f"Terjadi kesalahan saat clustering: {str(e)}")
 
-# === HASIL & ANALISIS ===
-elif menu == menu_items["Hasil & Analisis"]:
+elif menu == "Hasil & Analisis":
     st.markdown('<div class="title">📊 Hasil & Analisis Clustering</div>', unsafe_allow_html=True)
     
     if 'labels' not in st.session_state or 'df' not in st.session_state:
@@ -469,7 +535,7 @@ elif menu == menu_items["Hasil & Analisis"]:
         labels = st.session_state.labels
         df['Cluster'] = labels
         
-        tab1, tab2, tab3, tab4 = st.tabs(["📋 Hasil Cluster", "📊 Visualisasi", "🔍 Analisis", "📌 Rekomendasi"])
+        tab1, tab2, tab3 = st.tabs(["📋 Hasil Cluster", "📊 Visualisasi", "🔍 Analisis"])
         
         with tab1:
             st.subheader("Distribusi Cluster")
@@ -555,22 +621,30 @@ elif menu == menu_items["Hasil & Analisis"]:
                 st.dataframe(bottom3[['Kabupaten/Kota', 'Persentase Penduduk Miskin (%)', 'Cluster']])
             else:
                 st.warning("Kolom 'Persentase Penduduk Miskin (%)' tidak ditemukan dalam data.")
-        
-        with tab4:
-            st.subheader("Rekomendasi Kebijakan Berdasarkan Cluster")
-            
-            if 'selected_cols' in st.session_state and 'cluster_means' in locals():
-                st.write("""
-                **Analisis Cluster:**
-                - **Cluster 0:** Wilayah dengan tingkat kemiskinan tinggi, membutuhkan intervensi khusus
-                - **Cluster 1:** Wilayah dengan tingkat kemiskinan sedang, perlu peningkatan program sosial
-                - **Cluster 2:** Wilayah dengan tingkat kemiskinan rendah, bisa menjadi model untuk cluster lain
-                """)
-                
-                st.write("""
-                **Rekomendasi:**
-                1. Fokuskan program pengentasan kemiskinan pada wilayah di Cluster 0
-                2. Tingkatkan akses pendidikan dan kesehatan di Cluster 1
-                3. Pelajari best practice dari Cluster 2 untuk diterapkan di cluster lain
-                4. Monitor perkembangan tiap cluster secara berkala
-                """)
+
+# Script JavaScript untuk handle navigasi
+st.markdown(
+    """
+    <script>
+    // Tangkap perubahan pada radio button navigasi
+    const radioButtons = document.querySelectorAll('input[type="radio"]');
+    radioButtons.forEach(button => {
+        button.addEventListener('change', function() {
+            const value = this.value;
+            const pageIndex = ['Home', 'Upload Data', 'EDA', 'Preprocessing', 'Clustering', 'Hasil & Analisis'].indexOf(value);
+            window.history.pushState({}, '', `?page=${pageIndex}`);
+            window.location.reload();
+        });
+    });
+    
+    // Sembunyikan radio button di halaman Home
+    if(window.location.search.includes("page=0") || window.location.search === "") {
+        const radioContainer = document.querySelector('.stRadio');
+        if(radioContainer) {
+            radioContainer.style.display = 'none';
+        }
+    }
+    </script>
+    """,
+    unsafe_allow_html=True
+)
