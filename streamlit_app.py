@@ -268,52 +268,6 @@ def data_preprocessing():
         st.subheader("Contoh Data setelah Scaling")
         st.dataframe(pd.DataFrame(X_scaled, columns=X.columns).head())
 
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.cluster import SpectralClustering, KMeans
-from sklearn.metrics import silhouette_score, davies_bouldin_score
-from sklearn.preprocessing import normalize
-from sklearn.manifold import TSNE
-from sklearn.decomposition import PCA
-from scipy.sparse.csgraph import laplacian
-from scipy.sparse.linalg import eigsh
-from sklearn.metrics.pairwise import rbf_kernel
-from pyswarms.single import GlobalBestPSO
-import streamlit as st
-from collections import Counter
-import time
-
-# Set random seed untuk reproduktibilitas
-SEED = 42
-np.random.seed(SEED)
-
-def spectral_clustering_consistent(X, gamma, n_clusters):
-    """Implementasi konsisten untuk spectral clustering"""
-    try:
-        # 1. Affinity matrix
-        W = rbf_kernel(X, gamma=gamma)
-        
-        # 2. Thresholding
-        W[W < 0.01] = 0
-        
-        # 3. Laplacian
-        L = laplacian(W, normed=True)
-        
-        # 4. Eigen decomposition
-        eigvals, eigvecs = eigsh(L, k=n_clusters, which='SM', tol=1e-6)
-        U = normalize(eigvecs, norm='l2')
-        
-        # 5. Clustering
-        kmeans = KMeans(n_clusters=n_clusters, random_state=SEED, n_init=20)
-        labels = kmeans.fit_predict(U)
-        
-        return U, labels, W, True
-    
-    except Exception as e:
-        st.error(f"Error dalam spectral clustering: {str(e)}")
-        return None, None, None, False
-
 def clustering_analysis():
     st.header("🤖 Spectral Clustering dengan PSO")
     
@@ -395,79 +349,39 @@ def clustering_analysis():
         return
     
     st.success(f"**Cluster optimal terpilih:** k={best_cluster} (Silhouette: {best_silhouette:.4f}, DBI: {best_dbi:.4f})")
-
-from sklearn.metrics.pairwise import rbf_kernel
-from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score, davies_bouldin_score
-from scipy.linalg import eigh
-import numpy as np
-
-def spectral_clustering_consistent(X_scaled, gamma=0.1, n_clusters=2):
-    try:
-        # 1. Affinity matrix dengan RBF
-        W = rbf_kernel(X_scaled, gamma=gamma)
-
-        # 2. Threshold noise/outlier
-        W[W < 0.01] = 0
-
-        # 3. Degree matrix dan Normalized Laplacian
-        D = np.diag(W.sum(axis=1))
-        D_inv_sqrt = np.diag(1.0 / np.sqrt(W.sum(axis=1)))
-        L_sym = np.eye(W.shape[0]) - D_inv_sqrt @ W @ D_inv_sqrt
-
-        # 4. Eigen decomposition
-        eigvals, eigvecs = eigh(L_sym)
-
-        # 5. Ambil k eigenvector terkecil
-        U = eigvecs[:, :n_clusters]
-
-        # 6. Normalisasi baris eigenvector
-        U_norm = U / np.linalg.norm(U, axis=1, keepdims=True)
-
-        # 7. KMeans di ruang embedding
-        kmeans = KMeans(n_clusters=n_clusters, random_state=42)
-        labels = kmeans.fit_predict(U_norm)
-
-        return U_norm, labels, W, True
-
-    except Exception as e:
-        print("Error:", e)
-        return None, None, None, False
-
+    
     # =============================================
-# 3. SPECTRAL CLUSTERING BASELINE (γ=0.1)
-# =============================================
-st.subheader("2. Spectral Clustering Baseline (γ=0.1)")
-
-U_before, labels_before, W_before, success = spectral_clustering_consistent(
-    X_scaled, gamma=0.1, n_clusters=best_cluster
-)
-
-if not success:
-    st.error("Gagal melakukan baseline clustering")
-    st.stop()
-
-# Simpan hasil
-st.session_state.U_before = U_before
-st.session_state.labels_before = labels_before
-st.session_state.W_before = W_before
-
-# Hitung metrik
-sil_before = silhouette_score(U_before, labels_before)
-dbi_before = davies_bouldin_score(U_before, labels_before)
-
-st.success(f"Baseline berhasil! Silhouette: {sil_before:.4f}, DBI: {dbi_before:.4f}")
-
-# Visualisasi baseline
-import matplotlib.pyplot as plt
-
-fig_before = plt.figure(figsize=(8, 6))
-plt.scatter(U_before[:, 0], U_before[:, 1], c=labels_before, cmap='viridis', alpha=0.7)
-plt.title(f'Sebelum PSO (γ=0.1)\nSilhouette: {sil_before:.4f}, DBI: {dbi_before:.4f}')
-plt.xlabel('Eigenvector 1')
-plt.ylabel('Eigenvector 2')
-st.pyplot(fig_before)
-
+    # 3. SPECTRAL CLUSTERING BASELINE (γ=0.1)
+    # =============================================
+    st.subheader("2. Spectral Clustering Baseline (γ=0.1)")
+    
+    U_before, labels_before, W_before, success = spectral_clustering_consistent(
+        X_scaled, gamma=0.1, n_clusters=best_cluster
+    )
+    
+    if not success:
+        st.error("Gagal melakukan baseline clustering")
+        st.stop()
+    
+    # Simpan hasil
+    st.session_state.U_before = U_before
+    st.session_state.labels_before = labels_before
+    st.session_state.W_before = W_before
+    
+    # Hitung metrik
+    sil_before = silhouette_score(U_before, labels_before)
+    dbi_before = davies_bouldin_score(U_before, labels_before)
+    
+    st.success(f"Baseline berhasil! Silhouette: {sil_before:.4f}, DBI: {dbi_before:.4f}")
+    
+    # Visualisasi baseline
+    fig_before = plt.figure(figsize=(8, 6))
+    plt.scatter(U_before[:, 0], U_before[:, 1], c=labels_before, cmap='viridis', alpha=0.7)
+    plt.title(f'Sebelum PSO (γ=0.1)\nSilhouette: {sil_before:.4f}, DBI: {dbi_before:.4f}')
+    plt.xlabel('Eigenvector 1')
+    plt.ylabel('Eigenvector 2')
+    st.pyplot(fig_before)
+    
     # =============================================
     # 4. OPTIMASI GAMMA DENGAN PSO
     # =============================================
@@ -613,10 +527,6 @@ st.pyplot(fig_before)
             st.write(f"- Jumlah iterasi PSO: 50")
             st.write(f"- Jumlah partikel: 15")
             st.write(f"- Waktu eksekusi: {elapsed_time:.2f} detik")
-
-# Untuk menjalankan di Streamlit
-if __name__ == "__main__":
-    clustering_analysis()
     
 def results_analysis():
     st.header("📊 Hasil Analisis Cluster")
