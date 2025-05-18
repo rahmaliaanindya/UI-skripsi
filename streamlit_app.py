@@ -279,7 +279,7 @@ def clustering_analysis():
     X_scaled = st.session_state.X_scaled
     
     # =============================================
-    # 1. EVALUASI JUMLAH CLUSTER OPTIMAL
+    # 1. EVALUASI JUMLAH CLUSTER OPTIMAL DENGAN SPECTRALCLUSTERING
     # =============================================
     st.subheader("1. Evaluasi Jumlah Cluster Optimal")
     
@@ -295,24 +295,13 @@ def clustering_analysis():
             progress_text.text(f"Menghitung untuk k={k}...")
             progress_bar.progress((i+1)/len(k_range))
             
-            # Gunakan spectral clustering dengan gamma=0.1
-            W = rbf_kernel(X_scaled, gamma=0.1)
-            W[W < 0.01] = 0  # Thresholding
-            
-            # Laplacian matrix
-            L = laplacian(W, normed=True)
-            
-            # Eigen decomposition
-            eigvals, eigvecs = eigsh(L, k=k, which='SM', tol=1e-6)
-            U = normalize(eigvecs, norm='l2')
-            
-            # KMeans clustering
-            kmeans = KMeans(n_clusters=k, random_state=SEED, n_init=20)
-            labels = kmeans.fit_predict(U)
+            # Gunakan SpectralClustering dari sklearn untuk evaluasi
+            model = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', random_state=SEED)
+            labels = model.fit_predict(X_scaled)
             
             if len(np.unique(labels)) > 1:
-                sil = silhouette_score(U, labels)
-                dbi = davies_bouldin_score(U, labels)
+                sil = silhouette_score(X_scaled, labels)
+                dbi = davies_bouldin_score(X_scaled, labels)
                 st.write(f'k={k} | Silhouette: {sil:.4f} | DBI: {dbi:.4f}')
                 silhouette_scores.append(sil)
                 db_scores.append(dbi)
@@ -345,20 +334,14 @@ def clustering_analysis():
     best_silhouette = float('-inf')
     
     for n_clusters in k_range:
-        # Gunakan spectral clustering dengan gamma=0.1
-        W = rbf_kernel(X_scaled, gamma=0.1)
-        W[W < 0.01] = 0
-        
-        L = laplacian(W, normed=True)
-        eigvals, eigvecs = eigsh(L, k=n_clusters, which='SM', tol=1e-6)
-        U = normalize(eigvecs, norm='l2')
-        
-        kmeans = KMeans(n_clusters=n_clusters, random_state=SEED, n_init=20)
-        labels = kmeans.fit_predict(U)
+        model = SpectralClustering(n_clusters=n_clusters, affinity='nearest_neighbors', random_state=SEED)
+        labels = model.fit_predict(X_scaled)
         
         if len(np.unique(labels)) > 1:
-            dbi_score = davies_bouldin_score(U, labels)
-            silhouette_avg = silhouette_score(U, labels)
+            dbi_score = davies_bouldin_score(X_scaled, labels)
+            silhouette_avg = silhouette_score(X_scaled, labels)
+            
+            print(f'Jumlah Cluster: {n_clusters} | DBI: {dbi_score:.4f} | Silhouette Score: {silhouette_avg:.4f}')
             
             if dbi_score < best_dbi and silhouette_avg > best_silhouette:
                 best_dbi = dbi_score
@@ -372,9 +355,9 @@ def clustering_analysis():
     st.success(f"**Cluster optimal terpilih:** k={best_cluster} (Silhouette: {best_silhouette:.4f}, DBI: {best_dbi:.4f})")
     
     # =============================================
-    # 3. SPECTRAL CLUSTERING BASELINE (γ=0.1)
+    # 3. SPECTRAL CLUSTERING MANUAL DENGAN GAMMA=0.1
     # =============================================
-    st.subheader("2. Spectral Clustering Baseline (γ=0.1)")
+    st.subheader("2. Spectral Clustering Manual (γ=0.1)")
     
     # Hitung affinity matrix
     gamma_before = 0.1
@@ -409,12 +392,12 @@ def clustering_analysis():
     sil_before = silhouette_score(U_before_norm, labels_before)
     dbi_before = davies_bouldin_score(U_before_norm, labels_before)
     
-    st.success(f"Baseline berhasil! Silhouette: {sil_before:.4f}, DBI: {dbi_before:.4f}")
+    st.success(f"Clustering manual berhasil! Silhouette: {sil_before:.4f}, DBI: {dbi_before:.4f}")
     
     # Visualisasi baseline
     fig_before = plt.figure(figsize=(8, 6))
     plt.scatter(U_before_norm[:, 0], U_before_norm[:, 1], c=labels_before, cmap='viridis', alpha=0.7)
-    plt.title(f'Sebelum PSO (γ=0.1)\nSilhouette: {sil_before:.4f}, DBI: {dbi_before:.4f}')
+    plt.title(f'Spectral Clustering Manual (γ=0.1)\nSilhouette: {sil_before:.4f}, DBI: {dbi_before:.4f}')
     plt.xlabel('Eigenvector 1')
     plt.ylabel('Eigenvector 2')
     st.pyplot(fig_before)
