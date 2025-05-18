@@ -131,7 +131,7 @@ def landing_page():
             <ol>
                 <li>Upload dataset Anda (format Excel)</li>
                 <li>Lakukan eksplorasi data</li>
-                <li>Bersihkan dan normalisasi data</li>
+                <li>Bersihkan dan standarisasi data</li>
                 <li>Tentukan parameter clustering</li>
                 <li>Jalankan optimasi PSO</li>
                 <li>Analisis hasil clustering</li>
@@ -158,7 +158,6 @@ def landing_page():
         <h4>📌 Contoh Penggunaan</h4>
         <p>Aplikasi ini cocok untuk berbagai kasus seperti:</p>
         <ul>
-            <li>Segmentasi pelanggan</li>
             <li>Pengelompokan wilayah berdasarkan indikator</li>
             <li>Analisis pola data kompleks</li>
             <li>Eksplorasi struktur data</li>
