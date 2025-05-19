@@ -389,12 +389,12 @@ def clustering_analysis():
     # =============================================
     st.subheader("3. Optimasi Gamma dengan PSO")
 
-    # Add parameter sliders before the button
-        col1, col2 = st.columns(2)
-        with col1:
-            n_iter = st.slider("Jumlah Iterasi", 10, 100, 30, key='pso_iters')
-        with col2:
-            n_particles = st.slider("Jumlah Partikel", 5, 50, 20, key='pso_particles')
+        # Add parameter sliders before the button
+    col1, col2 = st.columns(2)
+    with col1:
+        n_iter = st.slider("Jumlah Iterasi", 10, 100, 30, key='pso_iters')
+    with col2:
+        n_particles = st.slider("Jumlah Partikel", 5, 50, 20, key='pso_particles')
     
     if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
         with st.spinner("Menjalankan optimasi PSO (mungkin memakan waktu beberapa menit)..."):
