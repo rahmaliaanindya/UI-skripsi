@@ -286,7 +286,7 @@ def clustering_analysis():
     k_range = range(2, 11)
 
     for k in k_range:
-        model = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', random_state=42)
+        model = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', random_state=SEED)
         labels = model.fit_predict(X_scaled)
         silhouette_scores.append(silhouette_score(X_scaled, labels))
         db_scores.append(davies_bouldin_score(X_scaled, labels))
@@ -356,7 +356,7 @@ def clustering_analysis():
     U = eigvecs[:, :k]
     U_norm = U / np.linalg.norm(U, axis=1, keepdims=True)
 
-    kmeans = KMeans(n_clusters=k, random_state=SEED)
+    kmeans = KMeans(n_clusters=k, random_state=SEED, n_init=10)
     labels = kmeans.fit_predict(U_norm)
 
     st.session_state.U_before = U_norm
@@ -436,7 +436,7 @@ def clustering_analysis():
                 bounds = (np.array([0.001]), np.array([5.0]))
                 
                 optimizer = GlobalBestPSO(
-                    n_particles=10,
+                    n_particles=20,
                     dimensions=1,
                     options=options,
                     bounds=bounds
@@ -444,7 +444,7 @@ def clustering_analysis():
                 
                 best_cost, best_pos = optimizer.optimize(
                     evaluate_gamma_robust,
-                    iters=50,
+                    iters=100,
                     verbose=False
                 )
                 
