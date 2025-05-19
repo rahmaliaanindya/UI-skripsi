@@ -388,6 +388,13 @@ def clustering_analysis():
     # 4. OPTIMASI GAMMA DENGAN PSO
     # =============================================
     st.subheader("3. Optimasi Gamma dengan PSO")
+
+    # Add parameter sliders before the button
+col1, col2 = st.columns(2)
+with col1:
+    n_iter = st.slider("Jumlah Iterasi", 10, 100, 30, key='pso_iters')
+with col2:
+    n_particles = st.slider("Jumlah Partikel", 5, 50, 20, key='pso_particles')
     
     if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
         with st.spinner("Menjalankan optimasi PSO (mungkin memakan waktu beberapa menit)..."):
@@ -419,7 +426,7 @@ def clustering_analysis():
                                 if np.isnan(U).any() or np.isinf(U).any():
                                     raise ValueError("Invalid U.")
 
-                                kmeans = KMeans(n_clusters=2, random_state=SEED, n_init=10)
+                                kmeans = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
                                 labels = kmeans.fit_predict(U)
 
                                 if len(np.unique(labels)) < 2:
@@ -446,7 +453,7 @@ def clustering_analysis():
                 bounds = (np.array([0.001]), np.array([5.0]))
                 
                 optimizer = GlobalBestPSO(
-                    n_particles=20,
+                    n_particles=n_particles,
                     dimensions=1,
                     options=options,
                     bounds=bounds
@@ -454,7 +461,7 @@ def clustering_analysis():
                 
                 best_cost, best_pos = optimizer.optimize(
                     evaluate_gamma_robust,
-                    iters=30,
+                    iters=n_iter,
                     verbose=False
                 )
                 
