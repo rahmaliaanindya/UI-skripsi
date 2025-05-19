@@ -700,9 +700,50 @@ def results_analysis():
             st.error(f"Terjadi kesalahan dalam pemetaan: {str(e)}")
             if 'merged_df' in locals():
                 st.write("Kolom yang tersedia:", merged_df.columns.tolist())
+
+        # 5. Ranking Kota (Termiskin & Paling Tidak Miskin)
+    st.subheader("5. Ranking Kota Berdasarkan Indikator Kemiskinan")
     
-    # 5. Perbandingan Sebelum-Sesudah PSO
-    st.subheader("5. Perbandingan Hasil Sebelum dan Sesudah Optimasi")
+    if 'df_cleaned' in st.session_state:
+        merged_df = st.session_state.df_cleaned.merge(
+            df[['Kabupaten/Kota', 'Cluster']],
+            on='Kabupaten/Kota',
+            how='left'
+        )
+        
+        kemiskinan_indicators = [
+            'Persentase Penduduk Miskin (%)',
+            'Jumlah Penduduk Miskin (ribu jiwa)',
+            'Garis Kemiskinan (Rupiah/Bulan/Kapita)'
+        ]
+        
+        available_indicators = [col for col in kemiskinan_indicators if col in merged_df.columns]
+        
+        if available_indicators:
+            main_indicator = available_indicators[0]
+            
+            # Tampilkan 3 Kota Termiskin
+            st.markdown("**3 Kota Termiskin:**")
+            poorest = merged_df.nlargest(3, main_indicator)[['Kabupaten/Kota', 'Cluster', main_indicator]]
+            st.dataframe(
+                poorest.style.format({
+                    main_indicator: "{:.2f} %" if "%" in main_indicator else "Rp {:,}" if "Rupiah" in main_indicator else "{:.2f}"
+                }),
+                hide_index=True
+            )
+            
+            # Tampilkan 3 Kota Paling Tidak Miskin
+            st.markdown("**3 Kota Paling Tidak Miskin:**")
+            least_poor = merged_df.nsmallest(3, main_indicator)[['Kabupaten/Kota', 'Cluster', main_indicator]]
+            st.dataframe(
+                least_poor.style.format({
+                    main_indicator: "{:.2f} %" if "%" in main_indicator else "Rp {:,}" if "Rupiah" in main_indicator else "{:.2f}"
+                }),
+                hide_index=True
+            )
+    
+    # 6. Perbandingan Sebelum-Sesudah PSO
+    st.subheader("6. Perbandingan Hasil Sebelum dan Sesudah Optimasi")
     
     if all(key in st.session_state for key in ['U_before', 'labels_before', 'U_opt', 'labels_opt']):
         col1, col2 = st.columns(2)
@@ -732,8 +773,8 @@ def results_analysis():
         
         st.pyplot(fig)
     
-    # 6. Implementasi dan Rekomendasi
-    st.subheader("6. Implementasi dan Rekomendasi Kebijakan")
+    # 7. Implementasi dan Rekomendasi
+    st.subheader("7. Implementasi dan Rekomendasi Kebijakan")
     
     st.markdown("""
     **Berdasarkan hasil clustering:**
@@ -747,11 +788,6 @@ def results_analysis():
     - Penguatan sektor produktif
     - Pelatihan keterampilan kerja
     - Infrastruktur dasar
-    
-    3. **Cluster Terkaya** (Cluster 2):
-    - Pengembangan industri strategis
-    - Investasi teknologi
-    - Pariwisata berkelanjutan
     
     **Strategi Implementasi:**
     - Prioritas anggaran berdasarkan karakteristik cluster
