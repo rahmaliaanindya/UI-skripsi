@@ -261,7 +261,7 @@ def data_preprocessing():
         st.session_state.X_scaled = X_scaled
         st.session_state.feature_names = X.columns.tolist()
         
-        st.success("Data berhasil dinormalisasi!")
+        st.success("Data berhasil distandarisasi!")
         
         # Show scaled data sample
         st.subheader("Contoh Data setelah Scaling")
