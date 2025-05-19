@@ -444,7 +444,7 @@ def clustering_analysis():
                 
                 best_cost, best_pos = optimizer.optimize(
                     evaluate_gamma_robust,
-                    iters=50,
+                    iters=30,
                     verbose=False
                 )
                 
