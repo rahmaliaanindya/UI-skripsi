@@ -375,11 +375,11 @@ def clustering_analysis():
     sil_score = silhouette_score(U_norm, labels)
     dbi_score = davies_bouldin_score(U_norm, labels)
 
-    st.success(f"Clustering manual berhasil! Silhouette: {sil_score:.2f}, DBI: {dbi_score:.2f}")
+    st.success(f"Clustering manual berhasil! Silhouette: {sil_score:.4f}, DBI: {dbi_score:.4f}")
 
     fig = plt.figure(figsize=(8, 6))
     plt.scatter(U_norm[:, 0], U_norm[:, 1], c=labels, cmap='viridis', alpha=0.7)
-    plt.title(f'Spectral Clustering Manual (γ=0.1)\nSilhouette: {sil_score:.2f}, DBI: {dbi_score:.2f}')
+    plt.title(f'Spectral Clustering Manual (γ=0.1)\nSilhouette: {sil_score:.4f}, DBI: {dbi_score:.4f}')
     plt.xlabel('Eigenvector 1')
     plt.ylabel('Eigenvector 2')
     st.pyplot(fig)
@@ -488,9 +488,9 @@ def clustering_analysis():
                                 
                                 col1, col2 = st.columns(2)
                                 col1.metric("Silhouette Score", f"{sil_opt:.4f}", 
-                                           f"{(sil_opt - sil_score):.2f} vs baseline")
+                                           f"{(sil_opt - sil_score):.4f} vs baseline")
                                 col2.metric("Davies-Bouldin Index", f"{dbi_opt:.4f}", 
-                                           f"{(dbi_score - dbi_opt):.2f} vs baseline")
+                                           f"{(dbi_score - dbi_opt):.4f} vs baseline")
                                 
                                 # =============================================
                                 # 6. VISUALISASI HASIL
@@ -506,7 +506,7 @@ def clustering_analysis():
                                 scatter1 = ax1.scatter(U_before_pca[:,0], U_before_pca[:,1], 
                                                      c=st.session_state.labels_before, 
                                                      cmap='viridis', s=50, alpha=0.7)
-                                ax1.set_title(f"Sebelum PSO (γ=0.1)\nSilhouette: {sil_score:.2f}, DBI: {dbi_score:.2f}")
+                                ax1.set_title(f"Sebelum PSO (γ=0.1)\nSilhouette: {sil_score:.4f}, DBI: {dbi_score:.4f}")
                                 ax1.set_xlabel("PC1")
                                 ax1.set_ylabel("PC2")
                                 plt.colorbar(scatter1, ax=ax1, label='Cluster')
@@ -514,7 +514,7 @@ def clustering_analysis():
                                 scatter2 = ax2.scatter(U_opt_pca[:,0], U_opt_pca[:,1], 
                                                      c=labels_opt, 
                                                      cmap='viridis', s=50, alpha=0.7)
-                                ax2.set_title(f"Sesudah PSO (γ={best_gamma:.4f})\nSilhouette: {sil_opt:.2f}, DBI: {dbi_opt:.2f}")
+                                ax2.set_title(f"Sesudah PSO (γ={best_gamma:.4f})\nSilhouette: {sil_opt:.4f}, DBI: {dbi_opt:.4f}")
                                 ax2.set_xlabel("PC1")
                                 ax2.set_ylabel("PC2")
                                 plt.colorbar(scatter2, ax=ax2, label='Cluster')
