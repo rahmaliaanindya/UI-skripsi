@@ -264,7 +264,7 @@ def data_preprocessing():
         # Data Scaling
         st.subheader("Standardisasi (scaling) Data dengan RobustScaler") 
         
-        X = st.session_state.df_cleaned.drop(columns=['Kabupaten/Kota'], errors='ignore')
+        X = st.session_state.df_cleaned.drop(columns=['Kabupaten/Kota'])
         scaler = RobustScaler()
         X_scaled = scaler.fit_transform(X)
         
