@@ -375,7 +375,7 @@ def clustering_analysis():
     sil_score = silhouette_score(U_norm, labels)
     dbi_score = davies_bouldin_score(U_norm, labels)
 
-    st.success(f"Clustering manual berhasil! Silhouette: {sil_score:.4f}, DBI: {dbi_score:.4f}")
+    st.success(f"Clustering manual berhasil! Silhouette: {sil_score:.2f}, DBI: {dbi_score:.2f}")
 
     fig = plt.figure(figsize=(8, 6))
     plt.scatter(U_norm[:, 0], U_norm[:, 1], c=labels, cmap='viridis', alpha=0.7)
