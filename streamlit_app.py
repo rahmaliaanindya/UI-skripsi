@@ -197,7 +197,7 @@ def exploratory_data_analysis():
     
     # Descriptive Statistics
     st.subheader("Statistik Deskriptif")
-    st.dataframe(df.describe().style.format("{:.2f}"))
+    st.dataframe(df.describe())
     
     # Missing Values
     st.subheader("Pengecekan Nilai Kosong")
