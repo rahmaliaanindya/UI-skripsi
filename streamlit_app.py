@@ -93,16 +93,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ======================
-# CACHE FUNCTIONS
-# ======================
-@st.cache_data
-def compute_laplacian(X_scaled, gamma_val):
-    """Hitung matriks Laplacian yang di-cache untuk optimasi PSO"""
-    W = rbf_kernel(X_scaled, gamma=gamma_val)
-    W[W < 0.01] = 0  # Threshold konsisten
-    return laplacian(W, normed=True)
-
-# ======================
 # MAIN APP FUNCTIONS
 # ======================
 
