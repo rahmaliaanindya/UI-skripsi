@@ -244,7 +244,7 @@ def data_preprocessing():
     st.dataframe(X)
 
     # Scaling
-    scaler = RobustScaler()
+    scaler = RobustScaler(with_centering=True, with_scaling=True, quantile_range=(25.0, 75.0))
     X_scaled = scaler.fit_transform(X)
 
     # Simpan ke session_state
