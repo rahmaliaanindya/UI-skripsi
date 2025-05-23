@@ -265,6 +265,11 @@ def data_preprocessing():
         st.subheader("Standardisasi (scaling) Data dengan RobustScaler") 
         
         X = st.session_state.df_cleaned.drop(columns=['Kabupaten/Kota'])
+        
+        # menampilkan data sebelum scaling
+        st.subheader("Contoh Data Sebelum Scaling")
+        st.dataframe(X)
+        
         scaler = RobustScaler()
         X_scaled = scaler.fit_transform(X)
         
