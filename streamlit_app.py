@@ -239,48 +239,31 @@ def exploratory_data_analysis():
 
 def data_preprocessing():
     st.header("⚙️ Data Preprocessing")
-    
+
     if 'df' not in st.session_state:
         st.warning("Silakan upload data terlebih dahulu")
         return
-    
+
     df = st.session_state.df.copy()
-    
-    # Data Cleaning
-    st.subheader("Pembersihan Data")
-    
-    if st.button("Bersihkan Data"):
-        # Handle missing values
-        numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns
-        df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].median())
-        
-        # Drop duplicates
-        df = df.drop_duplicates()
-        
-        st.session_state.df_cleaned = df
-        st.success("Data berhasil dibersihkan!")
-    
-    if 'df_cleaned' in st.session_state:
-        # Data Scaling
-        st.subheader("Standardisasi (scaling) Data dengan RobustScaler") 
-        
-        X = st.session_state.df_cleaned.drop(columns=['Kabupaten/Kota'])
-        
-        # menampilkan data sebelum scaling
-        st.subheader("Contoh Data Sebelum Scaling")
-        st.dataframe(X)
-        
-        scaler = RobustScaler()
-        X_scaled = scaler.fit_transform(X)
-        
-        st.session_state.X_scaled = X_scaled
-        st.session_state.feature_names = X.columns.tolist()
-        
-        st.success("Data berhasil distandarisasi!")
-        
-        # Show scaled data sample
-        st.subheader("Contoh Data setelah Scaling")
-        st.dataframe(pd.DataFrame(X_scaled, columns=X.columns))
+
+    # Hanya buang kolom non-numerik ('Kabupaten/Kota')
+    X = df.drop(columns=['Kabupaten/Kota'])  
+
+    # Tampilkan data sebelum scaling
+    st.subheader("Contoh Data Sebelum Scaling")
+    st.dataframe(X)
+
+    # Scaling
+    scaler = RobustScaler()
+    X_scaled = scaler.fit_transform(X)
+
+    # Simpan ke session_state
+    st.session_state.X_scaled = X_scaled
+    st.session_state.feature_names = X.columns.tolist()
+
+    # Tampilkan hasil scaling
+    st.subheader("Contoh Data setelah Scaling")
+    st.dataframe(pd.DataFrame(X_scaled, columns=X.columns))
 
 def clustering_analysis():
     st.header("🤖 Spectral Clustering dengan PSO")
