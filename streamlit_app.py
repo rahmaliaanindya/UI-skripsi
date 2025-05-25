@@ -173,9 +173,27 @@ def upload_data():
     if uploaded_file:
         df = pd.read_excel(uploaded_file)
         st.session_state.df = df
-        st.success("Data berhasil dimuat!")
-        
-        with st.expander("Lihat Data Mentah"):
+        st.success("✅ Data berhasil dimuat!")
+
+        # Tambahkan keterangan variabel yang diunggah
+        with st.expander("ℹ️ Kriteria Variabel yang Diunggah"):
+            st.markdown("""
+            **Kriteria variabel dalam file Excel yang harus diunggah:**
+
+            1. **Persentase Penduduk Miskin (%)**  
+            2. **Jumlah Penduduk Miskin (ribu jiwa)**
+            3. **Harapan Lama Sekolah (Tahun)**
+            4. **Rata-Rata Lama Sekolah (Tahun)**
+            5. **Tingkat Pengangguran Terbuka (%)**
+            6. **Tingkat Partisipasi Angkatan Kerja (%)**
+            7. **Angka Harapan Hidup (Tahun)**
+            8. **Garis Kemiskinan (Rupiah/Bulan/Kapita)**
+            9. **Indeks Pembangunan Manusia**
+            10. **Rata-rata Upah/Gaji Bersih Pekerja Informal Berdasarkan Lapangan Pekerjaan Utama (Rp)**
+            11. **Rata-rata Pendapatan Bersih Sebulan Pekerja Informal berdasarkan Pendidikan Tertinggi - Jumlah (Rp)**
+            """)
+
+        with st.expander("📄 Lihat Data Mentah"):
             st.dataframe(df)
 
 def exploratory_data_analysis():
