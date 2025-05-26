@@ -29,37 +29,6 @@ random.seed(SEED)
 os.environ['PYTHONHASHSEED'] = str(SEED)
 warnings.filterwarnings("ignore")
 
-# Initialize session state variables if they don't exist
-if 'df' not in st.session_state:
-    st.session_state.df = None
-    
-if 'df_cleaned' not in st.session_state:
-    st.session_state.df_cleaned = None
-    
-if 'X_scaled' not in st.session_state:
-    st.session_state.X_scaled = None
-    
-if 'feature_names' not in st.session_state:
-    st.session_state.feature_names = None
-    
-if 'df_clustered' not in st.session_state:
-    st.session_state.df_clustered = None
-    
-if 'U_before' not in st.session_state:
-    st.session_state.U_before = None
-    
-if 'labels_before' not in st.session_state:
-    st.session_state.labels_before = None
-    
-if 'U_opt' not in st.session_state:
-    st.session_state.U_opt = None
-    
-if 'labels_opt' not in st.session_state:
-    st.session_state.labels_opt = None
-    
-if 'best_gamma' not in st.session_state:
-    st.session_state.best_gamma = None
-
 # ======================
 # STREAMLIT UI SETUP
 # ======================
@@ -235,7 +204,7 @@ def upload_data():
 def exploratory_data_analysis():
     st.header("🔍 Exploratory Data Analysis (EDA)")
     
-    if 'df' not in st.session_state or st.session_state.df is None:
+    if 'df' not in st.session_state:
         st.warning("Silakan upload data terlebih dahulu")
         return
     
@@ -284,14 +253,11 @@ def exploratory_data_analysis():
 def data_preprocessing():
     st.header("⚙️ Data Preprocessing")
 
-    if 'df' not in st.session_state or st.session_state.df is None:
+    if 'df' not in st.session_state:
         st.warning("Silakan upload data terlebih dahulu")
         return
 
     df = st.session_state.df.copy()
-    
-    # Save the cleaned dataframe to session state
-    st.session_state.df_cleaned = df.copy()
 
     # Hanya buang kolom non-numerik ('Kabupaten/Kota')
     X = df.drop(columns=['Kabupaten/Kota'])  
@@ -315,7 +281,7 @@ def data_preprocessing():
 def clustering_analysis():
     st.header("🤖 Spectral Clustering dengan PSO")
     
-    if 'X_scaled' not in st.session_state or st.session_state.X_scaled is None:
+    if 'X_scaled' not in st.session_state:
         st.warning("Silakan lakukan preprocessing data terlebih dahulu")
         return
     
@@ -397,7 +363,7 @@ def clustering_analysis():
     L_sym = np.eye(W.shape[0]) - D_inv_sqrt @ W @ D_inv_sqrt
 
     eigvals, eigvecs = eigh(L_sym)
-    k = best_cluster  # Use the optimal k we found
+    k = 2
     U = eigvecs[:, :k]
     U_norm = U / np.linalg.norm(U, axis=1, keepdims=True)
 
@@ -448,13 +414,13 @@ def clustering_analysis():
                                 if np.any(np.isnan(L.data)) or np.any(np.isinf(L.data)):
                                     raise ValueError("Invalid Laplacian.")
 
-                                eigvals, eigvecs = eigsh(L, k=best_cluster, which='SM', tol=1e-6)
+                                eigvals, eigvecs = eigsh(L, k=2, which='SM', tol=1e-6)
                                 U = normalize(eigvecs, norm='l2')
 
                                 if np.isnan(U).any() or np.isinf(U).any():
                                     raise ValueError("Invalid U.")
 
-                                kmeans = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
+                                kmeans = KMeans(n_clusters=2, random_state=SEED, n_init=10)
                                 labels = kmeans.fit_predict(U)
 
                                 if len(np.unique(labels)) < 2:
@@ -494,7 +460,6 @@ def clustering_analysis():
                 )
                 
                 best_gamma = best_pos[0]
-                st.session_state.best_gamma = best_gamma
                 
                 # =============================================
                 # 5. CLUSTERING DENGAN GAMMA OPTIMAL
@@ -505,7 +470,7 @@ def clustering_analysis():
                     L_opt = laplacian(W_opt, normed=True)
                     
                     if not (np.any(np.isnan(L_opt.data)) or np.any(np.isinf(L_opt.data))):
-                        eigvals_opt, eigvecs_opt = eigsh(L_opt, k=best_cluster, which='SM', tol=1e-6)
+                        eigvals_opt, eigvecs_opt = eigsh(L_opt, k=2, which='SM', tol=1e-6)
                         U_opt = normalize(eigvecs_opt, norm='l2')
 
                         if not (np.isnan(U_opt).any() or np.isinf(U_opt).any()):
@@ -513,6 +478,7 @@ def clustering_analysis():
                             labels_opt = kmeans_opt.fit_predict(U_opt)
 
                             if len(np.unique(labels_opt)) > 1:
+                                st.session_state.best_gamma = best_gamma
                                 st.session_state.U_opt = U_opt
                                 st.session_state.labels_opt = labels_opt
                                 
@@ -560,11 +526,7 @@ def clustering_analysis():
                                 # 7. SIMPAN HASIL KE DATAFRAME
                                 # =============================================
                                 try:
-                                    if 'df_cleaned' not in st.session_state or st.session_state.df_cleaned is None:
-                                        df = st.session_state.df.copy()
-                                    else:
-                                        df = st.session_state.df_cleaned.copy()
-                                    
+                                    df = st.session_state.df_cleaned.copy()
                                     df['Cluster'] = labels_opt
                                     st.session_state.df_clustered = df
                                     
@@ -590,11 +552,11 @@ def clustering_analysis():
 
             except Exception as e:
                 st.error(f"Terjadi kesalahan dalam optimasi PSO: {str(e)}")
-
+                
 def results_analysis():
     st.header("📊 Hasil Analisis Cluster")
     
-    if 'df_clustered' not in st.session_state or st.session_state.df_clustered is None:
+    if 'df_clustered' not in st.session_state:
         st.warning("Silakan jalankan clustering terlebih dahulu")
         return
     
@@ -651,7 +613,7 @@ def results_analysis():
     ax.set_title("Faktor Paling Berpengaruh dalam Clustering")
     st.pyplot(fig)
     
-    # 4. Pemetaan Daerah per Cluster
+        # 4. Pemetaan Daerah per Cluster
     if 'Kabupaten/Kota' in df.columns:
         st.subheader("4. Pemetaan Daerah per Cluster")
         
@@ -818,4 +780,63 @@ def results_analysis():
         plt.subplot(122)
         plt.scatter(st.session_state.U_opt[:, 0], st.session_state.U_opt[:, 1], 
                     c=st.session_state.labels_opt, cmap='viridis')
-       
+        plt.title("Sesudah Optimasi")
+        
+        st.pyplot(fig)
+    
+    # 7. Implementasi dan Rekomendasi
+    st.subheader("7. Implementasi dan Rekomendasi Kebijakan")
+    
+    st.markdown("""
+    **Berdasarkan hasil clustering:**
+    
+    1. **Cluster Termiskin** (Cluster 0):
+    - Fokus pada program pengentasan kemiskinan
+    - Pengembangan UMKM lokal
+    - Peningkatan akses pendidikan dan kesehatan
+    
+    2. **Cluster Menengah** (Cluster 1):
+    - Penguatan sektor produktif
+    - Pelatihan keterampilan kerja
+    - Infrastruktur dasar
+    
+    **Strategi Implementasi:**
+    - Prioritas anggaran berdasarkan karakteristik cluster
+    - Program khusus untuk daerah tertinggal
+    - Monitoring evaluasi berbasis indikator cluster
+    """)
+    
+    # Tambahkan tombol download hasil
+    st.download_button(
+        label="📥 Download Hasil Clustering",
+        data=df.to_csv(index=False).encode('utf-8'),
+        file_name='hasil_clustering.csv',
+        mime='text/csv'
+    )
+
+# ======================
+# APP LAYOUT
+# ======================
+
+# Navigation menu at the top
+menu_options = {
+    "Beranda": landing_page,
+    "Upload Data": upload_data,
+    "EDA": exploratory_data_analysis,
+    "Preprocessing": data_preprocessing,
+    "Clustering": clustering_analysis,
+    "Results": results_analysis
+}
+
+# Display the appropriate page based on menu selection
+menu_selection = st.radio(
+    "Menu Navigasi",
+    list(menu_options.keys()),
+    index=0,
+    key="menu",
+    horizontal=True,
+    label_visibility="hidden"
+)
+
+# Execute the selected page function
+menu_options[menu_selection]()
