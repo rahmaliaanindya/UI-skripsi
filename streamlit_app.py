@@ -253,11 +253,14 @@ def exploratory_data_analysis():
 def data_preprocessing():
     st.header("⚙️ Data Preprocessing")
 
-    if 'df' not in st.session_state:
+    if 'df' not in st.session_state or st.session_state.df is None:
         st.warning("Silakan upload data terlebih dahulu")
         return
 
     df = st.session_state.df.copy()
+    
+    # Simpan dataframe cleaned ke session state
+    st.session_state.df_cleaned = df.copy()
 
     # Hanya buang kolom non-numerik ('Kabupaten/Kota')
     X = df.drop(columns=['Kabupaten/Kota'])  
@@ -278,10 +281,11 @@ def data_preprocessing():
     st.subheader("Contoh Data setelah Scaling")
     st.dataframe(pd.DataFrame(X_scaled, columns=X.columns))
 
+
 def clustering_analysis():
     st.header("🤖 Spectral Clustering dengan PSO")
     
-    if 'X_scaled' not in st.session_state:
+    if 'X_scaled' not in st.session_state or st.session_state.X_scaled is None:
         st.warning("Silakan lakukan preprocessing data terlebih dahulu")
         return
     
@@ -363,7 +367,7 @@ def clustering_analysis():
     L_sym = np.eye(W.shape[0]) - D_inv_sqrt @ W @ D_inv_sqrt
 
     eigvals, eigvecs = eigh(L_sym)
-    k = 2
+    k = best_cluster  # Gunakan jumlah cluster optimal yang sudah ditemukan
     U = eigvecs[:, :k]
     U_norm = U / np.linalg.norm(U, axis=1, keepdims=True)
 
@@ -414,13 +418,13 @@ def clustering_analysis():
                                 if np.any(np.isnan(L.data)) or np.any(np.isinf(L.data)):
                                     raise ValueError("Invalid Laplacian.")
 
-                                eigvals, eigvecs = eigsh(L, k=2, which='SM', tol=1e-6)
+                                eigvals, eigvecs = eigsh(L, k=best_cluster, which='SM', tol=1e-6)
                                 U = normalize(eigvecs, norm='l2')
 
                                 if np.isnan(U).any() or np.isinf(U).any():
                                     raise ValueError("Invalid U.")
 
-                                kmeans = KMeans(n_clusters=2, random_state=SEED, n_init=10)
+                                kmeans = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
                                 labels = kmeans.fit_predict(U)
 
                                 if len(np.unique(labels)) < 2:
@@ -460,6 +464,7 @@ def clustering_analysis():
                 )
                 
                 best_gamma = best_pos[0]
+                st.session_state.best_gamma = best_gamma
                 
                 # =============================================
                 # 5. CLUSTERING DENGAN GAMMA OPTIMAL
@@ -470,7 +475,7 @@ def clustering_analysis():
                     L_opt = laplacian(W_opt, normed=True)
                     
                     if not (np.any(np.isnan(L_opt.data)) or np.any(np.isinf(L_opt.data))):
-                        eigvals_opt, eigvecs_opt = eigsh(L_opt, k=2, which='SM', tol=1e-6)
+                        eigvals_opt, eigvecs_opt = eigsh(L_opt, k=best_cluster, which='SM', tol=1e-6)
                         U_opt = normalize(eigvecs_opt, norm='l2')
 
                         if not (np.isnan(U_opt).any() or np.isinf(U_opt).any()):
@@ -478,7 +483,6 @@ def clustering_analysis():
                             labels_opt = kmeans_opt.fit_predict(U_opt)
 
                             if len(np.unique(labels_opt)) > 1:
-                                st.session_state.best_gamma = best_gamma
                                 st.session_state.U_opt = U_opt
                                 st.session_state.labels_opt = labels_opt
                                 
@@ -526,7 +530,12 @@ def clustering_analysis():
                                 # 7. SIMPAN HASIL KE DATAFRAME
                                 # =============================================
                                 try:
-                                    df = st.session_state.df_cleaned.copy()
+                                    # Gunakan df_cleaned jika ada, jika tidak gunakan df asli
+                                    if 'df_cleaned' in st.session_state and st.session_state.df_cleaned is not None:
+                                        df = st.session_state.df_cleaned.copy()
+                                    else:
+                                        df = st.session_state.df.copy()
+                                    
                                     df['Cluster'] = labels_opt
                                     st.session_state.df_clustered = df
                                     
@@ -540,7 +549,6 @@ def clustering_analysis():
                                         
                                 except Exception as e:
                                     st.error(f"Error dalam menyimpan hasil: {str(e)}")
-                                    st.stop()
                             else:
                                 st.error("Hanya 1 cluster yang terbentuk, evaluasi gagal.")
                         else:
