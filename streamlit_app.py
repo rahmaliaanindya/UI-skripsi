@@ -397,6 +397,15 @@ def clustering_analysis():
     if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
         with st.spinner("Menjalankan optimasi PSO (mungkin memakan waktu beberapa menit)..."):
             try:
+                # Dictionary untuk menyimpan history
+                history = {
+                    'iteration': [],
+                    'g_best': [],
+                    'best_gamma': [],
+                    'silhouette': [],
+                    'dbi': []
+                }
+                
                 def evaluate_gamma_robust(gamma_array):
                     scores = []
                     data_for_kernel = X_scaled
@@ -447,6 +456,39 @@ def clustering_analysis():
 
                     return np.array(scores)
                 
+                # Callback function untuk menyimpan history
+                def callback(optimizer):
+                    current_iter = optimizer.it
+                    best_pos = optimizer.swarm.best_pos
+                    best_cost = optimizer.swarm.best_cost
+                    
+                    # Simpan informasi iterasi saat ini
+                    history['iteration'].append(current_iter)
+                    history['g_best'].append(best_cost)
+                    history['best_gamma'].append(best_pos[0][0])
+                    
+                    # Hitung metrik clustering untuk gamma terbaik saat ini
+                    try:
+                        W = rbf_kernel(X_scaled, gamma=best_pos[0][0])
+                        L = laplacian(W, normed=True)
+                        eigvals, eigvecs = eigsh(L, k=best_cluster, which='SM', tol=1e-6)
+                        U = normalize(eigvecs, norm='l2')
+                        kmeans = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
+                        labels = kmeans.fit_predict(U)
+                        
+                        sil = silhouette_score(U, labels)
+                        dbi = davies_bouldin_score(U, labels)
+                        
+                        history['silhouette'].append(sil)
+                        history['dbi'].append(dbi)
+                    except:
+                        history['silhouette'].append(0.0)
+                        history['dbi'].append(10.0)
+                    
+                    # Tampilkan progress di Streamlit
+                    progress_text = f"Iterasi {current_iter}: Gamma={best_pos[0][0]:.4f}, G-best={best_cost:.4f}"
+                    progress_bar.progress((current_iter + 1) / 50, text=progress_text)
+                
                 options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}
                 bounds = (np.array([0.001]), np.array([5.0]))
                 
@@ -457,14 +499,60 @@ def clustering_analysis():
                     bounds=bounds
                 )
                 
+                # Buat progress bar
+                progress_bar = st.progress(0, text="Memulai optimasi...")
+                
                 best_cost, best_pos = optimizer.optimize(
                     evaluate_gamma_robust,
                     iters=50,
-                    verbose=False
+                    verbose=False,
+                    callback=callback
                 )
                 
                 best_gamma = best_pos[0]
                 st.session_state.best_gamma = best_gamma
+                st.session_state.pso_history = history
+                
+                # =============================================
+                # TAMPILKAN HASIL OPTIMASI
+                # =============================================
+                st.success(f"**Optimasi selesai!** Gamma optimal: {best_gamma:.4f}")
+                
+                # Tampilkan grafik konvergensi
+                fig_convergence = plt.figure(figsize=(10, 6))
+                plt.plot(history['iteration'], history['g_best'], 'b-', label='Global Best')
+                plt.xlabel('Iterasi')
+                plt.ylabel('Nilai Fitness (G-best)')
+                plt.title('Konvergensi PSO')
+                plt.legend()
+                plt.grid(True)
+                st.pyplot(fig_convergence)
+                
+                # Tampilkan iterasi terbaik
+                best_iter_idx = np.argmin(history['g_best'])
+                st.info(f"""
+                **Iterasi terbaik:** {history['iteration'][best_iter_idx]}  
+                **Gamma terbaik:** {history['best_gamma'][best_iter_idx]:.4f}  
+                **Silhouette Score:** {history['silhouette'][best_iter_idx]:.4f}  
+                **Davies-Bouldin Index:** {history['dbi'][best_iter_idx]:.4f}
+                """)
+                
+                # Tampilkan tabel history
+                st.subheader("History Optimasi PSO")
+                history_df = pd.DataFrame({
+                    'Iterasi': history['iteration'],
+                    'Gamma': history['best_gamma'],
+                    'G-best': history['g_best'],
+                    'Silhouette': history['silhouette'],
+                    'DBI': history['dbi']
+                })
+                st.dataframe(history_df.style.format({
+                    'Gamma': '{:.4f}',
+                    'G-best': '{:.4f}',
+                    'Silhouette': '{:.4f}',
+                    'DBI': '{:.4f}'
+                }).highlight_min(subset=['G-best', 'DBI'], color='lightgreen')
+                                .highlight_max(subset=['Silhouette'], color='lightgreen'))
                 
                 # =============================================
                 # 5. CLUSTERING DENGAN GAMMA OPTIMAL
@@ -488,8 +576,6 @@ def clustering_analysis():
                                 
                                 sil_opt = silhouette_score(U_opt, labels_opt)
                                 dbi_opt = davies_bouldin_score(U_opt, labels_opt)
-                                
-                                st.success(f"**Optimasi selesai!** Gamma optimal: {best_gamma:.4f}")
                                 
                                 col1, col2 = st.columns(2)
                                 col1.metric("Silhouette Score", f"{sil_opt:.4f}", 
@@ -530,7 +616,6 @@ def clustering_analysis():
                                 # 7. SIMPAN HASIL KE DATAFRAME
                                 # =============================================
                                 try:
-                                    # Gunakan df_cleaned jika ada, jika tidak gunakan df asli
                                     if 'df_cleaned' in st.session_state and st.session_state.df_cleaned is not None:
                                         df = st.session_state.df_cleaned.copy()
                                     else:
@@ -560,6 +645,7 @@ def clustering_analysis():
 
             except Exception as e:
                 st.error(f"Terjadi kesalahan dalam optimasi PSO: {str(e)}")
+
                 
 def results_analysis():
     st.header("📊 Hasil Analisis Cluster")
