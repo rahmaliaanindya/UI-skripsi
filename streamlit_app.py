@@ -503,26 +503,25 @@ if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
             st.session_state.best_gamma = best_gamma
             st.session_state.pso_history = history
             
-            # =============================================
+                        # =============================================
             # RESULTS DISPLAY
             # =============================================
             st.success(f"**Optimasi selesai!** Gamma optimal: {best_gamma:.4f}")
-            # ... (rest of your code)
-
-                # Convergence plot
-                fig, ax = plt.subplots(figsize=(10, 6))
-                ax.plot(history['iteration'], history['g_best'], 'b-', label='Global Best')
-                ax.plot(history['iteration'], history['p_best_avg'], 'g--', label='Rata-rata P-best')
-                ax.fill_between(history['iteration'], 
-                               history['p_best_min'], 
-                               history['p_best_max'], 
-                               color='gray', alpha=0.2, label='Range P-best')
-                ax.set_xlabel('Iterasi')
-                ax.set_ylabel('Nilai Fitness')
-                ax.set_title('Konvergensi PSO (G-best dan P-best)')
-                ax.legend()
-                ax.grid(True)
-                st.pyplot(fig)
+            
+            # Convergence plot
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.plot(history['iteration'], history['g_best'], 'b-', label='Global Best')
+            ax.plot(history['iteration'], history['p_best_avg'], 'g--', label='Rata-rata P-best')
+            ax.fill_between(history['iteration'], 
+                           history['p_best_min'], 
+                           history['p_best_max'], 
+                           color='gray', alpha=0.2, label='Range P-best')
+            ax.set_xlabel('Iterasi')
+            ax.set_ylabel('Nilai Fitness')
+            ax.set_title('Konvergensi PSO (G-best dan P-best)')
+            ax.legend()
+            ax.grid(True)
+            st.pyplot(fig)
                 
                 # Particle movement visualization
                 st.subheader("Pergerakan Partikel")
