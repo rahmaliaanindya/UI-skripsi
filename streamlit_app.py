@@ -1,5 +1,3 @@
-pip install numba
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -476,8 +474,8 @@ def clustering_analysis():
                 
                 # More aggressive PSO parameters for faster convergence
                 options = {
-                    'c1': 1.7,  # Cognitive parameter increased
-                    'c2': 1.7,  # Social parameter increased
+                    'c1': 1.5,  # Cognitive parameter increased
+                    'c2': 1.5,  # Social parameter increased
                     'w': 0.7,
                     'k': 10,    # Neighborhood size
                     'p': 2      # P-norm for distance calculation
@@ -897,7 +895,7 @@ def results_analysis():
             main_indicator = available_indicators[0]
             
             # Tampilkan 3 Kota Termiskin
-            st.markdown("**3 Kota Termiskin:**")
+            st.markdown("**3 Kota Kemiskinan Tinggi:**")
             poorest = merged_df.nlargest(3, main_indicator)[['Kabupaten/Kota', 'Cluster', main_indicator]]
             st.dataframe(
                 poorest.style.format({
@@ -907,7 +905,7 @@ def results_analysis():
             )
             
             # Tampilkan 3 Kota Paling Tidak Miskin
-            st.markdown("**3 Kota Paling Tidak Miskin:**")
+            st.markdown("**3 Kota Kemiskinan Rendah:**")
             least_poor = merged_df.nsmallest(3, main_indicator)[['Kabupaten/Kota', 'Cluster', main_indicator]]
             st.dataframe(
                 least_poor.style.format({
@@ -1003,3 +1001,4 @@ menu_selection = st.radio(
 
 # Execute the selected page function
 menu_options[menu_selection]()
+
