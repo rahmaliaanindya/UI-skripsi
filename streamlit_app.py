@@ -452,125 +452,63 @@ def clustering_analysis():
     st.pyplot(fig)
 
     # =============================================
-    # 4. OPTIMASI GAMMA DENGAN PSO (OPTIMIZED)
-    # =============================================
-    st.subheader("3. Optimasi Gamma dengan PSO (Optimized)")
-    
-    if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
-        with st.spinner("Menjalankan optimasi PSO (proses lebih cepat)..."):
-            try:
-                # Enhanced history tracking
-                history = {
-                    'iteration': [],
-                    'g_best': [],
-                    'p_best_avg': [],
-                    'p_best_min': [],
-                    'p_best_max': [],
-                    'best_gamma': [],
-                    'silhouette': [],
-                    'dbi': [],
-                    'particle_history': []
-                }
-                
-                # More aggressive PSO parameters for faster convergence
-                options = {
-                    'c1': 1.5,  # Cognitive parameter increased
-                    'c2': 1.5,  # Social parameter increased
-                    'w': 0.7,
-                    'k': 10,    # Neighborhood size
-                    'p': 2      # P-norm for distance calculation
-                }
-                
-                optimizer = GlobalBestPSO(
-                    n_particles=20,
-                    dimensions=1,
-                    options=options,
-                    bounds=(np.array([0.001]), np.array([5.0]))
-                )
-                
-                # Progress bar setup
-                progress_bar = st.progress(0, text="Memulai optimasi...")
-                status_text = st.empty()
-                
-                def callback(optimizer):
-                    current_iter = optimizer.it
-                    best_pos = optimizer.swarm.best_pos
-                    best_cost = optimizer.swarm.best_cost
-                    
-                    # Calculate pbest statistics
-                    pbest_costs = [p.best_cost for p in optimizer.swarm.particles]
-                    avg_pbest = np.mean(pbest_costs)
-                    min_pbest = np.min(pbest_costs)
-                    max_pbest = np.max(pbest_costs)
-                    
-                    # Store history
-                    history['iteration'].append(current_iter)
-                    history['g_best'].append(best_cost)
-                    history['p_best_avg'].append(avg_pbest)
-                    history['p_best_min'].append(min_pbest)
-                    history['p_best_max'].append(max_pbest)
-                    history['best_gamma'].append(best_pos[0][0])
-                    
-                    # Store particle positions and pbest
-                    particle_pos = [p.position[0] for p in optimizer.swarm.particles]
-                    particle_pbest = [p.best_pos[0] for p in optimizer.swarm.particles]
-                    history['particle_history'].append({
-                        'positions': particle_pos,
-                        'pbest_positions': particle_pbest,
-                        'pbest_costs': pbest_costs
-                    })
-                    
-                    # Evaluate current best gamma
-                    try:
-                        gamma_val = best_pos[0][0]
-                        W = rbf_kernel_fast(X_scaled, gamma_val)
-                        W[W < 0.01] = 0
-                        L = laplacian(csr_matrix(W), normed=True)
-                        eigvals, eigvecs = eigsh(L, k=best_cluster, which='SM', tol=1e-4)
-                        U = normalize(eigvecs, norm='l2')
-                        kmeans = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=5)
-                        labels = kmeans.fit_predict(U)
-                        
-                        sil = silhouette_score(U, labels)
-                        dbi = davies_bouldin_score(U, labels)
-                        
-                        history['silhouette'].append(sil)
-                        history['dbi'].append(dbi)
-                    except:
-                        history['silhouette'].append(0.0)
-                        history['dbi'].append(10.0)
-                    
-                    # Update progress
-                    progress = (current_iter + 1) / 50
-                    progress_bar.progress(progress)
-                    
-                    # Detailed status
-                    status_text.markdown(f"""
-                    **Iterasi {current_iter}**  
-                    γ terbaik: {best_pos[0][0]:.4f}  
-                    G-best: {best_cost:.4f}  
-                    P-best (avg): {avg_pbest:.4f}  
-                    Silhouette: {history['silhouette'][-1]:.4f}  
-                    DBI: {history['dbi'][-1]:.4f}
-                    """)
-                
-                # Run optimization with parallel evaluation
-                best_cost, best_pos = optimizer.optimize(
-                    lambda x: parallel_evaluation(x, X_scaled, best_cluster),
-                    iters=50,
-                    verbose=False,
-                    callback=callback
-                )
-                
-                best_gamma = best_pos[0][0]
-                st.session_state.best_gamma = best_gamma
-                st.session_state.pso_history = history
-                
-                # =============================================
-                # RESULTS DISPLAY
-                # =============================================
-                st.success(f"**Optimasi selesai!** Gamma optimal: {best_gamma:.4f}")
-                
+# 4. OPTIMASI GAMMA DENGAN PSO (OPTIMIZED)
+# =============================================
+st.subheader("3. Optimasi Gamma dengan PSO (Optimized)")
+
+if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
+    with st.spinner("Menjalankan optimasi PSO (proses lebih cepat)..."):
+        try:
+            # Enhanced history tracking
+            history = {
+                'iteration': [],
+                'g_best': [],
+                'p_best_avg': [],
+                'p_best_min': [],
+                'p_best_max': [],
+                'best_gamma': [],
+                'silhouette': [],
+                'dbi': [],
+                'particle_history': []
+            }
+            
+            # More aggressive PSO parameters for faster convergence
+            options = {
+                'c1': 1.5,  # Cognitive parameter increased
+                'c2': 1.5,  # Social parameter increased
+                'w': 0.7,
+                'k': 10,    # Neighborhood size
+                'p': 2      # P-norm for distance calculation
+            }
+            
+            optimizer = GlobalBestPSO(
+                n_particles=20,
+                dimensions=1,
+                options=options,
+                bounds=(np.array([0.001]), np.array([5.0]))
+            )
+            
+            # Progress bar setup
+            progress_bar = st.progress(0, text="Memulai optimasi...")
+            status_text = st.empty()
+            
+            # Run optimization without callback
+            best_cost, best_pos = optimizer.optimize(
+                lambda x: parallel_evaluation(x, X_scaled, best_cluster),
+                iters=50,
+                verbose=False
+            )
+            
+            best_gamma = best_pos[0][0]
+            st.session_state.best_gamma = best_gamma
+            st.session_state.pso_history = history
+            
+            # =============================================
+            # RESULTS DISPLAY
+            # =============================================
+            st.success(f"**Optimasi selesai!** Gamma optimal: {best_gamma:.4f}")
+            # ... (rest of your code)
+
                 # Convergence plot
                 fig, ax = plt.subplots(figsize=(10, 6))
                 ax.plot(history['iteration'], history['g_best'], 'b-', label='Global Best')
