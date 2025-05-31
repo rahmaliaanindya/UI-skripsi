@@ -93,6 +93,203 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ======================
+# FUNCTION DEFINITIONS
+# ======================
+
+def landing_page():
+    st.title("🎯 Spectral Clustering dengan Optimasi PSO")
+    st.markdown("""
+    <div class="landing-header">
+        <h3>Aplikasi Web untuk Analisis Klaster dengan Spectral Clustering dan Optimasi Parameter menggunakan Particle Swarm Optimization</h3>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    ### 📌 Fitur Aplikasi:
+    """)
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+        <div class="feature-card">
+            <h4>📊 Eksplorasi Data</h4>
+            <p>Visualisasi dan analisis data sebelum pemrosesan</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div class="feature-card">
+            <h4>⚙️ Preprocessing Data</h4>
+            <p>Pembersihan dan transformasi data untuk analisis klaster</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown("""
+        <div class="feature-card">
+            <h4>🤖 Spectral Clustering</h4>
+            <p>Algoritma clustering berbasis graf dengan optimasi PSO</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    ### 🚀 Cara Menggunakan:
+    1. Unggah dataset Anda di menu **Upload Data**
+    2. Lakukan eksplorasi data di menu **EDA**
+    3. Lakukan preprocessing data di menu **Preprocessing**
+    4. Jalankan analisis klaster di menu **Clustering**
+    5. Lihat hasil analisis di menu **Results**
+    """)
+
+def upload_data():
+    st.header("📤 Upload Dataset")
+    
+    uploaded_file = st.file_uploader("Pilih file CSV atau Excel", type=["csv", "xlsx"])
+    
+    if uploaded_file is not None:
+        try:
+            if uploaded_file.name.endswith('.csv'):
+                df = pd.read_csv(uploaded_file)
+            else:
+                df = pd.read_excel(uploaded_file)
+            
+            st.session_state.df = df
+            st.success("Data berhasil diunggah!")
+            
+            st.subheader("Preview Data")
+            st.dataframe(df.head())
+            
+            st.subheader("Informasi Data")
+            st.write(f"Jumlah Baris: {df.shape[0]}")
+            st.write(f"Jumlah Kolom: {df.shape[1]}")
+            
+        except Exception as e:
+            st.error(f"Error membaca file: {str(e)}")
+
+def exploratory_data_analysis():
+    st.header("🔍 Exploratory Data Analysis (EDA)")
+    
+    if 'df' not in st.session_state or st.session_state.df is None:
+        st.warning("Silakan upload data terlebih dahulu di menu Upload Data")
+        return
+    
+    df = st.session_state.df
+    
+    st.subheader("Preview Data")
+    st.dataframe(df.head())
+    
+    st.subheader("Statistik Deskriptif")
+    st.dataframe(df.describe())
+    
+    st.subheader("Informasi Data")
+    buffer = StringIO()
+    df.info(buf=buffer)
+    st.text(buffer.getvalue())
+    
+    st.subheader("Distribusi Variabel Numerik")
+    num_cols = df.select_dtypes(include=np.number).columns
+    selected_col = st.selectbox("Pilih kolom untuk dilihat distribusinya", num_cols)
+    
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+    sns.histplot(df[selected_col], kde=True, ax=ax1)
+    ax1.set_title(f'Distribusi {selected_col}')
+    
+    sns.boxplot(x=df[selected_col], ax=ax2)
+    ax2.set_title(f'Boxplot {selected_col}')
+    st.pyplot(fig)
+    
+    st.subheader("Korelasi Antar Variabel")
+    corr_matrix = df[num_cols].corr()
+    fig, ax = plt.subplots(figsize=(10, 8))
+    sns.heatmap(corr_matrix, annot=True, fmt=".2f", cmap="coolwarm", ax=ax)
+    st.pyplot(fig)
+
+def data_preprocessing():
+    st.header("⚙️ Data Preprocessing")
+    
+    if 'df' not in st.session_state or st.session_state.df is None:
+        st.warning("Silakan upload data terlebih dahulu di menu Upload Data")
+        return
+    
+    df = st.session_state.df.copy()
+    
+    st.subheader("1. Penanganan Missing Values")
+    st.write("Jumlah missing value per kolom:")
+    st.dataframe(df.isna().sum().rename('Missing Values'))
+    
+    # Penanganan missing value sederhana
+    if st.checkbox("Hapus baris dengan missing values"):
+        df = df.dropna()
+        st.success(f"Data setelah penghapusan: {df.shape[0]} baris")
+    
+    st.subheader("2. Pemilihan Fitur")
+    all_columns = df.columns.tolist()
+    numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
+    
+    selected_features = st.multiselect(
+        "Pilih fitur untuk analisis klaster",
+        all_columns,
+        default=numeric_cols
+    )
+    
+    if not selected_features:
+        st.warning("Silakan pilih setidaknya satu fitur")
+        return
+    
+    X = df[selected_features]
+    
+    st.subheader("3. Normalisasi Data")
+    scaler = RobustScaler()
+    X_scaled = scaler.fit_transform(X)
+    
+    st.session_state.X_scaled = X_scaled
+    st.session_state.df_cleaned = df
+    
+    st.success("Preprocessing selesai! Data siap untuk analisis klaster.")
+    
+    st.subheader("Data Setelah Preprocessing")
+    st.dataframe(pd.DataFrame(X_scaled, columns=selected_features).head())
+
+def results_analysis():
+    st.header("📊 Hasil Analisis")
+    
+    if 'df_clustered' not in st.session_state:
+        st.warning("Silakan jalankan analisis klaster terlebih dahulu")
+        return
+    
+    df = st.session_state.df_clustered
+    
+    st.subheader("Distribusi Cluster")
+    cluster_counts = df['Cluster'].value_counts().sort_index()
+    st.bar_chart(cluster_counts)
+    
+    st.subheader("Karakteristik Cluster")
+    
+    numeric_cols = df.select_dtypes(include=np.number).columns
+    if 'Cluster' in numeric_cols:
+        numeric_cols = numeric_cols.drop('Cluster')
+    
+    cluster_stats = df.groupby('Cluster')[numeric_cols].mean()
+    st.dataframe(cluster_stats.style.background_gradient(cmap='Blues'))
+    
+    st.subheader("Visualisasi Cluster")
+    pca = PCA(n_components=2)
+    if 'X_scaled' in st.session_state:
+        X_pca = pca.fit_transform(st.session_state.X_scaled)
+        df_pca = pd.DataFrame(X_pca, columns=['PC1', 'PC2'])
+        df_pca['Cluster'] = df['Cluster']
+        
+        fig = plt.figure(figsize=(10, 8))
+        sns.scatterplot(data=df_pca, x='PC1', y='PC2', hue='Cluster', palette='viridis', s=100)
+        plt.title('Visualisasi Cluster (PCA)')
+        st.pyplot(fig)
+    
+    st.subheader("Data dengan Label Cluster")
+    st.dataframe(df)
+
+# ======================
 # CLUSTERING ANALYSIS FUNCTION (REVISED)
 # ======================
 
@@ -362,7 +559,6 @@ def clustering_analysis():
             except Exception as e:
                 st.error(f"Error dalam optimasi PSO: {str(e)}")
                 st.error(traceback.format_exc())
-
 # ======================
 # MAIN APP LAYOUT
 # ======================
