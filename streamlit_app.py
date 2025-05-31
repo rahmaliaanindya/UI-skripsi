@@ -292,9 +292,7 @@ def clustering_analysis():
     
     X_scaled = st.session_state.X_scaled
     
-    # =============================================
-    # 1. EVALUASI JUMLAH CLUSTER OPTIMAL DENGAN SPECTRALCLUSTERING
-    # =============================================
+    # 1. Evaluasi Jumlah Cluster Optimal
     st.subheader("1. Evaluasi Jumlah Cluster Optimal")
     
     silhouette_scores = []
@@ -324,9 +322,8 @@ def clustering_analysis():
 
     optimal_k = k_range[np.argmax(silhouette_scores)]
     
-    # =============================================
-    # 2. PILIH CLUSTER OPTIMAL
-    # =============================================
+    # 2. Pilih Cluster Optimal
+    st.subheader("2. Pilih Cluster Optimal")
     best_cluster = None
     best_dbi = float('inf')
     best_silhouette = float('-inf')
@@ -337,8 +334,8 @@ def clustering_analysis():
         spectral = SpectralClustering(n_clusters=n_clusters, affinity='nearest_neighbors', random_state=SEED)
         clusters = spectral.fit_predict(X_scaled)
 
-        dbi_score = davies_bouldin_score(X_scaled, clusters))
-        silhouette_avg = silhouette_score(X_scaled, clusters))
+        dbi_score = davies_bouldin_score(X_scaled, clusters)
+        silhouette_avg = silhouette_score(X_scaled, clusters)
 
         st.write(f'Jumlah Cluster: {n_clusters} | DBI: {dbi_score:.4f} | Silhouette Score: {silhouette_avg:.4f}')
 
@@ -353,10 +350,8 @@ def clustering_analysis():
     
     st.success(f"**Cluster optimal terpilih:** k={best_cluster} (Silhouette: {best_silhouette:.4f}, DBI: {best_dbi:.4f})")
     
-    # =============================================
-    # 3. SPECTRAL CLUSTERING MANUAL DENGAN GAMMA=0.1
-    # =============================================
-    st.subheader("2. Spectral Clustering Manual (γ=0.1)")
+    # 3. Spectral Clustering Manual dengan Gamma=0.1
+    st.subheader("3. Spectral Clustering Manual (γ=0.1)")
 
     gamma = 0.1
     W = rbf_kernel(X_scaled, gamma=gamma)
@@ -378,8 +373,8 @@ def clustering_analysis():
     st.session_state.U_before = U_norm
     st.session_state.labels_before = labels
 
-    sil_score = silhouette_score(U_norm, labels))
-    dbi_score = davies_bouldin_score(U_norm, labels))
+    sil_score = silhouette_score(U_norm, labels)
+    dbi_score = davies_bouldin_score(U_norm, labels)
 
     st.success(f"Clustering manual berhasil! Silhouette: {sil_score:.4f}, DBI: {dbi_score:.4f}")
 
@@ -390,42 +385,34 @@ def clustering_analysis():
     plt.ylabel('Eigenvector 2')
     st.pyplot(fig)
 
-    # =============================================
-    # 4. OPTIMASI GAMMA DENGAN PSO
-    # =============================================
-    st.subheader("3. Optimasi Gamma dengan PSO")
+    # 4. Optimasi Gamma dengan PSO
+    st.subheader("4. Optimasi Gamma dengan PSO")
 
     if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
         with st.spinner("Menjalankan optimasi PSO..."):
             try:
-                # Fungsi evaluasi
                 def evaluate_gamma(gamma_array):
                     scores = []
                     for gamma_val in gamma_array:
                         try:
-                            # Hitung kernel matrix
                             pairwise_dists = squareform(pdist(X_scaled, 'sqeuclidean'))
                             W = np.exp(-gamma_val * pairwise_dists)
                             
-                            # Laplacian
                             D_inv_sqrt = np.diag(1.0 / np.sqrt(W.sum(axis=1)))
                             L_sym = np.eye(W.shape[0]) - D_inv_sqrt @ W @ D_inv_sqrt
                             
-                            # Eigen decomposition
                             eigvals, eigvecs = eigsh(L_sym, k=best_cluster, which='SM')
                             U = eigvecs / np.linalg.norm(eigvecs, axis=1, keepdims=True)
                             
-                            # Clustering
                             kmeans = KMeans(n_clusters=best_cluster, random_state=SEED, n_init='auto')
                             labels = kmeans.fit_predict(U)
                             
-                            # Hitung metrik
                             if len(np.unique(labels)) < 2:
                                 sil = 0
                                 dbi = 10
                             else:
-                                sil = silhouette_score(U, labels))
-                                dbi = davies_bouldin_score(U, labels))
+                                sil = silhouette_score(U, labels)
+                                dbi = davies_bouldin_score(U, labels)
                             
                             fitness = -sil + dbi
                             
@@ -436,7 +423,6 @@ def clustering_analysis():
                         
                     return np.array(scores)
                 
-                # Setup PSO
                 options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}
                 bounds = (np.array([0.001]), np.array([5.0]))
                 
@@ -447,23 +433,18 @@ def clustering_analysis():
                     bounds=bounds
                 )
                 
-                # Jalankan optimasi
                 best_cost, best_pos = optimizer.optimize(
                     evaluate_gamma,
                     iters=50,
                     verbose=False
                 )
                 
-                # Dapatkan gamma optimal
-                best_gamma = float(best_pos)  # Fix: Convert to float for 1D problem
+                best_gamma = float(best_pos)
                 st.session_state.best_gamma = best_gamma
                 
-                # =============================================
-                # 5. CLUSTERING DENGAN GAMMA OPTIMAL
-                # =============================================
-                st.subheader("4. Hasil Clustering dengan Gamma Optimal")
+                # 5. Clustering dengan Gamma Optimal
+                st.subheader("5. Hasil Clustering dengan Gamma Optimal")
                 
-                # Hitung ulang dengan gamma optimal
                 pairwise_dists = squareform(pdist(X_scaled, 'sqeuclidean'))
                 W_opt = np.exp(-best_gamma * pairwise_dists)
                 D_inv_sqrt = np.diag(1.0 / np.sqrt(W_opt.sum(axis=1)))
@@ -476,8 +457,8 @@ def clustering_analysis():
                 st.session_state.U_opt = U_opt
                 st.session_state.labels_opt = labels_opt
                 
-                sil_opt = silhouette_score(U_opt, labels_opt))
-                dbi_opt = davies_bouldin_score(U_opt, labels_opt))
+                sil_opt = silhouette_score(U_opt, labels_opt)
+                dbi_opt = davies_bouldin_score(U_opt, labels_opt)
                 
                 col1, col2 = st.columns(2)
                 col1.metric("Silhouette Score", f"{sil_opt:.4f}", 
@@ -485,10 +466,8 @@ def clustering_analysis():
                 col2.metric("Davies-Bouldin Index", f"{dbi_opt:.4f}", 
                            f"{(dbi_score - dbi_opt):.4f} vs baseline")
                 
-                # =============================================
-                # 6. VISUALISASI HASIL
-                # =============================================
-                st.subheader("5. Visualisasi Hasil")
+                # 6. Visualisasi Hasil
+                st.subheader("6. Visualisasi Hasil")
                 
                 pca = PCA(n_components=2)
                 U_before_pca = pca.fit_transform(st.session_state.U_before)
@@ -514,9 +493,9 @@ def clustering_analysis():
                 
                 st.pyplot(fig)
                 
-                # =============================================
-                # 7. SIMPAN HASIL KE DATAFRAME
-                # =============================================
+                # 7. Simpan Hasil ke DataFrame
+                st.subheader("7. Simpan Hasil ke DataFrame")
+                
                 try:
                     if 'df_cleaned' in st.session_state:
                         df = st.session_state.df_cleaned.copy()
