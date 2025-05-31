@@ -131,36 +131,11 @@ def evaluate_gamma_robust(gammas):
             else:
                 scores.append(100)  # Penalty besar jika hanya 1 cluster
         
-        except:
+        except Exception as e:
+            print(f"Error in evaluation: {str(e)}")
             scores.append(100)  # Penalty besar jika ada error
     
     return np.array(scores)
-
-def callback(optimizer):
-    """Callback function untuk menyimpan history PSO."""
-    iteration = optimizer.iters
-    best_pos = optimizer.swarm.best_pos
-    best_score = optimizer.swarm.best_cost
-    
-    # Simpan ke session state
-    if 'pso_history' not in st.session_state:
-        st.session_state.pso_history = {
-            'iteration': [],
-            'best_pos': [],
-            'best_score': []
-        }
-    
-    st.session_state.pso_history['iteration'].append(iteration)
-    st.session_state.pso_history['best_pos'].append(best_pos)
-    st.session_state.pso_history['best_score'].append(best_score)
-    
-    # Update progress bar
-    if 'progress_bar' in st.session_state:
-        progress_text = f"Iterasi {iteration+1}/{optimizer.options['iterations']}"
-        st.session_state.progress_bar.progress(
-            (iteration+1)/optimizer.options['iterations'], 
-            text=progress_text
-        )
 
 # ======================
 # MAIN APP FUNCTIONS
@@ -468,17 +443,6 @@ def clustering_analysis():
     if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
         with st.spinner("Menjalankan optimasi PSO (mungkin memakan waktu beberapa menit)..."):
             try:
-                # Dictionary untuk menyimpan history
-                history = {
-                    'iteration': [],
-                    'g_best': [],
-                    'best_gamma': [],
-                    'silhouette': [],
-                    'dbi': [],
-                    'pbest_history': [],
-                    'gbest_history': []
-                }
-                
                 # Setup optimizer
                 options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}
                 bounds = (np.array([0.001]), np.array([5.0]))
@@ -493,18 +457,42 @@ def clustering_analysis():
                 # Buat progress bar
                 progress_bar = st.progress(0, text="Memulai optimasi...")
                 
+                # Dictionary untuk menyimpan history
+                history = {
+                    'iteration': [],
+                    'g_best': [],
+                    'best_gamma': [],
+                    'silhouette': [],
+                    'dbi': []
+                }
+                
+                # Fungsi callback
+                def pso_callback(optimizer):
+                    iteration = optimizer.iters
+                    best_pos = optimizer.swarm.best_pos
+                    best_score = optimizer.swarm.best_cost
+                    
+                    history['iteration'].append(iteration)
+                    history['g_best'].append(best_score)
+                    history['best_gamma'].append(best_pos[0][0])
+                    
+                    # Update progress
+                    progress_text = f"Iterasi {iteration+1}/{optimizer.options['iterations']}"
+                    progress_bar.progress(
+                        (iteration+1)/optimizer.options['iterations'], 
+                        text=progress_text
+                    )
+                
                 # Jalankan optimasi
-                best_cost, best_pos = optimizer.optimize(
-                    evaluate_gamma_robust, 
+                cost, pos = optimizer.optimize(
+                    func=evaluate_gamma_robust,
                     iters=50,
-                    callback=callback
+                    n_processes=None,
+                    verbose=False
                 )
                 
-                best_gamma = best_pos[0]
-                st.session_state.best_gamma = best_gamma
-                st.session_state.pso_history = history
-                
-                st.success(f"**Optimasi selesai!** Gamma optimal: {best_gamma:.4f}")
+                best_gamma = pos[0][0]
+                st.success(f"Optimasi selesai! Gamma optimal: {best_gamma:.4f}")
 		    
 		# =============================================
                 # TAMPILKAN HASIL OPTIMASI (DITAMBAHKAN VISUALISASI PBEST DAN GBEST)
