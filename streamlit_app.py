@@ -87,18 +87,25 @@ def evaluate_gamma_robust_fast(gammas):
 
 class FastPSO(GlobalBestPSO):
     """Optimized PSO with better progress tracking"""
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, n_particles, dimensions, options, bounds, n_processes=None):
+        # Initialize parent class with required parameters
+        super().__init__(
+            n_particles=n_particles,
+            dimensions=dimensions,
+            options=options,
+            bounds=bounds
+        )
         self.history = {
             'iteration': [],
             'best_cost': [],
             'best_pos': []
         }
+        self.n_processes = n_processes
     
     def optimize(self, objective_func, iters, progress_bar=None):
         for i in range(iters):
             # Run one iteration
-            super()._optimize(objective_func, 1)
+            super().optimize(objective_func, iters=1)  # Run just one iteration
             
             # Store history
             self.history['iteration'].append(i+1)
@@ -485,8 +492,7 @@ def clustering_analysis():
                 n_particles=20,
                 dimensions=1,
                 options={'c1': 1.5, 'c2': 1.5, 'w': 0.7},
-                bounds=([0.001], [5.0]),
-                n_processes=4
+                bounds=([0.001], [5.0])
             )
             
             # Run optimization
