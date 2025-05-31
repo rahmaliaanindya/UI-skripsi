@@ -433,7 +433,7 @@ def clustering_analysis():
     plt.ylabel('Eigenvector 2')
     st.pyplot(fig)
 
-    # =============================================
+# =============================================
     # 4. OPTIMASI GAMMA DENGAN PSO - REVISI CALLBACK
     # =============================================
     st.subheader("3. Optimasi Gamma dengan PSO")
@@ -466,11 +466,11 @@ def clustering_analysis():
                     'gbest_history': []
                 }
                 
-                # Fungsi callback
-                def pso_callback(optimizer):
-                    iteration = optimizer.iters
-                    best_pos = optimizer.swarm.best_pos
-                    best_score = optimizer.swarm.best_cost
+                # Fungsi callback yang benar
+                def callback(steps, cost, pos):
+                    iteration = steps
+                    best_pos = pos
+                    best_score = cost
                     
                     history['iteration'].append(iteration)
                     history['g_best'].append(best_score)
@@ -478,21 +478,45 @@ def clustering_analysis():
                     history['pbest_history'].append(optimizer.swarm.pbest_pos.tolist())
                     history['gbest_history'].append(best_pos.tolist())
                     
+                    # Hitung metrik untuk history
+                    try:
+                        W = rbf_kernel(X_scaled, gamma=best_pos[0][0])
+                        W[W < 0.01] = 0
+                        L = laplacian(W, normed=True)
+                        eigvals, eigvecs = eigsh(L, k=best_cluster, which='SM', tol=1e-6)
+                        U = normalize(eigvecs, norm='l2')
+                        kmeans = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
+                        labels = kmeans.fit_predict(U)
+                        
+                        if len(np.unique(labels)) > 1:
+                            sil_score = silhouette_score(U, labels)
+                            dbi_score = davies_bouldin_score(U, labels)
+                            history['silhouette'].append(sil_score)
+                            history['dbi'].append(dbi_score)
+                        else:
+                            history['silhouette'].append(0)
+                            history['dbi'].append(100)
+                    except:
+                        history['silhouette'].append(0)
+                        history['dbi'].append(100)
+                    
                     # Update progress
-                    progress_text = f"Iterasi {iteration+1}/{optimizer.options['iterations']}"
+                    progress_text = f"Iterasi {iteration+1}/{50}"
                     progress_bar.progress(
-                        (iteration+1)/optimizer.options['iterations'], 
+                        (iteration+1)/50, 
                         text=progress_text
                     )
                 
-                # Jalankan optimasi
+                # Jalankan optimasi dengan callback yang benar
                 cost, pos = optimizer.optimize(
                     evaluate_gamma_robust,  # Objective function
                     iters=50,
                     n_processes=None,
-                    verbose=False,
-                    callback=pso_callback
+                    verbose=False
                 )
+                
+                # Simpan history callback secara manual setelah optimasi selesai
+                callback(optimizer.iters, cost, pos)
                 
                 best_gamma = pos[0][0]
                 st.session_state.best_gamma = best_gamma
