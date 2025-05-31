@@ -337,8 +337,8 @@ def clustering_analysis():
         spectral = SpectralClustering(n_clusters=n_clusters, affinity='nearest_neighbors', random_state=SEED)
         clusters = spectral.fit_predict(X_scaled)
 
-        dbi_score = davies_bouldin_score(X_scaled, clusters)
-        silhouette_avg = silhouette_score(X_scaled, clusters)
+        dbi_score = davies_bouldin_score(X_scaled, clusters))
+        silhouette_avg = silhouette_score(X_scaled, clusters))
 
         st.write(f'Jumlah Cluster: {n_clusters} | DBI: {dbi_score:.4f} | Silhouette Score: {silhouette_avg:.4f}')
 
@@ -368,7 +368,7 @@ def clustering_analysis():
     L_sym = np.eye(W.shape[0]) - D_inv_sqrt @ W @ D_inv_sqrt
 
     eigvals, eigvecs = eigh(L_sym)
-    k = best_cluster  # Gunakan jumlah cluster optimal yang sudah ditemukan
+    k = best_cluster
     U = eigvecs[:, :k]
     U_norm = U / np.linalg.norm(U, axis=1, keepdims=True)
 
@@ -378,8 +378,8 @@ def clustering_analysis():
     st.session_state.U_before = U_norm
     st.session_state.labels_before = labels
 
-    sil_score = silhouette_score(U_norm, labels)
-    dbi_score = davies_bouldin_score(U_norm, labels)
+    sil_score = silhouette_score(U_norm, labels))
+    dbi_score = davies_bouldin_score(U_norm, labels))
 
     st.success(f"Clustering manual berhasil! Silhouette: {sil_score:.4f}, DBI: {dbi_score:.4f}")
 
@@ -391,46 +391,31 @@ def clustering_analysis():
     st.pyplot(fig)
 
     # =============================================
-    # 4. OPTIMASI GAMMA DENGAN PSO (VERSI CEPAT)
+    # 4. OPTIMASI GAMMA DENGAN PSO
     # =============================================
-    st.subheader("3. Optimasi Gamma dengan PSO (Optimized)")
+    st.subheader("3. Optimasi Gamma dengan PSO")
 
     if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
-        with st.spinner("Menjalankan optimasi PSO (versi cepat)..."):
+        with st.spinner("Menjalankan optimasi PSO..."):
             try:
-                # Setup progress bar
-                progress_bar = st.progress(0, text="Memulai optimasi...")
-                
-                # Cache untuk menyimpan hasil evaluasi gamma
-                gamma_cache = {}
-                
-                # Fungsi evaluasi yang dioptimasi
-                def evaluate_gamma_robust(gamma_array):
+                # Fungsi evaluasi
+                def evaluate_gamma(gamma_array):
                     scores = []
-                    for gamma in gamma_array:
-                        gamma_val = gamma[0]
-                        
-                        # Cek cache dulu
-                        if gamma_val in gamma_cache:
-                            scores.append(gamma_cache[gamma_val])
-                            continue
-                            
+                    for gamma_val in gamma_array:
                         try:
-                            # Hitung kernel matrix (versi cepat)
+                            # Hitung kernel matrix
                             pairwise_dists = squareform(pdist(X_scaled, 'sqeuclidean'))
                             W = np.exp(-gamma_val * pairwise_dists)
                             
-                            # Laplacian (versi sparse)
-                            D = np.diag(W.sum(axis=1))
-                            L = D - W
+                            # Laplacian
                             D_inv_sqrt = np.diag(1.0 / np.sqrt(W.sum(axis=1)))
                             L_sym = np.eye(W.shape[0]) - D_inv_sqrt @ W @ D_inv_sqrt
                             
-                            # Eigen decomposition (hitung yang kecil saja)
-                            eigvals, eigvecs = eigsh(L_sym, k=best_cluster, which='SM', tol=1e-3)
+                            # Eigen decomposition
+                            eigvals, eigvecs = eigsh(L_sym, k=best_cluster, which='SM')
                             U = eigvecs / np.linalg.norm(eigvecs, axis=1, keepdims=True)
                             
-                            # Clustering (versi cepat)
+                            # Clustering
                             kmeans = KMeans(n_clusters=best_cluster, random_state=SEED, n_init='auto')
                             labels = kmeans.fit_predict(U)
                             
@@ -439,17 +424,14 @@ def clustering_analysis():
                                 sil = 0
                                 dbi = 10
                             else:
-                                sil = silhouette_score(U, labels)
-                                dbi = davies_bouldin_score(U, labels)
+                                sil = silhouette_score(U, labels))
+                                dbi = davies_bouldin_score(U, labels))
                             
                             fitness = -sil + dbi
                             
                         except Exception as e:
                             fitness = 10
-                            print(f"Error evaluating gamma {gamma_val}: {e}")
-                            
-                        # Simpan ke cache
-                        gamma_cache[gamma_val] = fitness
+                        
                         scores.append(fitness)
                         
                     return np.array(scores)
@@ -459,121 +441,22 @@ def clustering_analysis():
                 bounds = (np.array([0.001]), np.array([5.0]))
                 
                 optimizer = GlobalBestPSO(
-                    n_particles=20,  # Tetap 20 partikel
+                    n_particles=20,
                     dimensions=1,
                     options=options,
                     bounds=bounds
                 )
                 
-                # History tracking
-                history = {
-                    'iteration': [],
-                    'g_best': [],
-                    'best_gamma': [],
-                    'silhouette': [],
-                    'dbi': [],
-                    'p_best_history': []
-                }
-                
                 # Jalankan optimasi
                 best_cost, best_pos = optimizer.optimize(
-                    evaluate_gamma_robust,
-                    iters=50,  # Tetap 50 iterasi
+                    evaluate_gamma,
+                    iters=50,
                     verbose=False
                 )
                 
-                best_gamma = best_pos[0][0]
+                # Dapatkan gamma optimal
+                best_gamma = float(best_pos)  # Fix: Convert to float for 1D problem
                 st.session_state.best_gamma = best_gamma
-                st.session_state.pso_history = history
-                st.session_state.optimizer = optimizer  # Simpan optimizer untuk akses pbest
-                
-                # =============================================
-                # TAMPILKAN HASIL OPTIMASI
-                # =============================================
-                st.success(f"**Optimasi selesai!** Gamma optimal: {best_gamma:.4f}")
-                
-                # 1. Grafik konvergensi
-                fig_convergence = plt.figure(figsize=(10, 6))
-                plt.plot(history['iteration'], history['g_best'], 'b-', label='Global Best')
-                
-                # Tambahkan P Best (rata-rata)
-                avg_pbest = [np.mean(p) for p in history['p_best_history']]
-                plt.plot(history['iteration'], avg_pbest, 'g--', label='Rata-rata P Best')
-                
-                plt.xlabel('Iterasi')
-                plt.ylabel('Nilai Fitness')
-                plt.title('Konvergensi PSO (G Best vs P Best)')
-                plt.legend()
-                plt.grid(True)
-                st.pyplot(fig_convergence)
-                
-                # 2. Visualisasi pergerakan partikel
-                st.subheader("Pergerakan Partikel")
-                
-                # Buat array untuk menyimpan posisi partikel tiap iterasi
-                particle_positions = np.array([p for p in optimizer.swarm.pos_history]).squeeze()
-                
-                fig_particles = plt.figure(figsize=(12, 6))
-                
-                # Plot semua partikel
-                for i in range(20):  # 20 partikel
-                    plt.plot(history['iteration'], particle_positions[:, i], 'gray', alpha=0.3)
-                
-                # Highlight G Best
-                plt.plot(history['iteration'], history['best_gamma'], 'r-', linewidth=2, label='G Best')
-                
-                plt.xlabel('Iterasi')
-                plt.ylabel('Nilai Gamma')
-                plt.title('Pergerakan Partikel dalam Pencarian Gamma Optimal')
-                plt.legend()
-                plt.grid(True)
-                st.pyplot(fig_particles)
-                
-                # 3. Tampilkan PBest dan GBest
-                st.subheader("Personal Best (PBest) dan Global Best (GBest)")
-                
-                # Tampilkan GBest
-                st.markdown(f"""
-                **Global Best (GBest):**
-                - Gamma Optimal: `{best_gamma:.6f}`
-                - Fitness Value: `{best_cost:.6f}`
-                """)
-                
-                # Tampilkan PBest dalam bentuk tabel
-                st.markdown("**Personal Best (PBest) dari semua partikel:**")
-                
-                # Buat dataframe untuk PBest
-                pbest_data = []
-                for i, (pos, cost) in enumerate(zip(optimizer.swarm.pbest_pos, optimizer.swarm.pbest_cost)):
-                    pbest_data.append({
-                        'Partikel': i+1,
-                        'Gamma': pos[0],
-                        'Fitness': cost
-                    })
-                
-                pbest_df = pd.DataFrame(pbest_data)
-                st.dataframe(
-                    pbest_df.style.format({
-                        'Gamma': '{:.6f}',
-                        'Fitness': '{:.6f}'
-                    }),
-                    height=400,
-                    use_container_width=True
-                )
-                
-                # 4. Tabel hasil
-                st.subheader("Ringkasan Hasil Optimasi")
-                
-                best_iter_idx = np.argmin(history['g_best'])
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.metric("Gamma Optimal", f"{best_gamma:.4f}")
-                    st.metric("Iterasi Terbaik", best_iter_idx+1)
-                
-                with col2:
-                    st.metric("Silhouette Score", f"{history['silhouette'][best_iter_idx]:.4f}")
-                    st.metric("Davies-Bouldin Index", f"{history['dbi'][best_iter_idx]:.4f}")
                 
                 # =============================================
                 # 5. CLUSTERING DENGAN GAMMA OPTIMAL
@@ -585,7 +468,7 @@ def clustering_analysis():
                 W_opt = np.exp(-best_gamma * pairwise_dists)
                 D_inv_sqrt = np.diag(1.0 / np.sqrt(W_opt.sum(axis=1)))
                 L_sym_opt = np.eye(W_opt.shape[0]) - D_inv_sqrt @ W_opt @ D_inv_sqrt
-                eigvals_opt, eigvecs_opt = eigsh(L_sym_opt, k=best_cluster, which='SM', tol=1e-3)
+                eigvals_opt, eigvecs_opt = eigsh(L_sym_opt, k=best_cluster, which='SM')
                 U_opt = eigvecs_opt / np.linalg.norm(eigvecs_opt, axis=1, keepdims=True)
                 kmeans_opt = KMeans(n_clusters=best_cluster, random_state=SEED, n_init='auto')
                 labels_opt = kmeans_opt.fit_predict(U_opt)
@@ -593,8 +476,8 @@ def clustering_analysis():
                 st.session_state.U_opt = U_opt
                 st.session_state.labels_opt = labels_opt
                 
-                sil_opt = silhouette_score(U_opt, labels_opt)
-                dbi_opt = davies_bouldin_score(U_opt, labels_opt)
+                sil_opt = silhouette_score(U_opt, labels_opt))
+                dbi_opt = davies_bouldin_score(U_opt, labels_opt))
                 
                 col1, col2 = st.columns(2)
                 col1.metric("Silhouette Score", f"{sil_opt:.4f}", 
@@ -635,7 +518,7 @@ def clustering_analysis():
                 # 7. SIMPAN HASIL KE DATAFRAME
                 # =============================================
                 try:
-                    if 'df_cleaned' in st.session_state and st.session_state.df_cleaned is not None:
+                    if 'df_cleaned' in st.session_state:
                         df = st.session_state.df_cleaned.copy()
                     else:
                         df = st.session_state.df.copy()
