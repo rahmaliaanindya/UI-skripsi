@@ -245,7 +245,6 @@ def upload_data():
         with st.expander("📄 Lihat Data Mentah"):
             st.dataframe(df)
 
-
 def exploratory_data_analysis():
     st.header("🔍 Exploratory Data Analysis (EDA)")
     
@@ -325,7 +324,6 @@ def data_preprocessing():
     # Tampilkan hasil scaling
     st.subheader("Contoh Data setelah Scaling")
     st.dataframe(pd.DataFrame(X_scaled, columns=X.columns))
-
 
 def clustering_analysis():
     st.header("🤖 Spectral Clustering dengan PSO")
@@ -463,7 +461,9 @@ def clustering_analysis():
                     'g_best': [],
                     'best_gamma': [],
                     'silhouette': [],
-                    'dbi': []
+                    'dbi': [],
+                    'pbest_history': [],
+                    'gbest_history': []
                 }
                 
                 # Fungsi callback
@@ -475,6 +475,8 @@ def clustering_analysis():
                     history['iteration'].append(iteration)
                     history['g_best'].append(best_score)
                     history['best_gamma'].append(best_pos[0][0])
+                    history['pbest_history'].append(optimizer.swarm.pbest_pos.tolist())
+                    history['gbest_history'].append(best_pos.tolist())
                     
                     # Update progress
                     progress_text = f"Iterasi {iteration+1}/{optimizer.options['iterations']}"
@@ -485,16 +487,18 @@ def clustering_analysis():
                 
                 # Jalankan optimasi
                 cost, pos = optimizer.optimize(
-                    func=evaluate_gamma_robust,
+                    evaluate_gamma_robust,  # Objective function
                     iters=50,
                     n_processes=None,
-                    verbose=False
+                    verbose=False,
+                    callback=pso_callback
                 )
                 
                 best_gamma = pos[0][0]
+                st.session_state.best_gamma = best_gamma
                 st.success(f"Optimasi selesai! Gamma optimal: {best_gamma:.4f}")
-		    
-		# =============================================
+                
+                # =============================================
                 # TAMPILKAN HASIL OPTIMASI (DITAMBAHKAN VISUALISASI PBEST DAN GBEST)
                 # =============================================
                 
@@ -540,8 +544,7 @@ def clustering_analysis():
                 ax.set_ylabel("Nilai Gamma")
                 st.pyplot(fig)
 
-
-		# Tampilkan grafik konvergensi
+                # Tampilkan grafik konvergensi
                 fig_convergence = plt.figure(figsize=(10, 6))
                 plt.plot(history['iteration'], history['g_best'], 'b-', label='Global Best')
                 plt.xlabel('Iterasi')
@@ -669,7 +672,6 @@ def clustering_analysis():
             except Exception as e:
                 st.error(f"Terjadi kesalahan dalam optimasi PSO: {str(e)}")
 
-                
 def results_analysis():
     st.header("📊 Hasil Analisis Cluster")
     
@@ -730,7 +732,7 @@ def results_analysis():
     ax.set_title("Faktor Paling Berpengaruh dalam Clustering")
     st.pyplot(fig)
     
-        # 4. Pemetaan Daerah per Cluster
+    # 4. Pemetaan Daerah per Cluster
     if 'Kabupaten/Kota' in df.columns:
         st.subheader("4. Pemetaan Daerah per Cluster")
         
