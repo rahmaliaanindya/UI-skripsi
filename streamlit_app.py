@@ -538,7 +538,8 @@ def clustering_analysis():
                 # Buat progress bar
                 progress_bar = st.progress(0, text="Memulai optimasi...")
     
-                def update_progress(iteration, fitness, pos):
+                # Fungsi callback untuk update progress
+                def callback(iteration, fitness, pos):
                     progress = (iteration + 1) / 50
                     progress_bar.progress(progress, text=f"Iterasi {iteration + 1}/50 - Best Fitness: {fitness:.4f}")
                     
@@ -550,7 +551,7 @@ def clustering_analysis():
                     evaluate_gamma_robust,
                     iters=50,
                     verbose=False,
-                    post_eval=update_progress
+                    callback=callback  # Menggunakan callback bukan post_eval
                 )
     
                 best_gamma = best_pos[0]
