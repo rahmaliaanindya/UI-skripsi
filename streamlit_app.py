@@ -646,7 +646,7 @@ def optimized_clustering_analysis():
             best_cost, best_pos = optimizer.optimize(
                 pso_optimizer.evaluate,
                 iters=50,
-                n_processes=4,
+                n_processes=1,
                 verbose=False
             )
             
