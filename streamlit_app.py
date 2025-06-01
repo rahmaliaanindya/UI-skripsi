@@ -157,7 +157,7 @@ def run_fast_pso_optimization(X_scaled, best_cluster):
     bounds = (np.array([0.001]), np.array([5.0]))
     
     optimizer = GlobalBestPSO(
-        n_particles=20,  # Tetap pertahankan jumlah partikel
+        n_particles=20,
         dimensions=1,
         options=options,
         bounds=bounds
@@ -171,11 +171,9 @@ def run_fast_pso_optimization(X_scaled, best_cluster):
     start_time = datetime.now()
     
     def callback(optimizer):
-        # Update progress
         progress = (optimizer.it + 1) / optimizer.max_iter
         progress_bar.progress(min(int(progress * 100), 100))
         
-        # Update status
         elapsed = (datetime.now() - start_time).total_seconds()
         status_text.markdown(f"""
         <div class="status-box">
@@ -186,18 +184,23 @@ def run_fast_pso_optimization(X_scaled, best_cluster):
         </div>
         """, unsafe_allow_html=True)
         
-        # Simpan history
         cost_history.append(optimizer.swarm.best_cost)
         best_pos_history.append(optimizer.swarm.best_pos[0])
+    
+    # Define the objective function properly
+    def objective_func(gamma_array):
+        """Wrapper function for PSO that returns proper shape"""
+        scores = evaluate_gamma_parallel(gamma_array, X_scaled, best_cluster)
+        return scores.reshape(-1)  # Ensure it returns 1D array with length n_particles
     
     # 3. Jalankan optimasi dengan timeout
     try:
         with st.spinner("Optimasi berjalan (maksimal 5 menit)..."):
             best_cost, best_pos = optimizer.optimize(
-                lambda x: evaluate_gamma_parallel(x, X_scaled, best_cluster),
-                iters=50,  # Tetap pertahankan iterasi
+                objective_func,
+                iters=50,
                 callback=callback,
-                timeout=300,  # Timeout 5 menit
+                timeout=300,
                 verbose=False
             )
     except TimeoutError:
@@ -218,7 +221,7 @@ def run_fast_pso_optimization(X_scaled, best_cluster):
     st.pyplot(fig)
     
     return best_pos[0], cost_history
-
+    
 # ======================
 # MAIN APP FUNCTIONS
 # ======================
