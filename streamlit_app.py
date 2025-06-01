@@ -874,7 +874,7 @@ menu_options = {
     "Upload Data": upload_data,
     "EDA": exploratory_data_analysis,
     "Preprocessing": data_preprocessing,
-    "Clustering": clustering_analysis,
+    "Clustering": optimized_clustering_analysis,
     "Results": results_analysis
 }
 
