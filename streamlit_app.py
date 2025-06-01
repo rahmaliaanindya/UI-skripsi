@@ -581,26 +581,26 @@ def optimized_clustering_analysis():
         
         st.pyplot(fig)
         
-                # Simpan hasil ke dataframe
-        if 'df_cleaned' in st.session_state and st.session_state.df_cleaned is not None:
-            df = st.session_state.df_cleaned.copy()
-        else:
-            df = st.session_state.df.copy()
-        
-        df['Cluster'] = labels_opt
-        st.session_state.df_clustered = df
-        
-        # Tampilkan distribusi cluster
-        st.subheader("Distribusi Cluster")
-        cluster_counts = df['Cluster'].value_counts().sort_index()
-        st.bar_chart(cluster_counts)
-        
-        if 'Kabupaten/Kota' in df.columns:
-            st.subheader("Pemetaan Cluster")
-            st.dataframe(df[['Kabupaten/Kota', 'Cluster']].sort_values('Cluster'))
+            # Simpan hasil ke dataframe
+            if 'df_cleaned' in st.session_state and st.session_state.df_cleaned is not None:
+                df = st.session_state.df_cleaned.copy()
+            else:
+                df = st.session_state.df.copy()
+            
+            df['Cluster'] = labels_opt
+            st.session_state.df_clustered = df
+            
+            # Tampilkan distribusi cluster
+            st.subheader("Distribusi Cluster")
+            cluster_counts = df['Cluster'].value_counts().sort_index()
+            st.bar_chart(cluster_counts)
+            
+            if 'Kabupaten/Kota' in df.columns:
+                st.subheader("Pemetaan Cluster")
+                st.dataframe(df[['Kabupaten/Kota', 'Cluster']].sort_values('Cluster'))
 
-    except Exception as e:
-        st.error(f"Terjadi kesalahan dalam optimasi PSO: {str(e)}")
+        except Exception as e:
+            st.error(f"Terjadi kesalahan dalam optimasi PSO: {str(e)}")
 
 def results_analysis():
     st.header("📊 Hasil Analisis Cluster")
