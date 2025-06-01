@@ -1,26 +1,16 @@
-import streamlit as st
-import pandas as pd
 import numpy as np
+import pandas as pd
+import streamlit as st
 import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.preprocessing import RobustScaler
-from sklearn.cluster import SpectralClustering, KMeans
-from sklearn.metrics import silhouette_score, davies_bouldin_score
 from sklearn.metrics.pairwise import rbf_kernel
 from scipy.sparse.csgraph import laplacian
-from scipy.linalg import eigh  # Untuk matriks symmetric
-from scipy.sparse.linalg import eigsh  # Untuk matriks sparse
+from scipy.sparse.linalg import eigsh
 from sklearn.preprocessing import normalize
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score, davies_bouldin_score
 from sklearn.decomposition import PCA
-from collections import Counter
-import pyswarms as ps
-from pyswarms.single.global_best import GlobalBestPSO
-import warnings
-from io import StringIO
-import sys
-import random
-import os
+from pyswarms.single import GlobalBestPSO
+import traceback
 
 # Set random seed for reproducibility
 SEED = 42
@@ -456,15 +446,39 @@ def clustering_analysis():
     
                     return np.array(scores)
     
-                # Callback function untuk menyimpan history
-                def pso_callback(optimizer, **kwargs):
-                    iteration = kwargs.get('iteration')
-                    best_pos = optimizer.swarm.best_pos
-                    best_score = optimizer.swarm.best_cost
+                options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}
+                bounds = (np.array([0.001]), np.array([2.0]))
+    
+                optimizer = GlobalBestPSO(
+                    n_particles=10,
+                    dimensions=1,
+                    options=options,
+                    bounds=bounds
+                )
+    
+                # Buat progress bar
+                progress_bar = st.progress(0, text="Memulai optimasi...")
+                
+                # Custom optimization loop to track progress
+                best_cost = None
+                best_pos = None
+                
+                for i in range(30):  # 30 iterations
+                    if i == 0:
+                        # First iteration
+                        cost, pos = optimizer.optimize(evaluate_gamma_robust, iters=1, verbose=False)
+                    else:
+                        # Subsequent iterations
+                        cost, pos = optimizer.optimize(evaluate_gamma_robust, iters=1, verbose=False)
                     
-                    # Evaluasi kembali dengan best_pos untuk mendapatkan metrics
+                    # Update best cost and position
+                    if best_cost is None or cost < best_cost:
+                        best_cost = cost
+                        best_pos = pos
+                    
+                    # Calculate metrics for history
                     try:
-                        gamma_val = best_pos[0]
+                        gamma_val = pos[0][0]
                         W = rbf_kernel(X_scaled, gamma=gamma_val)
                         L = laplacian(W, normed=True)
                         eigvals, eigvecs = eigsh(L, k=best_cluster, which='SM', tol=1e-6)
@@ -478,37 +492,18 @@ def clustering_analysis():
                         sil = 0.0
                         dbi = 10.0
                     
-                    history['iteration'].append(iteration)
-                    history['g_best'].append(best_score)
-                    history['best_gamma'].append(best_pos[0])
+                    # Update history
+                    history['iteration'].append(i)
+                    history['g_best'].append(cost)
+                    history['best_gamma'].append(pos[0][0])
                     history['silhouette'].append(sil)
                     history['dbi'].append(dbi)
                     
                     # Update progress bar
-                    progress = (iteration + 1) / 30
-                    progress_bar.progress(progress, text=f"Iterasi {iteration + 1}/30")
+                    progress = (i + 1) / 30
+                    progress_bar.progress(progress, text=f"Iterasi {i + 1}/30")
     
-                options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}
-                bounds = (np.array([0.001]), np.array([2.0]))
-    
-                optimizer = GlobalBestPSO(
-                    n_particles=10,
-                    dimensions=1,
-                    options=options,
-                    bounds=bounds
-                )
-    
-                # Buat progress bar
-                progress_bar = st.progress(0, text="Memulai optimasi...")
-    
-                best_cost, best_pos = optimizer.optimize(
-                    evaluate_gamma_robust,
-                    iters=30,
-                    verbose=False,
-                    callback=pso_callback
-                )
-    
-                best_gamma = best_pos[0]
+                best_gamma = best_pos[0][0]
                 st.session_state.best_gamma = best_gamma
                 st.session_state.pso_history = history
     
@@ -555,7 +550,7 @@ def clustering_analysis():
                         'Silhouette': '{:.4f}',
                         'DBI': '{:.4f}'
                     }).highlight_min(subset=['G-best', 'DBI'], color='lightgreen')
-                                    .highlight_max(subset=['Silhouette'], color='lightgreen'))
+                                .highlight_max(subset=['Silhouette'], color='lightgreen'))
                 else:
                     st.warning("Tidak ada data history yang tersedia untuk ditampilkan.")
     
