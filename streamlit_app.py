@@ -767,6 +767,207 @@ def results_analysis():
         
         st.dataframe(importance_df)
 
+# 4. Pemetaan Daerah per Cluster
+    if 'Kabupaten/Kota' in df.columns:
+        st.subheader("4. Pemetaan Daerah per Cluster")
+        
+        try:
+            # Gabungkan dengan data asli
+            if 'df_cleaned' in st.session_state:
+                merged_df = pd.merge(
+                    df[['Kabupaten/Kota', 'Cluster']],
+                    st.session_state.df_cleaned,
+                    on='Kabupaten/Kota',
+                    how='left'
+                )
+                
+                # Daftar variabel yang tersedia
+                kemiskinan_vars = [
+                    'Persentase Penduduk Miskin (%)',
+                    'Jumlah Penduduk Miskin (ribu jiwa)',
+                    'Garis Kemiskinan (Rupiah/Bulan/Kapita)'
+                ]
+                
+                pendidikan_vars = [
+                    'Harapan Lama Sekolah (Tahun)',
+                    'Rata-Rata Lama Sekolah (Tahun)'
+                ]
+                
+                ketenagakerjaan_vars = [
+                    'Tingkat Pengangguran Terbuka (%)',
+                    'Tingkat Partisipasi Angkatan Kerja (%)',
+                    'Rata-rata Upah/Gaji Bersih Pekerja Informal Berdasarkan Lapangan Pekerjaan Utama (Rp)',
+                    'Rata-rata Pendapatan Bersih Sebulan Pekerja Informal berdasarkan Pendidikan Tertinggi - Jumlah (Rp)'
+                ]
+                
+                kesehatan_vars = [
+                    'Angka Harapan Hidup (Tahun)'
+                ]
+                
+                ipm_vars = [
+                    'Indeks Pembangunan Manusia'
+                ]
+                
+                # Cari variabel yang ada di dataset
+                available_vars = {
+                    'Kemiskinan': [v for v in kemiskinan_vars if v in merged_df.columns],
+                    'Pendidikan': [v for v in pendidikan_vars if v in merged_df.columns],
+                    'Ketenagakerjaan': [v for v in ketenagakerjaan_vars if v in merged_df.columns],
+                    'Kesehatan': [v for v in kesehatan_vars if v in merged_df.columns],
+                    'IPM': [v for v in ipm_vars if v in merged_df.columns]
+                }
+                
+                # Pilih 1 variabel utama per kategori untuk ditampilkan
+                display_cols = ['Kabupaten/Kota', 'Cluster']
+                sort_by = 'Cluster'
+                
+                # Tambahkan variabel terpilih
+                for category, vars_list in available_vars.items():
+                    if vars_list:
+                        display_cols.append(vars_list[0])  # Ambil variabel pertama yang tersedia
+                        if category == 'Kemiskinan':
+                            sort_by = vars_list[0]  # Default sort by first poverty variable
+                
+                # Urutkan data
+                merged_df = merged_df.sort_values([sort_by, 'Kabupaten/Kota'], ascending=[False, True])
+                
+                # Tampilkan data
+                st.dataframe(
+                    merged_df[display_cols],
+                    height=600,
+                    column_config={
+                        'Persentase Penduduk Miskin (%)': st.column_config.NumberColumn(format="%.2f %%"),
+                        'Garis Kemiskinan (Rupiah/Bulan/Kapita)': st.column_config.NumberColumn(format="%,d")
+                    }
+                )
+                
+                # Analisis sederhana per cluster
+                st.subheader("Analisis Indikator per Cluster")
+                
+                # Pilih indikator untuk analisis
+                analysis_var = st.selectbox(
+                    "Pilih indikator untuk analisis cluster:",
+                    options=[v for vars_list in available_vars.values() for v in vars_list]
+                )
+                
+                if analysis_var in merged_df.columns:
+                    cluster_stats = merged_df.groupby('Cluster')[analysis_var].describe()
+                    st.write(f"Statistik {analysis_var} per Cluster:")
+                    st.dataframe(cluster_stats.style.format("{:.2f}"))
+                    
+                    # Visualisasi
+                    fig, ax = plt.subplots(figsize=(10, 6))
+                    sns.boxplot(data=merged_df, x='Cluster', y=analysis_var, palette='viridis')
+                    plt.title(f'Distribusi {analysis_var} per Cluster')
+                    st.pyplot(fig)
+                
+        except Exception as e:
+            st.error(f"Terjadi kesalahan dalam pemetaan: {str(e)}")
+            if 'merged_df' in locals():
+                st.write("Kolom yang tersedia:", merged_df.columns.tolist())
+
+        # 5. Ranking Kota (Termiskin & Paling Tidak Miskin)
+    st.subheader("Ranking Kota Berdasarkan Indikator Kemiskinan")
+    
+    if 'df_cleaned' in st.session_state:
+        merged_df = st.session_state.df_cleaned.merge(
+            df[['Kabupaten/Kota', 'Cluster']],
+            on='Kabupaten/Kota',
+            how='left'
+        )
+        
+        kemiskinan_indicators = [
+            'Persentase Penduduk Miskin (%)',
+            'Jumlah Penduduk Miskin (ribu jiwa)',
+            'Garis Kemiskinan (Rupiah/Bulan/Kapita)'
+        ]
+        
+        available_indicators = [col for col in kemiskinan_indicators if col in merged_df.columns]
+        
+        if available_indicators:
+            main_indicator = available_indicators[0]
+            
+            # Tampilkan 3 Kota Termiskin
+            st.markdown("**3 Kota Kemiskinan Tingii:**")
+            poorest = merged_df.nlargest(3, main_indicator)[['Kabupaten/Kota', 'Cluster', main_indicator]]
+            st.dataframe(
+                poorest.style.format({
+                    main_indicator: "{:.2f} %" if "%" in main_indicator else "Rp {:,}" if "Rupiah" in main_indicator else "{:.2f}"
+                }),
+                hide_index=True
+            )
+            
+            # Tampilkan 3 Kota Paling Tidak Miskin
+            st.markdown("**3 Kota Kemiskinan Rendah:**")
+            least_poor = merged_df.nsmallest(3, main_indicator)[['Kabupaten/Kota', 'Cluster', main_indicator]]
+            st.dataframe(
+                least_poor.style.format({
+                    main_indicator: "{:.2f} %" if "%" in main_indicator else "Rp {:,}" if "Rupiah" in main_indicator else "{:.2f}"
+                }),
+                hide_index=True
+            )
+    
+    # 6. Perbandingan Sebelum-Sesudah PSO
+    st.subheader("Perbandingan Hasil Sebelum dan Sesudah Optimasi")
+    
+    if all(key in st.session_state for key in ['U_before', 'labels_before', 'U_opt', 'labels_opt']):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**Sebelum Optimasi (γ=0.1):**")
+            st.write(f"- Silhouette Score: {silhouette_score(st.session_state.U_before, st.session_state.labels_before):.4f}")
+            st.write(f"- Davies-Bouldin Index: {davies_bouldin_score(st.session_state.U_before, st.session_state.labels_before):.4f}")
+            
+        with col2:
+            st.markdown(f"**Sesudah Optimasi (γ={st.session_state.get('best_gamma', 0):.4f}):**")
+            st.write(f"- Silhouette Score: {silhouette_score(st.session_state.U_opt, st.session_state.labels_opt):.4f}")
+            st.write(f"- Davies-Bouldin Index: {davies_bouldin_score(st.session_state.U_opt, st.session_state.labels_opt):.4f}")
+        
+        # Visualisasi
+        fig = plt.figure(figsize=(12, 6))
+        
+        plt.subplot(121)
+        plt.scatter(st.session_state.U_before[:, 0], st.session_state.U_before[:, 1], 
+                    c=st.session_state.labels_before, cmap='viridis')
+        plt.title("Sebelum Optimasi")
+        
+        plt.subplot(122)
+        plt.scatter(st.session_state.U_opt[:, 0], st.session_state.U_opt[:, 1], 
+                    c=st.session_state.labels_opt, cmap='viridis')
+        plt.title("Sesudah Optimasi")
+        
+        st.pyplot(fig)
+    
+    # 7. Implementasi dan Rekomendasi
+    st.subheader("Implementasi dan Rekomendasi Kebijakan")
+    
+    st.markdown("""
+    **Berdasarkan hasil clustering:**
+    
+    1. **Cluster Termiskin** (Cluster 0):
+    - Fokus pada program pengentasan kemiskinan
+    - Pengembangan UMKM lokal
+    - Peningkatan akses pendidikan dan kesehatan
+    
+    2. **Cluster Menengah** (Cluster 1):
+    - Penguatan sektor produktif
+    - Pelatihan keterampilan kerja
+    - Infrastruktur dasar
+    
+    **Strategi Implementasi:**
+    - Prioritas anggaran berdasarkan karakteristik cluster
+    - Program khusus untuk daerah tertinggal
+    - Monitoring evaluasi berbasis indikator cluster
+    """)
+    
+    # Tambahkan tombol download hasil
+    st.download_button(
+        label="📥 Download Hasil Clustering",
+        data=df.to_csv(index=False).encode('utf-8'),
+        file_name='hasil_clustering.csv',
+        mime='text/csv'
+    )
+
 # ======================
 # APP LAYOUT
 # ======================
