@@ -392,11 +392,11 @@ def clustering_analysis():
     # =============================================
     # 4. OPTIMASI GAMMA DENGAN PSO
     # =============================================
-      st.subheader("3. Optimasi Gamma dengan PSO")
+    st.subheader("3. Optimasi Gamma dengan PSO")
         
-        if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
-            with st.spinner("Menjalankan optimasi PSO (mungkin memakan waktu beberapa menit)..."):
-                try:
+    if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
+        with st.spinner("Menjalankan optimasi PSO (mungkin memakan waktu beberapa menit)..."):
+            try:
                 # Dictionary untuk menyimpan history
                 history = {
                     'iteration': [],
