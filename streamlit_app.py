@@ -557,7 +557,7 @@ def clustering_analysis():
                 # Jalankan dengan fungsi evaluasi hybrid
                 cost, pos = optimizer.optimize(
                     evaluate_gamma_hybrid,
-                    iters=40,  # Jumlah iterasi seimbang
+                    iters=50,  # Jumlah iterasi seimbang
                     progress_bar=progress_bar
                 )
                 
