@@ -657,6 +657,26 @@ def clustering_analysis():
                                     plt.colorbar(scatter2, ax=ax2, label='Cluster')
                                     
                                     st.pyplot(fig_comparison)
+
+                                    st.markdown("""
+                                    - **Titik-titik pada plot** mewakili setiap observasi (misalnya, Kabupaten/Kota) dalam dataset.
+                                    - **Warna Titik (Cluster)** menunjukkan cluster tempat observasi tersebut dikelompokkan oleh algoritma Spectral Clustering.  
+                                      Skala warna di sebelah kanan plot (**colorbar**) menunjukkan pemetaan warna ke label cluster (misalnya, 0, 1, 2, dst.).
+                                    
+                                    - **Metrik Evaluasi Clustering**:  
+                                      - **Silhouette Score**  
+                                        Merupakan metrik evaluasi yang mengukur seberapa mirip suatu objek dengan clusternya sendiri dibandingkan cluster lain.  
+                                        - Nilai berkisar antara **-1 hingga 1**.  
+                                        - Nilai mendekati **1** → Objek berada dalam cluster yang tepat dan terpisah dengan baik dari cluster lain.  
+                                        - Nilai mendekati **0** → Objek berada di antara dua cluster.  
+                                        - Nilai **negatif** → Objek mungkin telah ditetapkan ke cluster yang salah.  
+                                        - **Semakin tinggi nilai Silhouette, semakin baik kualitas clustering.**
+                                    
+                                      - **Davies-Bouldin Index (DBI)**  
+                                        Metrik yang mengukur rasio antara dispersi intra-cluster (jarak rata-rata setiap titik ke centroid cluster) dan dispersi inter-cluster (jarak antar centroid cluster).  
+                                        - **Semakin rendah nilai DBI, semakin baik kualitas clustering** (klaster lebih kompak dan terpisah jelas).
+                                    """)
+
                                     
                                     # Simpan hasil ke dataframe
                                     try:
