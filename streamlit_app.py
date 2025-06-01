@@ -115,34 +115,33 @@ def numba_davies_bouldin_score(U, labels):
     
     return np.mean(np.max(r_ij, axis=1))
 
-@njit(parallel=True)
-def evaluate_gamma_numba(gamma_array, X_scaled, best_cluster, n_runs=3):
+def evaluate_gamma(gamma_array, X_scaled, best_cluster, n_runs=3):
     scores = np.zeros(gamma_array.shape[0])
     
-    for i in prange(gamma_array.shape[0]):
+    for i in range(gamma_array.shape[0]):
         gamma_val = gamma_array[i,0]
         sil_sum = 0.0
         dbi_sum = 0.0
         
         for _ in range(n_runs):
             try:
-                # 1. Hitung kernel RBF
+                # 1. Hitung kernel RBF (dengan Numba)
                 W = numba_rbf_kernel(X_scaled, gamma_val)
                 
-                # 2. Hitung Laplacian
+                # 2. Hitung Laplacian (dengan Numba)
                 L = numba_laplacian(W)
                 
-                # 3. Eigen decomposition
+                # 3. Eigen decomposition (dengan Numba)
                 eigvals, eigvecs = numba_eigsh(L, best_cluster)
                 
-                # 4. Normalisasi eigenvector
+                # 4. Normalisasi eigenvector (dengan Numba)
                 U = numba_normalize(eigvecs)
                 
-                # 5. KMeans clustering (using sklearn but called separately)
-                # Note: This part can't be njit compiled
-                labels = run_kmeans(U, best_cluster)
+                # 5. KMeans clustering (tidak bisa dengan Numba)
+                kmeans = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
+                labels = kmeans.fit_predict(U)
                 
-                # 6. Hitung metrik
+                # 6. Hitung metrik (dengan Numba)
                 sil = numba_silhouette_score(U, labels)
                 dbi = numba_davies_bouldin_score(U, labels)
                 
@@ -159,11 +158,6 @@ def evaluate_gamma_numba(gamma_array, X_scaled, best_cluster, n_runs=3):
         scores[i] = -mean_sil + mean_dbi  # Semakin kecil semakin baik
     
     return scores
-
-# Wrapper function for KMeans (can't be njit compiled)
-def run_kmeans(U, n_clusters):
-    kmeans = KMeans(n_clusters=n_clusters, random_state=SEED, n_init=10)
-    return kmeans.fit_predict(U)
 
 # ======================
 # STREAMLIT UI SETUP
@@ -336,7 +330,6 @@ def upload_data():
         with st.expander("📄 Lihat Data Mentah"):
             st.dataframe(df)
 
-
 def exploratory_data_analysis():
     st.header("🔍 Exploratory Data Analysis (EDA)")
     
@@ -416,7 +409,6 @@ def data_preprocessing():
     # Tampilkan hasil scaling
     st.subheader("Contoh Data setelah Scaling")
     st.dataframe(pd.DataFrame(X_scaled, columns=X.columns))
-
 
 def clustering_analysis():
     st.header("🤖 Spectral Clustering dengan PSO")
@@ -527,12 +519,12 @@ def clustering_analysis():
 
     
     # =============================================
-    # 4. OPTIMASI GAMMA DENGAN PSO (NUMBA-OPTIMIZED)
+    # 4. OPTIMASI GAMMA DENGAN PSO
     # =============================================
     st.subheader("3. Optimasi Gamma dengan PSO")
     
     if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
-        with st.spinner("Menjalankan optimasi PSO dipercepat dengan Numba..."):
+        with st.spinner("Menjalankan optimasi PSO..."):
             try:
                 start_time = time.time()
                 
@@ -550,7 +542,7 @@ def clustering_analysis():
                 
                 # Fungsi cost yang dioptimasi
                 def cost_func(gamma_array):
-                    return evaluate_gamma_numba(gamma_array, X_scaled, best_cluster)
+                    return evaluate_gamma(gamma_array, X_scaled, best_cluster)
                 
                 # Jalankan optimasi
                 best_cost, best_pos = optimizer.optimize(cost_func, iters=50)
@@ -558,12 +550,15 @@ def clustering_analysis():
                 best_gamma = best_pos[0]
                 st.session_state.best_gamma = best_gamma
                 
-                # Evaluasi hasil optimal dengan Numba
+                # Evaluasi hasil optimal
                 W_opt = numba_rbf_kernel(X_scaled, best_gamma)
                 L_opt = numba_laplacian(W_opt)
                 eigvals_opt, eigvecs_opt = numba_eigsh(L_opt, best_cluster)
                 U_opt = numba_normalize(eigvecs_opt)
-                labels_opt = run_kmeans(U_opt, best_cluster)
+                
+                # KMeans clustering
+                kmeans = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
+                labels_opt = kmeans.fit_predict(U_opt)
                 
                 st.session_state.U_opt = U_opt
                 st.session_state.labels_opt = labels_opt
@@ -689,7 +684,7 @@ def results_analysis():
     ax.set_title("Faktor Paling Berpengaruh dalam Clustering")
     st.pyplot(fig)
     
-        # 4. Pemetaan Daerah per Cluster
+    # 4. Pemetaan Daerah per Cluster
     if 'Kabupaten/Kota' in df.columns:
         st.subheader("4. Pemetaan Daerah per Cluster")
         
@@ -788,7 +783,7 @@ def results_analysis():
             if 'merged_df' in locals():
                 st.write("Kolom yang tersedia:", merged_df.columns.tolist())
 
-        # 5. Ranking Kota (Termiskin & Paling Tidak Miskin)
+    # 5. Ranking Kota (Termiskin & Paling Tidak Miskin)
     st.subheader("5. Ranking Kota Berdasarkan Indikator Kemiskinan")
     
     if 'df_cleaned' in st.session_state:
