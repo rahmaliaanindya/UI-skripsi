@@ -439,7 +439,7 @@ def evaluate_gamma_robust(gamma_values):
         st.warning(f"Error pada gamma={gamma:.4f}: {str(e)}")
         return np.inf
 
-if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
+	if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
     with st.spinner("Menjalankan optimasi PSO (mungkin memakan waktu beberapa menit)..."):
         try:
             # Dictionary untuk menyimpan history
