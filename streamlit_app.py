@@ -404,7 +404,7 @@ def clustering_analysis():
                     'dbi': []
                 }
                 
-                # Definisikan fungsi evaluasi TANPA parameter callback
+                # Definisikan fungsi evaluasi
                 def evaluate_gamma_robust(gamma_array):
                     scores = []
                     data_for_kernel = X_scaled
@@ -455,43 +455,10 @@ def clustering_analysis():
     
                     return np.array(scores)
                 
-                # Definisikan callback function terpisah
-                def callback(optimizer):
-                    current_iter = optimizer.it
-                    best_pos = optimizer.swarm.best_pos
-                    best_cost = optimizer.swarm.best_cost
-                    
-                    # Simpan informasi iterasi saat ini
-                    history['iteration'].append(current_iter)
-                    history['g_best'].append(best_cost)
-                    history['best_gamma'].append(best_pos[0][0])
-                    
-                    # Hitung metrik clustering untuk gamma terbaik saat ini
-                    try:
-                        W = rbf_kernel(X_scaled, gamma=best_pos[0][0])
-                        L = laplacian(W, normed=True)
-                        eigvals, eigvecs = eigsh(L, k=best_cluster, which='SM', tol=1e-6)
-                        U = normalize(eigvecs, norm='l2')
-                        kmeans = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
-                        labels = kmeans.fit_predict(U)
-                        
-                        sil = silhouette_score(U, labels)
-                        dbi = davies_bouldin_score(U, labels)
-                        
-                        history['silhouette'].append(sil)
-                        history['dbi'].append(dbi)
-                    except:
-                        history['silhouette'].append(0.0)
-                        history['dbi'].append(10.0)
-                    
-                    # Tampilkan progress di Streamlit
-                    progress_text = f"Iterasi {current_iter}: Gamma={best_pos[0][0]:.4f}, G-best={best_cost:.4f}"
-                    progress_bar.progress((current_iter + 1) / 50, text=progress_text)
-    
                 options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}
                 bounds = (np.array([0.001]), np.array([5.0]))
     
-                # Inisialisasi optimizer dengan callback terpisah
+                # Inisialisasi optimizer
                 optimizer = GlobalBestPSO(
                     n_particles=20,
                     dimensions=1,
@@ -502,16 +469,39 @@ def clustering_analysis():
                 # Buat progress bar
                 progress_bar = st.progress(0, text="Memulai optimasi...")
     
-                # Jalankan optimasi dengan callback sebagai parameter terpisah
+                # Jalankan optimasi
                 best_cost, best_pos = optimizer.optimize(
                     evaluate_gamma_robust,  # Fungsi evaluasi
                     iters=50,
-                    verbose=False,
-                    callback=callback  # Callback di sini
+                    verbose=False
                 )
     
                 best_gamma = best_pos[0]
                 st.session_state.best_gamma = best_gamma
+    
+                # Simpan hasil iterasi terakhir
+                history['iteration'].append(50)
+                history['g_best'].append(best_cost)
+                history['best_gamma'].append(best_gamma)
+                
+                # Hitung metrik clustering untuk gamma terbaik
+                try:
+                    W = rbf_kernel(X_scaled, gamma=best_gamma)
+                    L = laplacian(W, normed=True)
+                    eigvals, eigvecs = eigsh(L, k=best_cluster, which='SM', tol=1e-6)
+                    U = normalize(eigvecs, norm='l2')
+                    kmeans = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
+                    labels = kmeans.fit_predict(U)
+                    
+                    sil = silhouette_score(U, labels)
+                    dbi = davies_bouldin_score(U, labels)
+                    
+                    history['silhouette'].append(sil)
+                    history['dbi'].append(dbi)
+                except:
+                    history['silhouette'].append(0.0)
+                    history['dbi'].append(10.0)
+    
                 st.session_state.pso_history = history
     
                 # =============================================
@@ -519,41 +509,12 @@ def clustering_analysis():
                 # =============================================
                 st.success(f"**Optimasi selesai!** Gamma optimal: {best_gamma:.4f}")
     
-                # Tampilkan grafik konvergensi
-                fig_convergence = plt.figure(figsize=(10, 6))
-                plt.plot(history['iteration'], history['g_best'], 'b-', label='Global Best')
-                plt.xlabel('Iterasi')
-                plt.ylabel('Nilai Fitness (G-best)')
-                plt.title('Konvergensi PSO')
-                plt.legend()
-                plt.grid(True)
-                st.pyplot(fig_convergence)
-    
-                # Tampilkan iterasi terbaik
-                best_iter_idx = np.argmin(history['g_best'])
+                # Tampilkan metrik clustering
                 st.info(f"""
-                **Iterasi terbaik:** {history['iteration'][best_iter_idx]}  
-                **Gamma terbaik:** {history['best_gamma'][best_iter_idx]:.4f}  
-                **Silhouette Score:** {history['silhouette'][best_iter_idx]:.4f}  
-                **Davies-Bouldin Index:** {history['dbi'][best_iter_idx]:.4f}
+                **Gamma terbaik:** {best_gamma:.4f}  
+                **Silhouette Score:** {sil:.4f}  
+                **Davies-Bouldin Index:** {dbi:.4f}
                 """)
-    
-                # Tampilkan tabel history
-                st.subheader("History Optimasi PSO")
-                history_df = pd.DataFrame({
-                    'Iterasi': history['iteration'],
-                    'Gamma': history['best_gamma'],
-                    'G-best': history['g_best'],
-                    'Silhouette': history['silhouette'],
-                    'DBI': history['dbi']
-                })
-                st.dataframe(history_df.style.format({
-                    'Gamma': '{:.4f}',
-                    'G-best': '{:.4f}',
-                    'Silhouette': '{:.4f}',
-                    'DBI': '{:.4f}'
-                }).highlight_min(subset=['G-best', 'DBI'], color='lightgreen')
-                                .highlight_max(subset=['Silhouette'], color='lightgreen'))
     
                 # =============================================
                 # 5. CLUSTERING DENGAN GAMMA OPTIMAL
