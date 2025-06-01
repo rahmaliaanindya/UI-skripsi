@@ -389,86 +389,8 @@ def clustering_analysis():
     plt.ylabel('Eigenvector 2')
     st.pyplot(fig)
 
-    def clustering_analysis():
-    st.header("🤖 Spectral Clustering dengan PSO")
-    
-    if 'X_scaled' not in st.session_state or st.session_state.X_scaled is None:
-        st.warning("Silakan lakukan preprocessing data terlebih dahulu")
-        return
-    
-    X_scaled = st.session_state.X_scaled
     
     # =============================================
-    # 1. EVALUASI JUMLAH CLUSTER OPTIMAL DENGAN SPECTRALCLUSTERING
-    # =============================================
-    st.subheader("1. Evaluasi Jumlah Cluster Optimal")
-    
-    silhouette_scores = []
-    db_scores = []
-    k_range = range(2, 11)
-
-    for k in k_range:
-        model = SpectralClustering(n_clusters=k, affinity='nearest_neighbors', random_state=SEED)
-        labels = model.fit_predict(X_scaled)
-        silhouette_scores.append(silhouette_score(X_scaled, labels))
-        db_scores.append(davies_bouldin_score(X_scaled, labels))
-
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
-    ax1.plot(k_range, silhouette_scores, 'bo-', label='Silhouette Score')
-    ax1.set_xlabel('Jumlah Cluster')
-    ax1.set_ylabel('Silhouette Score')
-    ax1.set_title('Evaluasi Silhouette Score')
-    ax1.legend()
-
-    ax2.plot(k_range, db_scores, 'ro-', label='Davies-Bouldin Index')
-    ax2.set_xlabel('Jumlah Cluster')
-    ax2.set_ylabel('DB Index')
-    ax2.set_title('Evaluasi Davies-Bouldin Index')
-    ax2.legend()
-
-    st.pyplot(fig)
-
-    optimal_k = k_range[np.argmax(silhouette_scores)]
-    st.success(f"Jumlah cluster optimal berdasarkan Silhouette Score: {optimal_k}")
-    
-    # =============================================
-    # 2. SPECTRAL CLUSTERING MANUAL DENGAN GAMMA=0.1
-    # =============================================
-    st.subheader("2. Spectral Clustering Manual (γ=0.1)")
-
-    gamma = 0.1
-    W = rbf_kernel(X_scaled, gamma=gamma)
-    threshold = 0.01
-    W[W < threshold] = 0
-
-    D = np.diag(W.sum(axis=1))
-    D_inv_sqrt = np.diag(1.0 / np.sqrt(W.sum(axis=1)))
-    L_sym = np.eye(W.shape[0]) - D_inv_sqrt @ W @ D_inv_sqrt
-
-    eigvals, eigvecs = eigh(L_sym)
-    k = optimal_k  # Gunakan jumlah cluster optimal yang sudah ditemukan
-    U = eigvecs[:, :k]
-    U_norm = U / np.linalg.norm(U, axis=1, keepdims=True)
-
-    kmeans = KMeans(n_clusters=k, random_state=SEED, n_init=10)
-    labels = kmeans.fit_predict(U_norm)
-
-    st.session_state.U_before = U_norm
-    st.session_state.labels_before = labels
-
-    sil_score = silhouette_score(U_norm, labels)
-    dbi_score = davies_bouldin_score(U_norm, labels)
-
-    st.success(f"Clustering manual berhasil! Silhouette: {sil_score:.4f}, DBI: {dbi_score:.4f}")
-
-    fig = plt.figure(figsize=(8, 6))
-    plt.scatter(U_norm[:, 0], U_norm[:, 1], c=labels, cmap='viridis', alpha=0.7)
-    plt.title(f'Spectral Clustering Manual (γ=0.1)\nSilhouette: {sil_score:.4f}, DBI: {dbi_score:.4f}')
-    plt.xlabel('Eigenvector 1')
-    plt.ylabel('Eigenvector 2')
-    st.pyplot(fig)
-
-        # =============================================
     # 4. OPTIMASI GAMMA DENGAN PSO
     # =============================================
     st.subheader("3. Optimasi Gamma dengan PSO")
