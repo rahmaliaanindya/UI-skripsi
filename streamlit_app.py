@@ -485,7 +485,7 @@ def clustering_analysis():
                 
                 # Setup optimizer
                 options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}
-                bounds = (np.array([0.001]), np.array([5.0]))
+                bounds = (np.array([0.001]), np.array([2.0]))
                 
                 optimizer = GlobalBestPSO(
                     n_particles=10,
