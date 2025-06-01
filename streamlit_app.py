@@ -575,58 +575,6 @@ def clustering_analysis():
                 # 5. TAMPILKAN HASIL OPTIMASI
                 # =============================================
                 
-                # Visualisasi evolusi PBest dan GBest
-                st.subheader("Evolusi PBest dan GBest")
-                
-                # Buat dataframe untuk visualisasi
-                pbest_evolution = []
-                for i, pbest_iter in enumerate(history['pbest_history']):
-                    for j, pbest in enumerate(pbest_iter):
-                        pbest_evolution.append({
-                            'Iteration': i,
-                            'Particle': j,
-                            'Gamma': pbest,
-                            'Type': 'PBest'
-                        })
-                
-                gbest_evolution = []
-                for i, gbest_iter in enumerate(history['gbest_history']):
-                    gbest_evolution.append({
-                        'Iteration': i,
-                        'Particle': 'GBest',
-                        'Gamma': gbest_iter[0],
-                        'Type': 'GBest'
-                    })
-                
-                evolution_df = pd.DataFrame(pbest_evolution + gbest_evolution)
-                
-                # Plot evolusi
-                fig_evolution, ax = plt.subplots(figsize=(12, 6))
-                sns.lineplot(
-                    data=evolution_df, 
-                    x='Iteration', 
-                    y='Gamma', 
-                    hue='Type', 
-                    style='Type',
-                    markers=True,
-                    dashes=False,
-                    ax=ax
-                )
-                ax.set_title("Evolusi Nilai Gamma pada PBest dan GBest")
-                ax.set_xlabel("Iterasi")
-                ax.set_ylabel("Nilai Gamma")
-                st.pyplot(fig_evolution)
-    
-                # Tampilkan grafik konvergensi
-                fig_convergence, ax = plt.subplots(figsize=(10, 6))
-                ax.plot(history['iteration'], history['g_best'], 'b-', label='Global Best')
-                ax.set_xlabel('Iterasi')
-                ax.set_ylabel('Nilai Fitness (G-best)')
-                ax.set_title('Konvergensi PSO')
-                ax.legend()
-                ax.grid(True)
-                st.pyplot(fig_convergence)
-                
                 # Tampilkan iterasi terbaik
                 best_iter_idx = np.argmin(history['g_best'])
                 st.info(f"""
