@@ -488,99 +488,100 @@ def optimized_clustering_analysis():
     st.subheader("3. Optimasi Gamma dengan PSO")
     
     if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        start_time = time.time()
-        
-        # Setup PSO dengan parameter original (tidak dikurangi)
-        options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}
-        bounds = (np.array([0.001]), np.array([5.0]))
-        
-        optimizer = GlobalBestPSO(
-            n_particles=20,  # Tetap 20 partikel
-            dimensions=1,
-            options=options,
-            bounds=bounds
-        )
-        
-        # Cache untuk kernel matrix
-        @lru_cache(maxsize=100)
-        def cached_rbf_kernel(gamma_val):
-            return numba_rbf_kernel(X_scaled, gamma_val)
-        
-        # Fungsi evaluasi yang dioptimasi
-        def cost_func(gamma_array):
-            progress = (len(optimizer.cost_history) / 50) * 100 if hasattr(optimizer, 'cost_history') else 0
-            progress_bar.progress(min(100, int(progress)))
+        try:
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            start_time = time.time()
             
-            scores = evaluate_gamma_optimized(gamma_array, X_scaled, optimal_k, n_runs=2)
+            # Setup PSO dengan parameter original (tidak dikurangi)
+            options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}
+            bounds = (np.array([0.001]), np.array([5.0]))
             
-            if hasattr(optimizer, 'cost_history'):
-                status_text.text(f"Iterasi {len(optimizer.cost_history)}/50 - Best Cost: {np.min(scores):.4f}")
+            optimizer = GlobalBestPSO(
+                n_particles=20,  # Tetap 20 partikel
+                dimensions=1,
+                options=options,
+                bounds=bounds
+            )
             
-            return scores
-        
-        # Jalankan optimasi dengan iterasi tetap 50
-        best_cost, best_pos = optimizer.optimize(
-            cost_func, 
-            iters=50,  # Tetap 50 iterasi
-            n_processes=4  # Gunakan 4 core CPU
-        )
-        
-        best_gamma = best_pos[0]
-        elapsed_time = time.time() - start_time
-        
-        progress_bar.progress(100)
-        status_text.success(f"Optimasi selesai dalam {elapsed_time:.2f} detik! Gamma optimal: {best_gamma:.4f}")
-        
-        # Evaluasi hasil optimal
-        W_opt = numba_rbf_kernel(X_scaled, best_gamma)
-        L_opt = numba_laplacian(W_opt)
-        eigvals_opt, eigvecs_opt = numba_eigsh(L_opt, optimal_k)
-        U_opt = numba_normalize(eigvecs_opt)
-        
-        labels_opt = fast_kmeans(U_opt, optimal_k)
-        
-        st.session_state.U_opt = U_opt
-        st.session_state.labels_opt = labels_opt
-        st.session_state.best_gamma = best_gamma
-        
-        # Hitung metrik
-        sil_opt = numba_silhouette_score(U_opt, labels_opt)
-        dbi_opt = numba_davies_bouldin_score(U_opt, labels_opt)
-        
-        # Tampilkan hasil
-        col1, col2 = st.columns(2)
-        col1.metric("Silhouette Score", f"{sil_opt:.4f}", 
-                   f"{(sil_opt - sil_score):.4f} vs baseline")
-        col2.metric("Davies-Bouldin Index", f"{dbi_opt:.4f}", 
-                   f"{(dbi_score - dbi_opt):.4f} vs baseline")
-        
-        # Visualisasi perbandingan
-        pca = PCA(n_components=2)
-        U_before_pca = pca.fit_transform(st.session_state.U_before)
-        U_opt_pca = pca.transform(U_opt)
-        
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
-        
-        scatter1 = ax1.scatter(U_before_pca[:,0], U_before_pca[:,1], 
-                             c=st.session_state.labels_before, 
-                             cmap='viridis', s=50, alpha=0.7)
-        ax1.set_title(f"Sebelum PSO (γ=0.1)\nSilhouette: {sil_score:.4f}, DBI: {dbi_score:.4f}")
-        ax1.set_xlabel("PC1")
-        ax1.set_ylabel("PC2")
-        plt.colorbar(scatter1, ax=ax1, label='Cluster')
-        
-        scatter2 = ax2.scatter(U_opt_pca[:,0], U_opt_pca[:,1], 
-                             c=labels_opt, 
-                             cmap='viridis', s=50, alpha=0.7)
-        ax2.set_title(f"Sesudah PSO (γ={best_gamma:.4f})\nSilhouette: {sil_opt:.4f}, DBI: {dbi_opt:.4f}")
-        ax2.set_xlabel("PC1")
-        ax2.set_ylabel("PC2")
-        plt.colorbar(scatter2, ax=ax2, label='Cluster')
-        
-        st.pyplot(fig)
-        
+            # Cache untuk kernel matrix
+            @lru_cache(maxsize=100)
+            def cached_rbf_kernel(gamma_val):
+                return numba_rbf_kernel(X_scaled, gamma_val)
+            
+            # Fungsi evaluasi yang dioptimasi
+            def cost_func(gamma_array):
+                progress = (len(optimizer.cost_history) / 50) * 100 if hasattr(optimizer, 'cost_history') else 0
+                progress_bar.progress(min(100, int(progress)))
+                
+                scores = evaluate_gamma_optimized(gamma_array, X_scaled, optimal_k, n_runs=2)
+                
+                if hasattr(optimizer, 'cost_history'):
+                    status_text.text(f"Iterasi {len(optimizer.cost_history)}/50 - Best Cost: {np.min(scores):.4f}")
+                
+                return scores
+            
+            # Jalankan optimasi dengan iterasi tetap 50
+            best_cost, best_pos = optimizer.optimize(
+                cost_func, 
+                iters=50,  # Tetap 50 iterasi
+                n_processes=4  # Gunakan 4 core CPU
+            )
+            
+            best_gamma = best_pos[0]
+            elapsed_time = time.time() - start_time
+            
+            progress_bar.progress(100)
+            status_text.success(f"Optimasi selesai dalam {elapsed_time:.2f} detik! Gamma optimal: {best_gamma:.4f}")
+            
+            # Evaluasi hasil optimal
+            W_opt = numba_rbf_kernel(X_scaled, best_gamma)
+            L_opt = numba_laplacian(W_opt)
+            eigvals_opt, eigvecs_opt = numba_eigsh(L_opt, optimal_k)
+            U_opt = numba_normalize(eigvecs_opt)
+            
+            labels_opt = fast_kmeans(U_opt, optimal_k)
+            
+            st.session_state.U_opt = U_opt
+            st.session_state.labels_opt = labels_opt
+            st.session_state.best_gamma = best_gamma
+            
+            # Hitung metrik
+            sil_opt = numba_silhouette_score(U_opt, labels_opt)
+            dbi_opt = numba_davies_bouldin_score(U_opt, labels_opt)
+            
+            # Tampilkan hasil
+            col1, col2 = st.columns(2)
+            col1.metric("Silhouette Score", f"{sil_opt:.4f}", 
+                       f"{(sil_opt - sil_score):.4f} vs baseline")
+            col2.metric("Davies-Bouldin Index", f"{dbi_opt:.4f}", 
+                       f"{(dbi_score - dbi_opt):.4f} vs baseline")
+            
+            # Visualisasi perbandingan
+            pca = PCA(n_components=2)
+            U_before_pca = pca.fit_transform(st.session_state.U_before)
+            U_opt_pca = pca.transform(U_opt)
+            
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+            
+            scatter1 = ax1.scatter(U_before_pca[:,0], U_before_pca[:,1], 
+                                 c=st.session_state.labels_before, 
+                                 cmap='viridis', s=50, alpha=0.7)
+            ax1.set_title(f"Sebelum PSO (γ=0.1)\nSilhouette: {sil_score:.4f}, DBI: {dbi_score:.4f}")
+            ax1.set_xlabel("PC1")
+            ax1.set_ylabel("PC2")
+            plt.colorbar(scatter1, ax=ax1, label='Cluster')
+            
+            scatter2 = ax2.scatter(U_opt_pca[:,0], U_opt_pca[:,1], 
+                                 c=labels_opt, 
+                                 cmap='viridis', s=50, alpha=0.7)
+            ax2.set_title(f"Sesudah PSO (γ={best_gamma:.4f})\nSilhouette: {sil_opt:.4f}, DBI: {dbi_opt:.4f}")
+            ax2.set_xlabel("PC1")
+            ax2.set_ylabel("PC2")
+            plt.colorbar(scatter2, ax=ax2, label='Cluster')
+            
+            st.pyplot(fig)
+            
             # Simpan hasil ke dataframe
             if 'df_cleaned' in st.session_state and st.session_state.df_cleaned is not None:
                 df = st.session_state.df_cleaned.copy()
