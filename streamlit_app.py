@@ -214,6 +214,7 @@ def main():
                     dimensions=1,
                     options={'c1': 1.5, 'c2': 1.5, 'w': 0.7},
                     bounds=([0.001], [5.0])
+                )  # Ini yang diperbaiki - menutup kurung dengan benar
                 
                 # Gunakan fungsi evaluasi yang sama dengan Colab
                 cost, pos = optimizer.optimize(
