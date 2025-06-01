@@ -536,140 +536,146 @@ def clustering_analysis():
     plt.xlabel('Eigenvector 1')
     plt.ylabel('Eigenvector 2')
     st.pyplot(fig)
+
+    # =============================================
+    # 4. OPTIMASI GAMMA DENGAN PSO (SESUAI COLAB)
+    # =============================================
+    st.subheader("3. Optimasi Gamma dengan PSO")
     
-    # PSO Optimization - REVISI SESUAI COLAB
-st.subheader("3. Optimasi Gamma dengan PSO")
+    # Definisikan evaluasi function di sini dengan closure untuk mengakses X_scaled
+    def get_evaluator(X):
+        def evaluate_gamma_robust(gamma_array):
+            scores = []
+            n_runs = 3
+            
+            for gamma in gamma_array:
+                gamma_val = gamma[0]
+                sil_list, dbi_list = [], []
 
-# Fungsi evaluasi sama persis dengan Colab
-def evaluate_gamma_robust(gamma_array):
-    scores = []
-    data_for_kernel = st.session_state.X_scaled
-    n_runs = 3  # sama dengan Colab
+                for _ in range(n_runs):
+                    try:
+                        W = rbf_kernel(X, gamma=gamma_val)
+                        W[W < 0.01] = 0
 
-    for gamma in gamma_array:
-        gamma_val = gamma[0]
-        sil_list, dbi_list = [], []
+                        if np.allclose(W, 0) or np.any(np.isnan(W)) or np.any(np.isinf(W)):
+                            raise ValueError("Invalid kernel matrix")
 
-        for _ in range(n_runs):
-            try:
-                W = rbf_kernel(data_for_kernel, gamma=gamma_val)
-                W[W < 0.01] = 0  # Thresholding seperti di Colab
+                        L = laplacian(W, normed=True)
 
-                if np.allclose(W, 0) or np.any(np.isnan(W)) or np.any(np.isinf(W)):
-                    raise ValueError("Invalid kernel matrix.")
+                        if np.any(np.isnan(L.data)) or np.any(np.isinf(L.data)):
+                            raise ValueError("Invalid Laplacian")
 
-                L = laplacian(W, normed=True)
+                        eigvals, eigvecs = eigsh(L, k=2, which='SM', tol=1e-6)
+                        U = normalize(eigvecs, norm='l2')
 
-                if np.any(np.isnan(L.data)) or np.any(np.isinf(L.data)):
-                    raise ValueError("Invalid Laplacian.")
+                        if np.isnan(U).any() or np.isinf(U).any():
+                            raise ValueError("Invalid U")
 
-                eigvals, eigvecs = eigsh(L, k=2, which='SM', tol=1e-6)
-                U = normalize(eigvecs, norm='l2')
+                        kmeans = KMeans(n_clusters=2, random_state=SEED, n_init=10).fit(U)
+                        labels = kmeans.labels_
 
-                if np.isnan(U).any() or np.isinf(U).any():
-                    raise ValueError("Invalid U.")
+                        if len(set(labels)) < 2:
+                            raise ValueError("Only one cluster")
 
-                kmeans = KMeans(n_clusters=2, random_state=SEED, n_init=10).fit(U)
-                labels = kmeans.labels_
+                        sil = silhouette_score(U, labels)
+                        dbi = davies_bouldin_score(U, labels)
 
-                if len(set(labels)) < 2:
-                    raise ValueError("Only one cluster.")
+                        sil_list.append(sil)
+                        dbi_list.append(dbi)
 
-                sil = silhouette_score(U, labels)
-                dbi = davies_bouldin_score(U, labels)
+                    except Exception:
+                        sil_list.append(0.0)
+                        dbi_list.append(10.0)
 
-                sil_list.append(sil)
-                dbi_list.append(dbi)
+                mean_sil = np.mean(sil_list)
+                mean_dbi = np.mean(dbi_list)
+                fitness_score = -mean_sil + mean_dbi
+                scores.append(fitness_score)
 
-            except Exception:
-                sil_list.append(0.0)
-                dbi_list.append(10.0)
-
-        mean_sil = np.mean(sil_list)
-        mean_dbi = np.mean(dbi_list)
-        fitness_score = -mean_sil + mean_dbi
-        scores.append(fitness_score)
-
-    return np.array(scores)
-
-# Jalankan otomatis tanpa button
-with st.spinner("Menjalankan optimasi PSO (50 iterasi, 20 partikel)..."):
-    # Parameter PSO sama persis dengan Colab
-    options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}
-    bounds = (np.array([0.001]), np.array([5.0]))
+            return np.array(scores)
+        return evaluate_gamma_robust
     
-    optimizer = GlobalBestPSO(
-        n_particles=20,
-        dimensions=1,
-        options=options,
-        bounds=bounds
-    )
+    # Buat evaluator dengan X_scaled
+    evaluator = get_evaluator(X_scaled)
     
-    # Jalankan optimasi
-    best_cost, best_pos = optimizer.optimize(evaluate_gamma_robust, iters=50)
-    best_gamma = best_pos[0]
-    
-    # Simpan hasil
-    st.session_state.best_gamma = best_gamma
-    st.session_state.pso_history = optimizer.swarm
-    
-    # Evaluasi clustering dengan gamma optimal (sama seperti Colab)
-    W_opt = rbf_kernel(st.session_state.X_scaled, gamma=best_gamma)
-    W_opt[W_opt < 0.01] = 0
-    
-    if not (np.allclose(W_opt, 0) or np.any(np.isnan(W_opt)) or np.any(np.isinf(W_opt))):
-        L_opt = laplacian(W_opt, normed=True)
-        eigvals_opt, eigvecs_opt = eigsh(L_opt, k=2, which='SM', tol=1e-6)
-        U_opt = normalize(eigvecs_opt, norm='l2')
+    # Jalankan otomatis tanpa button
+    with st.spinner("Menjalankan optimasi PSO (50 iterasi, 20 partikel)..."):
+        # Parameter PSO sama persis dengan Colab
+        options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}
+        bounds = (np.array([0.001]), np.array([5.0]))
         
-        kmeans_opt = KMeans(n_clusters=2, random_state=SEED, n_init=10).fit(U_opt)
-        labels_opt = kmeans_opt.labels_
+        optimizer = GlobalBestPSO(
+            n_particles=20,
+            dimensions=1,
+            options=options,
+            bounds=bounds
+        )
+        
+        # Jalankan optimasi dengan evaluator
+        best_cost, best_pos = optimizer.optimize(evaluator, iters=50)
+        best_gamma = best_pos[0]
         
         # Simpan hasil
-        st.session_state.U_opt = U_opt
-        st.session_state.labels_opt = labels_opt
+        st.session_state.best_gamma = best_gamma
+        st.session_state.pso_history = optimizer.swarm
         
-        # Hitung metrik
-        sil_score = silhouette_score(U_opt, labels_opt)
-        dbi_score = davies_bouldin_score(U_opt, labels_opt)
+        # Evaluasi clustering dengan gamma optimal (sama seperti Colab)
+        W_opt = rbf_kernel(X_scaled, gamma=best_gamma)
+        W_opt[W_opt < 0.01] = 0
         
-        # Tampilkan hasil utama
-        st.success(f"Optimasi selesai! Gamma terbaik: {best_gamma:.4f}")
-        st.metric("Fitness Terbaik", f"{best_cost:.4f}")
-        
-        # Visualisasi clustering
-        fig = plt.figure(figsize=(8, 6))
-        plt.scatter(U_opt[:, 0], U_opt[:, 1], c=labels_opt, cmap='viridis')
-        plt.title(f'Clustering Optimal (γ={best_gamma:.4f})')
-        st.pyplot(fig)
-        
-        # Tampilkan metrik evaluasi
-        col1, col2 = st.columns(2)
-        col1.metric("Silhouette Score", f"{sil_score:.4f}")
-        col2.metric("Davies-Bouldin Index", f"{dbi_score:.4f}")
-        
-        # Tampilkan detail partikel seperti di Colab
-        with st.expander("Detail Partikel PSO"):
-            st.subheader("Global Best (gbest)")
-            st.write(f"- Gamma: {optimizer.swarm.best_pos[0]:.4f}")
-            st.write(f"- Fitness: {optimizer.swarm.best_cost:.4f}")
+        if not (np.allclose(W_opt, 0) or np.any(np.isnan(W_opt)) or np.any(np.isinf(W_opt))):
+            L_opt = laplacian(W_opt, normed=True)
+            eigvals_opt, eigvecs_opt = eigsh(L_opt, k=2, which='SM', tol=1e-6)
+            U_opt = normalize(eigvecs_opt, norm='l2')
             
-            st.subheader("Personal Best (pbest) Partikel")
-            pbest_data = []
-            for i, (pos, cost) in enumerate(zip(optimizer.swarm.pbest_pos, optimizer.swarm.pbest_cost)):
-                pbest_data.append({
-                    "Partikel": i+1,
-                    "Gamma": f"{pos[0]:.4f}",
-                    "Fitness": f"{cost:.4f}"
-                })
-            st.dataframe(pd.DataFrame(pbest_data))
-        
-        # Simpan ke dataframe
-        df = st.session_state.df_cleaned.copy()
-        df['Cluster'] = labels_opt
-        st.session_state.df_clustered = df
-        
-        st.write("Distribusi Cluster:", Counter(labels_opt))
+            kmeans_opt = KMeans(n_clusters=2, random_state=SEED, n_init=10).fit(U_opt)
+            labels_opt = kmeans_opt.labels_
+            
+            # Simpan hasil
+            st.session_state.U_opt = U_opt
+            st.session_state.labels_opt = labels_opt
+            
+            # Hitung metrik
+            sil_score = silhouette_score(U_opt, labels_opt)
+            dbi_score = davies_bouldin_score(U_opt, labels_opt)
+            
+            # Tampilkan hasil utama
+            st.success(f"Optimasi selesai! Gamma terbaik: {best_gamma:.4f}")
+            st.metric("Fitness Terbaik", f"{best_cost:.4f}")
+            
+            # Visualisasi clustering
+            fig = plt.figure(figsize=(8, 6))
+            plt.scatter(U_opt[:, 0], U_opt[:, 1], c=labels_opt, cmap='viridis')
+            plt.title(f'Clustering Optimal (γ={best_gamma:.4f})')
+            st.pyplot(fig)
+            
+            # Tampilkan metrik evaluasi
+            col1, col2 = st.columns(2)
+            col1.metric("Silhouette Score", f"{sil_score:.4f}")
+            col2.metric("Davies-Bouldin Index", f"{dbi_score:.4f}")
+            
+            # Tampilkan detail partikel seperti di Colab
+            with st.expander("Detail Partikel PSO"):
+                st.subheader("Global Best (gbest)")
+                st.write(f"- Gamma: {optimizer.swarm.best_pos[0]:.4f}")
+                st.write(f"- Fitness: {optimizer.swarm.best_cost:.4f}")
+                
+                st.subheader("Personal Best (pbest) Partikel")
+                pbest_data = []
+                for i, (pos, cost) in enumerate(zip(optimizer.swarm.pbest_pos, optimizer.swarm.pbest_cost)):
+                    pbest_data.append({
+                        "Partikel": i+1,
+                        "Gamma": f"{pos[0]:.4f}",
+                        "Fitness": f"{cost:.4f}"
+                    })
+                st.dataframe(pd.DataFrame(pbest_data))
+            
+            # Simpan ke dataframe
+            df = st.session_state.df_cleaned.copy()
+            df['Cluster'] = labels_opt
+            st.session_state.df_clustered = df
+            
+            st.write("Distribusi Cluster:", Counter(labels_opt))
                 
 def results_analysis():
     st.header("📊 Hasil Analisis Cluster")
