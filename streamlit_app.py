@@ -394,7 +394,7 @@ def clustering_analysis():
     # =============================================
     st.subheader("3. Optimasi Gamma dengan PSO")
     
-    if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
+        if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
         with st.spinner("Menjalankan optimasi PSO (mungkin memakan waktu beberapa menit)..."):
             try:
                 # Dictionary untuk menyimpan history
@@ -406,6 +406,7 @@ def clustering_analysis():
                     'dbi': []
                 }
                 
+                # Definisikan fungsi evaluasi TANPA parameter callback
                 def evaluate_gamma_robust(gamma_array):
                     scores = []
                     data_for_kernel = X_scaled
@@ -456,7 +457,7 @@ def clustering_analysis():
 
                     return np.array(scores)
                 
-                # Callback function untuk menyimpan history
+                # Definisikan callback function terpisah
                 def callback(optimizer):
                     current_iter = optimizer.it
                     best_pos = optimizer.swarm.best_pos
@@ -492,6 +493,7 @@ def clustering_analysis():
                 options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}
                 bounds = (np.array([0.001]), np.array([5.0]))
                 
+                # Inisialisasi optimizer dengan callback terpisah
                 optimizer = GlobalBestPSO(
                     n_particles=20,
                     dimensions=1,
@@ -502,11 +504,12 @@ def clustering_analysis():
                 # Buat progress bar
                 progress_bar = st.progress(0, text="Memulai optimasi...")
                 
+                # Jalankan optimasi dengan callback sebagai parameter terpisah
                 best_cost, best_pos = optimizer.optimize(
-                    evaluate_gamma_robust,
+                    evaluate_gamma_robust,  # Fungsi evaluasi
                     iters=50,
                     verbose=False,
-                    callback=callback
+                    callback=callback  # Callback di sini
                 )
                 
                 best_gamma = best_pos[0]
