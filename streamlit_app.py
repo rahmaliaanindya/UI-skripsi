@@ -157,6 +157,10 @@ def evaluate_gamma_parallel(gamma_array, X_scaled, best_cluster):
     
     return np.array(scores)
 
+def objective_func_wrapper(gamma_array, X_scaled, best_cluster):
+    """Wrapper function yang bisa di-pickle untuk PSO"""
+    return evaluate_gamma_parallel(gamma_array, X_scaled, best_cluster)
+
 def run_fast_pso_optimization(X_scaled, best_cluster):
     """Optimasi PSO dengan percepatan (FIXED VERSION)"""
     st.info("🚀 Menjalankan PSO versi cepat dengan optimasi caching dan parallel processing...")
@@ -192,21 +196,8 @@ def run_fast_pso_optimization(X_scaled, best_cluster):
     best_pos_history = []
     start_time = datetime.now()
     
-    # Define the objective function properly
-    def objective_func(gamma_array):
-        """Wrapper function for PSO that returns proper shape"""
-        try:
-            scores = evaluate_gamma_parallel(gamma_array, X_scaled, best_cluster)
-            return scores.reshape(-1)  # Pastikan return 1D array
-        except Exception as e:
-            st.error(f"Error in objective function: {str(e)}")
-            return np.full(gamma_array.shape[0], 10.0)  # Return bad scores
-    
-    # 4. Define a custom callback function that matches PySwarms' expected signature
     def pso_callback(optimizer_data):
-        """Custom callback function for PySwarms that matches their expected signature"""
-        # optimizer_data contains: (current_cost, current_pos, current_vel)
-        # We'll use the best values from the optimizer
+        """Callback untuk tracking progress"""
         progress = (optimizer.it + 1) / optimizer.max_iter
         progress_bar.progress(min(int(progress * 100), 100))
         
@@ -223,18 +214,25 @@ def run_fast_pso_optimization(X_scaled, best_cluster):
         cost_history.append(optimizer.swarm.best_cost)
         best_pos_history.append(optimizer.swarm.best_pos[0])
     
-    # 5. Jalankan optimasi dengan timeout
+    # 4. Jalankan optimasi dengan timeout
     try:
         with st.spinner("Optimasi berjalan (maksimal 5 menit)..."):
+            # Gunakan partial untuk binding parameter yang tidak berubah
+            from functools import partial
+            objective_func = partial(objective_func_wrapper, 
+                                   X_scaled=X_scaled, 
+                                   best_cluster=best_cluster)
+            
             best_cost, best_pos = optimizer.optimize(
                 objective_func,
                 iters=50,
-                n_processes=4,  # Use 4 parallel processes
+                n_processes=4,
                 verbose=False
             )
             
-            # Manually call our callback after optimization to update final state
+            # Panggil callback untuk update terakhir
             pso_callback(None)
+            
     except TimeoutError:
         st.warning("Optimasi dihentikan setelah 5 menit, menggunakan hasil terbaik saat ini")
         best_pos = optimizer.swarm.best_pos
@@ -243,7 +241,7 @@ def run_fast_pso_optimization(X_scaled, best_cluster):
         st.error(f"Error during optimization: {str(e)}")
         return None, []
     
-    # 6. Tampilkan hasil
+    # 5. Tampilkan hasil
     if best_pos is not None and not np.isnan(best_pos).any():
         st.success(f"Optimasi selesai! Gamma optimal: {best_pos[0]:.4f} (Cost: {best_cost:.4f})")
         
