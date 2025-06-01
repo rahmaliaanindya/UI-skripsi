@@ -517,7 +517,7 @@ def clustering_analysis():
     # =============================================
     # 4. OPTIMASI GAMMA DENGAN PSO
     # =============================================
-     st.subheader("3. Optimasi Gamma dengan PSO (Optimized)")
+    st.subheader("3. Optimasi Gamma dengan PSO (Optimized)")
     
     if st.button("🚀 Jalankan Optimasi PSO (Cepat)", type="primary"):
         with st.spinner("Mempersiapkan optimasi..."):
@@ -530,47 +530,48 @@ def clustering_analysis():
                 'cost': cost_history,
                 'best_gamma': best_gamma
             }
-    
-                # =============================================
-                # 5. CLUSTERING DENGAN GAMMA OPTIMAL
-                # =============================================
+            
+            # =============================================
+            # 5. CLUSTERING DENGAN GAMMA OPTIMAL
+            # =============================================
+            try:
                 W_opt = rbf_kernel(X_scaled, gamma=best_gamma)
-    
+                
                 if not (np.allclose(W_opt, 0) or np.any(np.isnan(W_opt)) or np.any(np.isinf(W_opt))):
                     L_opt = laplacian(W_opt, normed=True)
-    
+                    
                     if not (np.any(np.isnan(L_opt.data)) or np.any(np.isinf(L_opt.data))):
                         eigvals_opt, eigvecs_opt = eigsh(L_opt, k=best_cluster, which='SM', tol=1e-6)
                         U_opt = normalize(eigvecs_opt, norm='l2')
-    
+                        
                         if not (np.isnan(U_opt).any() or np.isinf(U_opt).any()):
                             kmeans_opt = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
                             labels_opt = kmeans_opt.fit_predict(U_opt)
-    
+                            
                             if len(np.unique(labels_opt)) > 1:
                                 st.session_state.U_opt = U_opt
                                 st.session_state.labels_opt = labels_opt
-    
+                                
                                 sil_opt = silhouette_score(U_opt, labels_opt)
                                 dbi_opt = davies_bouldin_score(U_opt, labels_opt)
-    
+                                
                                 col1, col2 = st.columns(2)
                                 col1.metric("Silhouette Score", f"{sil_opt:.4f}", 
                                            f"{(sil_opt - sil_score):.4f} vs baseline")
                                 col2.metric("Davies-Bouldin Index", f"{dbi_opt:.4f}", 
                                            f"{(dbi_score - dbi_opt):.4f} vs baseline")
-    
+                                
                                 # =============================================
                                 # 6. VISUALISASI HASIL
                                 # =============================================
                                 st.subheader("4. Visualisasi Hasil")
-    
+                                
                                 pca = PCA(n_components=2)
                                 U_before_pca = pca.fit_transform(st.session_state.U_before)
                                 U_opt_pca = pca.transform(U_opt)
-    
+                                
                                 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
-    
+                                
                                 scatter1 = ax1.scatter(U_before_pca[:,0], U_before_pca[:,1], 
                                                      c=st.session_state.labels_before, 
                                                      cmap='viridis', s=50, alpha=0.7)
@@ -578,7 +579,7 @@ def clustering_analysis():
                                 ax1.set_xlabel("PC1")
                                 ax1.set_ylabel("PC2")
                                 plt.colorbar(scatter1, ax=ax1, label='Cluster')
-    
+                                
                                 scatter2 = ax2.scatter(U_opt_pca[:,0], U_opt_pca[:,1], 
                                                      c=labels_opt, 
                                                      cmap='viridis', s=50, alpha=0.7)
@@ -586,9 +587,9 @@ def clustering_analysis():
                                 ax2.set_xlabel("PC1")
                                 ax2.set_ylabel("PC2")
                                 plt.colorbar(scatter2, ax=ax2, label='Cluster')
-    
+                                
                                 st.pyplot(fig)
-    
+                                
                                 # =============================================
                                 # 7. SIMPAN HASIL KE DATAFRAME
                                 # =============================================
@@ -597,18 +598,18 @@ def clustering_analysis():
                                         df = st.session_state.df_cleaned.copy()
                                     else:
                                         df = st.session_state.df.copy()
-    
+                                    
                                     df['Cluster'] = labels_opt
                                     st.session_state.df_clustered = df
-    
+                                    
                                     st.subheader("Distribusi Cluster")
                                     cluster_counts = df['Cluster'].value_counts().sort_index()
                                     st.bar_chart(cluster_counts)
-    
+                                    
                                     if 'Kabupaten/Kota' in df.columns:
                                         st.subheader("Pemetaan Cluster")
                                         st.dataframe(df[['Kabupaten/Kota', 'Cluster']].sort_values('Cluster'))
-    
+                                    
                                 except Exception as e:
                                     st.error(f"Error dalam menyimpan hasil: {str(e)}")
                             else:
@@ -619,7 +620,6 @@ def clustering_analysis():
                         st.error("Matriks Laplacian mengandung nilai NaN atau inf.")
                 else:
                     st.error("Matriks kernel W mengandung nilai NaN, inf, atau nol semua.")
-    
             except Exception as e:
                 st.error(f"Terjadi kesalahan dalam optimasi PSO: {str(e)}")
 
