@@ -575,141 +575,51 @@ def optimized_clustering_analysis():
     
     # Optimasi Gamma dengan PSO
     st.subheader("4. Optimasi Gamma dengan PSO")
-def run_pso_optimization_fixed(X_scaled, best_cluster):
-    # 1. Hybrid Gamma Initialization - Solusi No.6
-   def hybrid_gamma_initialization(X):
-    # Hitung pairwise distances
-    distances = np.sqrt(np.sum((X[:, np.newaxis] - X)**2, axis=2))
     
-    # Hitung gamma min dan max
-    percentile_75 = np.percentile(distances, 75)
-    gamma_min = 1 / (2 * percentile_75**2)
-    
-    percentile_25 = np.percentile(distances, 25)
-    gamma_max = 1 / (2 * percentile_25**2)
-    
-    # Batasi nilai gamma
-    return max(gamma_min, 0.001), min(gamma_max, 5.0)
-    
-    gamma_min, gamma_max = hybrid_gamma_initialization(X_scaled)
-    
-    # 2. Setup Progress Tracking
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    fig, ax = plt.subplots(figsize=(8,4))
-    chart_placeholder = st.empty()
-    cost_history = []
-    gamma_history = []
-    
-    # 3. PSO Configuration dengan Early Stopping - Solusi No.3
-    class EarlyStoppingPSO(GlobalBestPSO):
-        def __init__(self, *args, patience=5, tol=1e-4, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.patience = patience
-            self.tol = tol
-            self.best_cost_history = []
+    if st.button("Jalankan Optimasi PSO"):
+        with st.spinner('Menjalankan optimasi PSO...'):
+            best_gamma, cost_history, gamma_history = run_pso_optimization_fixed(X_scaled, best_cluster)
             
-        def optimize(self, objective_func, iters, **kwargs):
-            for i in range(iters):
-                super().optimize(objective_func, iters=1, **kwargs)
-                self.best_cost_history.append(self.swarm.best_cost)
-                
-                # Early stopping check
-                if len(self.best_cost_history) > self.patience:
-                    recent_improvement = abs(np.diff(self.best_cost_history[-self.patience:]).mean())
-                    if recent_improvement < self.tol:
-                        break
-    
-    # 4. Optimized Evaluation Function - Gabungan Solusi No.1, 2, 4
-    @njit
-    def efficient_rbf_kernel(X, gamma):
-        n = X.shape[0]
-        K = np.zeros((n,n))
-        for i in range(n):
-            for j in range(i,n):  # Hitung segitiga atas saja
-                diff = X[i] - X[j]
-                K[i,j] = np.exp(-gamma * np.dot(diff, diff))
-                K[j,i] = K[i,j]  # Simetri
-        return K
-    
-    def evaluate_pso(gamma_array):
-        gamma_array = gamma_array.reshape(-1, 1)
-        scores = np.zeros(len(gamma_array))
-        
-        for i in range(len(gamma_array)):
-            gamma = gamma_array[i,0]
+            st.session_state.best_gamma = best_gamma
+            st.session_state.cost_history = cost_history
+            st.session_state.gamma_history = gamma_history
             
-            try:
-                # Versi optimasi perhitungan
-                W = efficient_rbf_kernel(X_scaled, gamma)
-                D = np.diag(W.sum(axis=1))
-                L = D - W
-                
-                # Eigen decomposition
-                eigvals, eigvecs = eigh(L, subset_by_index=[0, best_cluster-1])
-                U = eigvecs / np.linalg.norm(eigvecs, axis=1, keepdims=True)
-                
-                # K-means
-                labels = KMeans(n_clusters=best_cluster, n_init=5).fit_predict(U)
-                
-                # Metrics
-                sil = silhouette_score(U, labels)
-                dbi = davies_bouldin_score(U, labels)
-                scores[i] = -sil + dbi
-                
-            except:
-                scores[i] = 10.0  # Penalty jika error
-        
-        # Track progress
-        best_idx = np.argmin(scores)
-        cost_history.append(scores[best_idx])
-        gamma_history.append(gamma_array[best_idx,0])
-        
-        # Update UI setiap 2 iterasi
-        if len(cost_history) % 2 == 0 or len(cost_history) == 1:
-            progress = min(100, int((len(cost_history)/50)*100))
-            progress_bar.progress(progress)
+            # Spectral Clustering dengan gamma optimal
+            W_opt = rbf_kernel(X_scaled, gamma=best_gamma)
+            W_opt[W_opt < threshold] = 0
             
-            status_text.markdown(
-                f"**Iterasi:** {len(cost_history)}/50\n"
-                f"**Gamma Terbaik:** {gamma_history[-1]:.4f}\n"
-                f"**Cost Terbaik:** {min(cost_history):.4f}"
-            )
+            D_opt = np.diag(W_opt.sum(axis=1))
+            D_inv_sqrt_opt = np.diag(1.0 / np.sqrt(W_opt.sum(axis=1)))
+            L_sym_opt = np.eye(W_opt.shape[0]) - D_inv_sqrt_opt @ W_opt @ D_inv_sqrt_opt
             
-            ax.clear()
-            ax.plot(range(1, len(cost_history)+1), cost_history, 'b-')
-            ax.set_title('Konvergensi PSO')
-            ax.grid(True)
-            chart_placeholder.pyplot(fig)
-            plt.close(fig)
-        
-        return scores
-    
-    # 5. Main Optimization Process
-    try:
-        optimizer = EarlyStoppingPSO(
-            n_particles=20,
-            dimensions=1,
-            options={'c1': 1.5, 'c2': 1.5, 'w': 0.7},
-            bounds=(np.array([gamma_min]), np.array([gamma_max])),
-            patience=5,
-            tol=1e-4
-        )
-        
-        best_cost, best_pos = optimizer.optimize(
-            evaluate_pso,
-            iters=50,
-            n_processes=1
-        )
-        
-        best_gamma = best_pos[0]
-        st.success(f"Optimasi selesai! Gamma optimal: {best_gamma:.4f}")
-        
-        return best_gamma, cost_history, gamma_history
-        
-    except Exception as e:
-        st.error(f"Error dalam optimasi: {str(e)}")
-        return 0.1, [], []  # Fallback value
+            eigvals_opt, eigvecs_opt = eigh(L_sym_opt)
+            U_opt = eigvecs_opt[:, :k]
+            U_norm_opt = U_opt / np.linalg.norm(U_opt, axis=1, keepdims=True)
+            
+            kmeans_opt = KMeans(n_clusters=k, random_state=SEED, n_init=10)
+            labels_opt = kmeans_opt.fit_predict(U_norm_opt)
+            
+            st.session_state.U_opt = U_norm_opt
+            st.session_state.labels_opt = labels_opt
+            
+            sil_score_opt = silhouette_score(U_norm_opt, labels_opt)
+            dbi_score_opt = davies_bouldin_score(U_norm_opt, labels_opt)
+            
+            st.success(f"Optimasi selesai! Gamma optimal: {best_gamma:.4f}")
+            st.success(f"Hasil clustering dengan gamma optimal - Silhouette: {sil_score_opt:.4f}, DBI: {dbi_score_opt:.4f}")
+            
+            # Visualisasi hasil clustering dengan gamma optimal
+            fig = plt.figure(figsize=(8, 6))
+            plt.scatter(U_norm_opt[:, 0], U_norm_opt[:, 1], c=labels_opt, cmap='viridis', alpha=0.7)
+            plt.title(f'Spectral Clustering dengan Gamma Optimal ({best_gamma:.4f})\nSilhouette: {sil_score_opt:.4f}, DBI: {dbi_score_opt:.4f}')
+            plt.xlabel('Eigenvector 1')
+            plt.ylabel('Eigenvector 2')
+            st.pyplot(fig)
+            
+            # Simpan hasil clustering ke dataframe
+            df = st.session_state.df_cleaned.copy()
+            df['Cluster'] = labels_opt
+            st.session_state.df_clustered = df
 
 def results_analysis():
     st.header("📊 Hasil Analisis Cluster")
