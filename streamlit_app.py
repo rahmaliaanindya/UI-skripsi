@@ -1,4 +1,4 @@
-import streamlit as st
+SIimport streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -142,24 +142,19 @@ def evaluate_single_gamma(args):
         print(f"Error evaluating gamma {gamma_val}: {str(e)}")
         return 10.0
 
-def evaluate_gamma_parallel(gamma_array, X_scaled, best_cluster):
-    """Evaluasi gamma secara parallel"""
-    n_cores = min(cpu_count(), 4)  # Batasi core yang digunakan
-    
+def pso_objective_function(gamma_array, X_scaled=None, best_cluster=None):
+    """Fungsi objective untuk PSO yang bisa dipickle"""
     # Pastikan gamma_array berbentuk (n_particles, 1)
     if gamma_array.ndim == 1:
         gamma_array = gamma_array.reshape(-1, 1)
     
-    args_list = [(g, X_scaled, best_cluster) for g in gamma_array]
+    n_cores = min(cpu_count(), 4)  # Batasi core yang digunakan
+    args_list = [(g[0], X_scaled, best_cluster) for g in gamma_array]
     
     with Pool(processes=n_cores) as pool:
         scores = pool.map(evaluate_single_gamma, args_list)
     
     return np.array(scores)
-
-def objective_func_wrapper(gamma_array, X_scaled, best_cluster):
-    """Wrapper function yang bisa di-pickle untuk PSO"""
-    return evaluate_gamma_parallel(gamma_array, X_scaled, best_cluster)
 
 def run_fast_pso_optimization(X_scaled, best_cluster):
     """Optimasi PSO dengan percepatan (FIXED VERSION)"""
@@ -217,11 +212,13 @@ def run_fast_pso_optimization(X_scaled, best_cluster):
     # 4. Jalankan optimasi dengan timeout
     try:
         with st.spinner("Optimasi berjalan (maksimal 5 menit)..."):
-            # Gunakan serial processing sebagai fallback
+            # Buat partial function untuk objective function
+            objective_func = lambda x: pso_objective_function(x, X_scaled, best_cluster)
+            
             best_cost, best_pos = optimizer.optimize(
-                lambda g: evaluate_gamma_serial(g, X_scaled, best_cluster),
+                objective_func,
                 iters=50,
-                n_processes=1,  # Nonaktifkan multiprocessing
+                n_processes=1,  # Nonaktifkan multiprocessing internal PySwarms
                 verbose=False
             )
             
@@ -239,7 +236,7 @@ def run_fast_pso_optimization(X_scaled, best_cluster):
     else:
         st.error("Optimasi gagal, tidak mendapatkan nilai gamma yang valid")
         return None, []
-
+        
 def evaluate_gamma_serial(gamma_array, X_scaled, best_cluster):
     """Evaluasi gamma secara serial"""
     scores = []
