@@ -577,11 +577,19 @@ def optimized_clustering_analysis():
     st.subheader("4. Optimasi Gamma dengan PSO")
 def run_pso_optimization_fixed(X_scaled, best_cluster):
     # 1. Hybrid Gamma Initialization - Solusi No.6
-    def hybrid_gamma_initialization(X):
-        distances = np.sqrt(np.sum((X[:, np.newaxis] - X)**2, axis=2))
-        gamma_min = 1/(2*(np.percentile(distances, 75))**2
-        gamma_max = 1/(2*(np.percentile(distances, 25))**2
-        return max(gamma_min, 0.001), min(gamma_max, 5.0)
+   def hybrid_gamma_initialization(X):
+    # Hitung pairwise distances
+    distances = np.sqrt(np.sum((X[:, np.newaxis] - X)**2, axis=2))
+    
+    # Hitung gamma min dan max
+    percentile_75 = np.percentile(distances, 75)
+    gamma_min = 1 / (2 * percentile_75**2)
+    
+    percentile_25 = np.percentile(distances, 25)
+    gamma_max = 1 / (2 * percentile_25**2)
+    
+    # Batasi nilai gamma
+    return max(gamma_min, 0.001), min(gamma_max, 5.0)
     
     gamma_min, gamma_max = hybrid_gamma_initialization(X_scaled)
     
