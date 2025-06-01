@@ -393,10 +393,11 @@ def clustering_analysis():
     # 4. OPTIMASI GAMMA DENGAN PSO - REVISI CALLBACK
     # =============================================
     st.subheader("3. Optimasi Gamma dengan PSO")
+	
 def evaluate_gamma_robust(gamma_values):
-	"""Fungsi evaluasi untuk PSO yang lebih robust terhadap error."""
-	    gamma = gamma_values[0]  # Karena PSO bekerja dengan array 1D
-                try:
+    """Fungsi evaluasi untuk PSO yang lebih robust terhadap error."""
+    gamma = gamma_values[0]  # Karena PSO bekerja dengan array 1D
+    try:
         # Hitung matriks kernel
         W = rbf_kernel(X_scaled, gamma=gamma)
         
