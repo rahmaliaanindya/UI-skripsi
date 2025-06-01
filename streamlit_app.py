@@ -224,8 +224,6 @@ def run_optimization(X_scaled, best_cluster, colab_gamma=None):
         if iteration > 10 and len(history['g_best']) >= 5:
             last_5_std = np.std(history['g_best'][-5:])
             if last_5_std < 1e-5:
-                optimizer.stop()
-                st.session_state.early_stop = True
                 return True  # Stop optimization
         
         # Adaptive iterations
@@ -240,8 +238,8 @@ def run_optimization(X_scaled, best_cluster, colab_gamma=None):
     best_cost, best_pos = optimizer.optimize(
         lambda gamma: evaluate_gamma_robust(gamma, X_scaled, best_cluster),
         iters=st.session_state.adaptive_iterations,
-        callback=callback,
-        early_stop=True
+        n_processes=None,  # Let PSO handle parallel processing
+        verbose=False
     )
     
     # 6. Simpan hasil
