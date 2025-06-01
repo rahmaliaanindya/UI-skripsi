@@ -848,13 +848,7 @@ def results_analysis():
                     cluster_stats = merged_df.groupby('Cluster')[analysis_var].describe()
                     st.write(f"Statistik {analysis_var} per Cluster:")
                     st.dataframe(cluster_stats.style.format("{:.2f}"))
-                    
-                    # Visualisasi
-                    fig, ax = plt.subplots(figsize=(10, 6))
-                    sns.boxplot(data=merged_df, x='Cluster', y=analysis_var, palette='viridis')
-                    plt.title(f'Distribusi {analysis_var} per Cluster')
-                    st.pyplot(fig)
-                
+
         except Exception as e:
             st.error(f"Terjadi kesalahan dalam pemetaan: {str(e)}")
             if 'merged_df' in locals():
