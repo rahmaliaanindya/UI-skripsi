@@ -466,7 +466,7 @@ def clustering_analysis():
                 
                 try:
                     optimizer = GlobalBestPSO(
-                        n_particles=20,
+                        n_particles=10,
                         dimensions=1,
                         options=options,
                         bounds=bounds
@@ -479,7 +479,7 @@ def clustering_analysis():
                 progress_bar = st.progress(0, text="Memulai optimasi...")
                 
                 # Jalankan optimasi secara manual per iterasi
-                for i in range(30):
+                for i in range(20):
                     try:
                         # Jalankan satu iterasi
                         cost, pos = optimizer.optimize(evaluate_gamma_robust, iters=1)
