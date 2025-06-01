@@ -238,6 +238,9 @@ def exploratory_data_analysis():
     sns.histplot(df[selected_col], kde=True, bins=30, color='skyblue')
     ax.set_title(f'Distribusi {selected_col}')
     st.pyplot(fig)
+    st.markdown("""
+    "Count" = jumlah kabupaten/kota yang termasuk dalam satu kelompok nilai.
+    """)
     
     # Correlation Matrix
     st.subheader("Matriks Korelasi")
