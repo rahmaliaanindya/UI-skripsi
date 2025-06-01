@@ -438,7 +438,7 @@ def clustering_analysis():
             st.warning(f"Error pada gamma={gamma:.4f}: {str(e)}")
             return np.inf
     
-    if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
+        if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
         with st.spinner("Menjalankan optimasi PSO (mungkin memakan waktu beberapa menit)..."):
             try:
                 # Dictionary untuk menyimpan history
@@ -453,7 +453,7 @@ def clustering_analysis():
                 }
                 
                 # Setup optimizer
-                               options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}
+                options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}  # Ensure this line is correctly indented
                 bounds = (np.array([0.001]), np.array([2.0]))
                 
                 optimizer = GlobalBestPSO(
