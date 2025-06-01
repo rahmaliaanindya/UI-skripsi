@@ -400,6 +400,20 @@ def clustering_analysis():
     plt.ylabel('Eigenvector 2')
     st.pyplot(fig)
 
+    st.markdown("""
+    - **Plot klasterisasi Spectral Clustering** menampilkan pemetaan data ke ruang eigenvector utama.
+    - **Setiap titik** mewakili satu kabupaten/kota yang diproyeksikan ke dua dimensi utama (Eigenvector 1 dan Eigenvector 2).
+    - **Warna titik** menunjukkan klaster atau kelompok yang terbentuk berdasarkan kemiripan struktur data.
+    
+    - **Titik-titik yang berdekatan** dalam visualisasi cenderung memiliki karakteristik yang mirip berdasarkan variabel yang dianalisis.
+    - **Nilai Silhouette Score** mengukur kualitas pemisahan klaster:
+      - Nilai mendekati **1.0** → Pemisahan antar klaster sangat baik.
+      - Nilai di atas **0.5** → Klaster dianggap cukup baik.
+    - **Nilai Davies-Bouldin Index (DBI)** menilai kepadatan dan jarak antar klaster:
+      - Nilai yang **semakin kecil** → Kualitas klaster semakin baik (klaster kompak dan terpisah jelas).
+    """)
+
+    
     # =============================================
     # 4. OPTIMASI GAMMA DENGAN PSO - REVISI TANPA CALLBACK
     # =============================================
