@@ -251,15 +251,15 @@ def exploratory_data_analysis():
         st.pyplot(fig)
     else:
         st.warning("Tidak cukup variabel numerik untuk menampilkan matriks korelasi")
-st.markdown("""
-- **Heatmap korelasi** menunjukkan hubungan antar variabel dalam bentuk angka dan warna.
-- **Nilai korelasi** berkisar dari **-1 sampai 1**:
-  - `+1` → Hubungan positif sempurna (jika satu variabel naik, yang lain ikut naik)
-  - `0` → Tidak ada hubungan linear
-  - `-1` → Hubungan negatif sempurna (jika satu variabel naik, yang lain turun)
-- **Warna biru** menunjukkan korelasi negatif, **warna merah** menunjukkan korelasi positif.
-- Semakin gelap warnanya, semakin kuat hubungan antar variabel tersebut.
-""")
+    st.markdown("""
+    - **Heatmap korelasi** menunjukkan hubungan antar variabel dalam bentuk angka dan warna.
+    - **Nilai korelasi** berkisar dari **-1 sampai 1**:
+      - `+1` → Hubungan positif sempurna (jika satu variabel naik, yang lain ikut naik)
+      - `0` → Tidak ada hubungan linear
+      - `-1` → Hubungan negatif sempurna (jika satu variabel naik, yang lain turun)
+    - **Warna biru** menunjukkan korelasi negatif, **warna merah** menunjukkan korelasi positif.
+    - Semakin gelap warnanya, semakin kuat hubungan antar variabel tersebut.
+    """)
 
 def data_preprocessing():
     st.header("⚙️ Data Preprocessing")
