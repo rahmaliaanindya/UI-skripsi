@@ -95,24 +95,33 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ======================
-# OPTIMIZED PSO FUNCTIONS
+# OPTIMIZED PSO FUNCTIONS (FIXED)
 # ======================
 
 def evaluate_single_gamma(args):
     """Evaluasi satu nilai gamma untuk parallel processing"""
     gamma_val, X_scaled, best_cluster = args
     try:
+        # Pastikan gamma_val adalah scalar
+        if isinstance(gamma_val, np.ndarray):
+            gamma_val = gamma_val[0]
+            
+        # Validasi nilai gamma
+        if gamma_val <= 0 or gamma_val > 5.0:
+            return 10.0
+            
         W = rbf_kernel(X_scaled, gamma=gamma_val)
         
         if np.allclose(W, 0) or np.any(np.isnan(W)) or np.any(np.isinf(W)):
-            return 10.0  # Return bad score
+            return 10.0
         
         L = laplacian(W, normed=True)
         
         if np.any(np.isnan(L.data)) or np.any(np.isinf(L.data)):
             return 10.0
             
-        eigvals, eigvecs = eigsh(L, k=best_cluster, which='SM', tol=1e-4)
+        # Gunakan eigh untuk matriks simetris
+        eigvals, eigvecs = eigh(L.toarray(), subset_by_index=[0, best_cluster-1])
         U = normalize(eigvecs, norm='l2')
         
         if np.isnan(U).any() or np.isinf(U).any():
@@ -129,13 +138,19 @@ def evaluate_single_gamma(args):
         
         return -sil + dbi  # Gabungkan kedua metrik
         
-    except:
+    except Exception as e:
+        print(f"Error evaluating gamma {gamma_val}: {str(e)}")
         return 10.0
 
 def evaluate_gamma_parallel(gamma_array, X_scaled, best_cluster):
     """Evaluasi gamma secara parallel"""
     n_cores = min(cpu_count(), 4)  # Batasi core yang digunakan
-    args_list = [(g[0], X_scaled, best_cluster) for g in gamma_array]
+    
+    # Pastikan gamma_array berbentuk (n_particles, 1)
+    if gamma_array.ndim == 1:
+        gamma_array = gamma_array.reshape(-1, 1)
+    
+    args_list = [(g, X_scaled, best_cluster) for g in gamma_array]
     
     with Pool(processes=n_cores) as pool:
         scores = pool.map(evaluate_single_gamma, args_list)
@@ -143,10 +158,15 @@ def evaluate_gamma_parallel(gamma_array, X_scaled, best_cluster):
     return np.array(scores)
 
 def run_fast_pso_optimization(X_scaled, best_cluster):
-    """Optimasi PSO dengan percepatan"""
+    """Optimasi PSO dengan percepatan (FIXED VERSION)"""
     st.info("🚀 Menjalankan PSO versi cepat dengan optimasi caching dan parallel processing...")
     
-    # 1. Setup PSO dengan parameter optimal
+    # 1. Validasi input
+    if X_scaled is None or np.isnan(X_scaled).any() or np.isinf(X_scaled).any():
+        st.error("Data mengandung NaN atau inf!")
+        return None, []
+    
+    # 2. Setup PSO dengan parameter optimal
     options = {
         'c1': 1.5,  # Cognitive parameter
         'c2': 1.5,  # Social parameter
@@ -154,6 +174,8 @@ def run_fast_pso_optimization(X_scaled, best_cluster):
         'k': 10,    # Neighbors count
         'p': 2      # Norm type (2 untuk L2)
     }
+    
+    # Batas gamma yang masuk akal
     bounds = (np.array([0.001]), np.array([5.0]))
     
     optimizer = GlobalBestPSO(
@@ -163,7 +185,7 @@ def run_fast_pso_optimization(X_scaled, best_cluster):
         bounds=bounds
     )
     
-    # 2. Setup progress tracking
+    # 3. Setup progress tracking
     progress_bar = st.progress(0)
     status_text = st.empty()
     cost_history = []
@@ -190,8 +212,12 @@ def run_fast_pso_optimization(X_scaled, best_cluster):
     # Define the objective function properly
     def objective_func(gamma_array):
         """Wrapper function for PSO that returns proper shape"""
-        scores = evaluate_gamma_parallel(gamma_array, X_scaled, best_cluster)
-        return scores.reshape(-1)  # Ensure it returns 1D array with length n_particles
+        try:
+            scores = evaluate_gamma_parallel(gamma_array, X_scaled, best_cluster)
+            return scores.reshape(-1)  # Pastikan return 1D array
+        except Exception as e:
+            st.error(f"Error in objective function: {str(e)}")
+            return np.full(gamma_array.shape[0], 10.0)  # Return bad scores
     
     # 3. Jalankan optimasi dengan timeout
     try:
@@ -207,20 +233,27 @@ def run_fast_pso_optimization(X_scaled, best_cluster):
         st.warning("Optimasi dihentikan setelah 5 menit, menggunakan hasil terbaik saat ini")
         best_pos = optimizer.swarm.best_pos
         best_cost = optimizer.swarm.best_cost
+    except Exception as e:
+        st.error(f"Error during optimization: {str(e)}")
+        return None, []
     
     # 4. Tampilkan hasil
-    st.success(f"Optimasi selesai! Gamma optimal: {best_pos[0]:.4f} (Cost: {best_cost:.4f})")
-    
-    # Plot konvergensi
-    fig, ax = plt.subplots(figsize=(10, 5))
-    ax.plot(cost_history, 'b-', label='Best Cost')
-    ax.set_title('PSO Convergence History')
-    ax.set_xlabel('Iteration')
-    ax.set_ylabel('Fitness Score')
-    ax.legend()
-    st.pyplot(fig)
-    
-    return best_pos[0], cost_history
+    if best_pos is not None and not np.isnan(best_pos).any():
+        st.success(f"Optimasi selesai! Gamma optimal: {best_pos[0]:.4f} (Cost: {best_cost:.4f})")
+        
+        # Plot konvergensi
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.plot(cost_history, 'b-', label='Best Cost')
+        ax.set_title('PSO Convergence History')
+        ax.set_xlabel('Iteration')
+        ax.set_ylabel('Fitness Score')
+        ax.legend()
+        st.pyplot(fig)
+        
+        return best_pos[0], cost_history
+    else:
+        st.error("Optimasi gagal, tidak mendapatkan nilai gamma yang valid")
+        return None, []
     
 # ======================
 # MAIN APP FUNCTIONS
@@ -525,6 +558,11 @@ def clustering_analysis():
     if st.button("🚀 Jalankan Optimasi PSO (Cepat)", type="primary"):
         with st.spinner("Mempersiapkan optimasi..."):
             best_gamma, cost_history = run_fast_pso_optimization(X_scaled, best_cluster)
+            
+            if best_gamma is None:
+                st.error("Optimasi gagal, tidak dapat melanjutkan")
+                return
+                
             st.session_state.best_gamma = best_gamma
             
             # Simpan history
@@ -544,7 +582,7 @@ def clustering_analysis():
                     L_opt = laplacian(W_opt, normed=True)
                     
                     if not (np.any(np.isnan(L_opt.data)) or np.any(np.isinf(L_opt.data))):
-                        eigvals_opt, eigvecs_opt = eigsh(L_opt, k=best_cluster, which='SM', tol=1e-6)
+                        eigvals_opt, eigvecs_opt = eigh(L_opt.toarray(), subset_by_index=[0, best_cluster-1])
                         U_opt = normalize(eigvecs_opt, norm='l2')
                         
                         if not (np.isnan(U_opt).any() or np.isinf(U_opt).any()):
@@ -624,7 +662,7 @@ def clustering_analysis():
                 else:
                     st.error("Matriks kernel W mengandung nilai NaN, inf, atau nol semua.")
             except Exception as e:
-                st.error(f"Terjadi kesalahan dalam optimasi PSO: {str(e)}")
+                st.error(f"Terjadi kesalahan dalam clustering dengan gamma optimal: {str(e)}")
 
 def results_analysis():
     st.header("📊 Hasil Analisis Cluster")
