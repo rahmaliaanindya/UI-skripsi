@@ -390,7 +390,7 @@ def clustering_analysis():
     st.pyplot(fig)
 
     # =============================================
-    # 4. OPTIMASI GAMMA DENGAN PSO TANPA CALLBACK
+    # 4. OPTIMASI GAMMA DENGAN PSO - TANPA CALLBACK
     # =============================================
     st.subheader("3. Optimasi Gamma dengan PSO")
     
@@ -467,13 +467,17 @@ def clustering_analysis():
                 # Buat progress bar
                 progress_bar = st.progress(0, text="Memulai optimasi...")
                 
-                # Jalankan optimasi
-                for iteration in range(30):
-                    optimizer.optimize(evaluate_gamma_robust, iters=1)  # Run for 1 iteration
+                # Jalankan optimasi dan simpan history secara manual
+                for i in range(30):
+                    # Jalankan satu iterasi
+                    if i == 0:
+                        optimizer.optimize(evaluate_gamma_robust, iters=1)
+                    else:
+                        optimizer.optimize(evaluate_gamma_robust, iters=1, verbose=False)
                     
-                    # Update history
+                    # Simpan history
                     g_best = optimizer.swarm.best_cost
-                    best_gamma = optimizer.swarm.best_pos[0]  # Accessing the first element directly
+                    best_gamma = optimizer.swarm.best_pos[0][0]
                     
                     # Hitung metrics untuk best gamma
                     W = rbf_kernel(X_scaled, gamma=best_gamma)
@@ -486,8 +490,7 @@ def clustering_analysis():
                     silhouette = silhouette_score(U, labels)
                     dbi = davies_bouldin_score(U, labels)
                     
-                    # Simpan history
-                    history['iteration'].append(iteration)
+                    history['iteration'].append(i)
                     history['g_best'].append(g_best)
                     history['best_gamma'].append(best_gamma)
                     history['silhouette'].append(silhouette)
@@ -496,10 +499,10 @@ def clustering_analysis():
                     history['gbest_history'].append(optimizer.swarm.best_pos)
                     
                     # Update progress bar
-                    progress = (iteration + 1) / 30
-                    progress_bar.progress(progress, text=f"Iterasi {iteration + 1}/30 - Best Gamma: {best_gamma:.4f}")
+                    progress = (i + 1) / 30
+                    progress_bar.progress(progress, text=f"Iterasi {i + 1}/30 - Best Gamma: {best_gamma:.4f}")
                 
-                best_gamma = optimizer.swarm.best_pos[0]  # Accessing the first element directly
+                best_gamma = optimizer.swarm.best_pos[0][0]
                 st.session_state.best_gamma = best_gamma
                 st.session_state.pso_history = history
                 
@@ -528,7 +531,7 @@ def clustering_analysis():
                     gbest_evolution.append({
                         'Iteration': i,
                         'Particle': 'GBest',
-                        'Gamma': gbest_iter[0],
+                        'Gamma': gbest_iter[0][0],
                         'Type': 'GBest'
                     })
                 
