@@ -96,11 +96,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ======================
-# OPTIMIZED PSO FUNCTIONS (FIXED)
+# OPTIMIZED PSO FUNCTIONS (FIXED - NO MULTIPROCESSING)
 # ======================
 
 def evaluate_single_gamma(args):
-    """Evaluasi satu nilai gamma untuk parallel processing"""
+    """Evaluasi satu nilai gamma"""
     gamma_val, X_scaled, best_cluster = args
     try:
         # Pastikan gamma_val adalah scalar
@@ -118,7 +118,13 @@ def evaluate_single_gamma(args):
         
         L = laplacian(W, normed=True)
         
-        if np.any(np.isnan(L.data)) or np.any(np.isinf(L.data)):
+        # For sparse matrix laplacian, .data contains values
+        try:
+            lap_data = L.data
+        except Exception:
+            lap_data = L
+        
+        if np.any(np.isnan(lap_data)) or np.any(np.isinf(lap_data)):
             return 10.0
             
         # Gunakan eigh untuk matriks simetris
@@ -143,62 +149,53 @@ def evaluate_single_gamma(args):
         print(f"Error evaluating gamma {gamma_val}: {str(e)}")
         return 10.0
 
-
-# Pindahkan fungsi objective ke luar
 def pso_objective_function(gamma_array, X_scaled, best_cluster):
-    """Fungsi objective untuk PSO yang bisa dipickle"""
-    # Pastikan gamma_array berbentuk (n_particles, 1)
+    """Fungsi objective untuk PSO (serial evaluation, no multiprocessing)"""
     if gamma_array.ndim == 1:
         gamma_array = gamma_array.reshape(-1, 1)
     
-    n_cores = min(cpu_count(), 4)  # Batasi core yang digunakan
-    args_list = [(g[0], X_scaled, best_cluster) for g in gamma_array]
-    
-    with Pool(processes=n_cores) as pool:
-        scores = pool.map(evaluate_single_gamma, args_list)
-    
+    scores = []
+    for g in gamma_array:
+        score = evaluate_single_gamma((g[0], X_scaled, best_cluster))
+        scores.append(score)
     return np.array(scores)
 
 def run_fast_pso_optimization(X_scaled, best_cluster):
-    """Optimasi PSO dengan percepatan (FIXED VERSION)"""
-    st.info("🚀 Menjalankan PSO versi cepat dengan optimasi caching dan parallel processing...")
-    
-    # 1. Validasi input
+    """Optimasi PSO dengan versi serial tanpa multiprocessing untuk menghindari error"""
+    st.info("🚀 Menjalankan PSO versi cepat dengan evaluasi serial tanpa multiprocessing...")
+
+    # Validasi input
     if X_scaled is None or np.isnan(X_scaled).any() or np.isinf(X_scaled).any():
         st.error("Data mengandung NaN atau inf!")
         return None, []
-    
-    # 2. Setup PSO dengan parameter optimal
+
     options = {
-        'c1': 1.5,  # Cognitive parameter
-        'c2': 1.5,  # Social parameter
-        'w': 0.7,   # Inertia weight
-        'k': 10,    # Neighbors count
-        'p': 2      # Norm type (2 untuk L2)
+        'c1': 1.5,
+        'c2': 1.5,
+        'w': 0.7,
+        'k': 10,
+        'p': 2
     }
-    
-    # Batas gamma yang masuk akal
+
     bounds = (np.array([0.001]), np.array([5.0]))
-    
+
     optimizer = GlobalBestPSO(
         n_particles=20,
         dimensions=1,
         options=options,
         bounds=bounds
     )
-    
-    # 3. Setup progress tracking
+
     progress_bar = st.progress(0)
     status_text = st.empty()
     cost_history = []
     best_pos_history = []
     start_time = datetime.now()
-    
+
     def pso_callback(optimizer_data):
-        """Callback untuk tracking progress"""
         progress = (optimizer.it + 1) / optimizer.max_iter
         progress_bar.progress(min(int(progress * 100), 100))
-        
+
         elapsed = (datetime.now() - start_time).total_seconds()
         status_text.markdown(f"""
         <div class="status-box">
@@ -208,37 +205,34 @@ def run_fast_pso_optimization(X_scaled, best_cluster):
             <b>Best Cost:</b> {optimizer.swarm.best_cost:.4f}
         </div>
         """, unsafe_allow_html=True)
-        
+
         cost_history.append(optimizer.swarm.best_cost)
         best_pos_history.append(optimizer.swarm.best_pos[0])
-    
-    # 4. Jalankan optimasi dengan timeout
+
     try:
         with st.spinner("Optimasi berjalan (maksimal 5 menit)..."):
-            # Buat partial function untuk objective function
-            objective_func = partial(pso_objective_function, X_scaled=X_scaled, best_cluster=best_cluster)
-            
             best_cost, best_pos = optimizer.optimize(
-                objective_func,
+                func=pso_objective_function,
                 iters=50,
-                n_processes=1,  # Nonaktifkan multiprocessing internal PySwarms
-                verbose=False
+                n_processes=1,
+                verbose=False,
+                X_scaled=X_scaled,
+                best_cluster=best_cluster,
+                callback=pso_callback
             )
-            
-            # Panggil callback untuk update terakhir
             pso_callback(None)
-            
+
     except Exception as e:
         st.error(f"Error during optimization: {str(e)}")
         return None, []
-    
-    # 5. Tampilkan hasil
+
     if best_pos is not None and not np.isnan(best_pos).any():
         st.success(f"Optimasi selesai! Gamma optimal: {best_pos[0]:.4f} (Cost: {best_cost:.4f})")
         return best_pos[0], cost_history
     else:
         st.error("Optimasi gagal, tidak mendapatkan nilai gamma yang valid")
         return None, []
+
         
 def evaluate_gamma_serial(gamma_array, X_scaled, best_cluster):
     """Evaluasi gamma secara serial"""
