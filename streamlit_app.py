@@ -393,292 +393,292 @@ def clustering_analysis():
     # 4. OPTIMASI GAMMA DENGAN PSO - REVISI CALLBACK
     # =============================================
     st.subheader("3. Optimasi Gamma dengan PSO")
-	
-def evaluate_gamma_robust(gamma_values):
-    """Fungsi evaluasi untuk PSO yang lebih robust terhadap error."""
-    gamma = gamma_values[0]  # Karena PSO bekerja dengan array 1D
-    try:
-        # Hitung matriks kernel
-        W = rbf_kernel(X_scaled, gamma=gamma)
-        
-        # Handle potential numerical issues
-        if np.allclose(W, 0) or np.any(np.isnan(W)) or np.any(np.isinf(W)):
-            return np.inf
-            
-        # Hitung matriks Laplacian
-        L = laplacian(W, normed=True)
-        
-        # Handle potential numerical issues
-        if np.any(np.isnan(L.data)) or np.any(np.isinf(L.data)):
-            return np.inf
-            
-        # Hitung eigenvectors
-        eigvals, eigvecs = eigsh(L, k=best_cluster, which='SM', tol=1e-6)
-        U = normalize(eigvecs, norm='l2')
-        
-        # Handle potential numerical issues
-        if np.isnan(U).any() or np.isinf(U).any():
-            return np.inf
-            
-        # Clustering
-        kmeans = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
-        labels = kmeans.fit_predict(U)
-        
-        # Hitung metrics
-        if len(np.unique(labels)) > 1:
-            silhouette = silhouette_score(U, labels)
-            dbi = davies_bouldin_score(U, labels)
-            
-            # Gabungkan metrics (kita ingin memaksimalkan silhouette dan meminimalkan DBI)
-            fitness = (1 - silhouette) + dbi  # Gabungan kedua metrics
-            return fitness
-        else:
-            return np.inf
-            
-    except Exception as e:
-        st.warning(f"Error pada gamma={gamma:.4f}: {str(e)}")
-        return np.inf
 
-	if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
-    with st.spinner("Menjalankan optimasi PSO (mungkin memakan waktu beberapa menit)..."):
+    def evaluate_gamma_robust(gamma_values):
+        """Fungsi evaluasi untuk PSO yang lebih robust terhadap error."""
+        gamma = gamma_values[0]  # Karena PSO bekerja dengan array 1D
         try:
-            # Dictionary untuk menyimpan history
-            history = {
-                'iteration': [],
-                'g_best': [],
-                'best_gamma': [],
-                'silhouette': [],
-                'dbi': [],
-                'pbest_history': [],
-                'gbest_history': []
-            }
+            # Hitung matriks kernel
+            W = rbf_kernel(X_scaled, gamma=gamma)
             
-            # Define callback function
-            def callback(optimizer):
-                iteration = optimizer.rep
-                g_best = optimizer.swarm.best_cost
-                best_gamma = optimizer.swarm.best_pos[0][0]
+            # Handle potential numerical issues
+            if np.allclose(W, 0) or np.any(np.isnan(W)) or np.any(np.isinf(W)):
+                return np.inf
                 
-                # Hitung metrics untuk best gamma
-                W = rbf_kernel(X_scaled, gamma=best_gamma)
-                L = laplacian(W, normed=True)
-                eigvals, eigvecs = eigsh(L, k=best_cluster, which='SM', tol=1e-6)
-                U = normalize(eigvecs, norm='l2')
-                kmeans = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
-                labels = kmeans.fit_predict(U)
+            # Hitung matriks Laplacian
+            L = laplacian(W, normed=True)
+            
+            # Handle potential numerical issues
+            if np.any(np.isnan(L.data)) or np.any(np.isinf(L.data)):
+                return np.inf
                 
+            # Hitung eigenvectors
+            eigvals, eigvecs = eigsh(L, k=best_cluster, which='SM', tol=1e-6)
+            U = normalize(eigvecs, norm='l2')
+            
+            # Handle potential numerical issues
+            if np.isnan(U).any() or np.isinf(U).any():
+                return np.inf
+                
+            # Clustering
+            kmeans = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
+            labels = kmeans.fit_predict(U)
+            
+            # Hitung metrics
+            if len(np.unique(labels)) > 1:
                 silhouette = silhouette_score(U, labels)
                 dbi = davies_bouldin_score(U, labels)
                 
-                # Simpan history
-                history['iteration'].append(iteration)
-                history['g_best'].append(g_best)
-                history['best_gamma'].append(best_gamma)
-                history['silhouette'].append(silhouette)
-                history['dbi'].append(dbi)
-                history['pbest_history'].append([particle.pbest_pos for particle in optimizer.swarm])
-                history['gbest_history'].append(optimizer.swarm.best_pos)
-                
-                # Update progress bar
-                progress = (iteration + 1) / 30
-                progress_bar.progress(progress, text=f"Iterasi {iteration + 1}/30 - Best Gamma: {best_gamma:.4f}")
-            
-            # Setup optimizer
-            options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}
-            bounds = (np.array([0.001]), np.array([5.0]))
-            
-            optimizer = GlobalBestPSO(
-                n_particles=10,
-                dimensions=1,
-                options=options,
-                bounds=bounds
-            )
-            
-            # Buat progress bar
-            progress_bar = st.progress(0, text="Memulai optimasi...")
-            
-            # Jalankan optimasi
-            optimizer.optimize(evaluate_gamma_robust, iters=30, callback=callback)
-            
-            best_gamma = optimizer.swarm.best_pos[0][0]
-            st.session_state.best_gamma = best_gamma
-            st.session_state.pso_history = history
-            
-            st.success(f"**Optimasi selesai!** Gamma optimal: {best_gamma:.4f}")
-            
-            # =============================================
-            # 5. TAMPILKAN HASIL OPTIMASI
-            # =============================================
-            
-            # Visualisasi evolusi PBest dan GBest
-            st.subheader("Evolusi PBest dan GBest")
-            
-            # Buat dataframe untuk visualisasi
-            pbest_evolution = []
-            for i, pbest_iter in enumerate(history['pbest_history']):
-                for j, pbest in enumerate(pbest_iter):
-                    pbest_evolution.append({
-                        'Iteration': i,
-                        'Particle': j,
-                        'Gamma': pbest[0],
-                        'Type': 'PBest'
-                    })
-            
-            gbest_evolution = []
-            for i, gbest_iter in enumerate(history['gbest_history']):
-                gbest_evolution.append({
-                    'Iteration': i,
-                    'Particle': 'GBest',
-                    'Gamma': gbest_iter[0][0],
-                    'Type': 'GBest'
-                })
-            
-            evolution_df = pd.DataFrame(pbest_evolution + gbest_evolution)
-            
-            # Plot evolusi
-            fig_evolution, ax = plt.subplots(figsize=(12, 6))
-            sns.lineplot(
-                data=evolution_df, 
-                x='Iteration', 
-                y='Gamma', 
-                hue='Type', 
-                style='Type',
-                markers=True,
-                dashes=False,
-                ax=ax
-            )
-            ax.set_title("Evolusi Nilai Gamma pada PBest dan GBest")
-            ax.set_xlabel("Iterasi")
-            ax.set_ylabel("Nilai Gamma")
-            st.pyplot(fig_evolution)
-
-            # Tampilkan grafik konvergensi
-            fig_convergence, ax = plt.subplots(figsize=(10, 6))
-            ax.plot(history['iteration'], history['g_best'], 'b-', label='Global Best')
-            ax.set_xlabel('Iterasi')
-            ax.set_ylabel('Nilai Fitness (G-best)')
-            ax.set_title('Konvergensi PSO')
-            ax.legend()
-            ax.grid(True)
-            st.pyplot(fig_convergence)
-            
-            # Tampilkan iterasi terbaik
-            best_iter_idx = np.argmin(history['g_best'])
-            st.info(f"""
-            **Iterasi terbaik:** {history['iteration'][best_iter_idx]}  
-            **Gamma terbaik:** {history['best_gamma'][best_iter_idx]:.4f}  
-            **Silhouette Score:** {history['silhouette'][best_iter_idx]:.4f}  
-            **Davies-Bouldin Index:** {history['dbi'][best_iter_idx]:.4f}
-            """)
-            
-            # Tampilkan tabel history
-            st.subheader("History Optimasi PSO")
-            history_df = pd.DataFrame({
-                'Iterasi': history['iteration'],
-                'Gamma': history['best_gamma'],
-                'G-best': history['g_best'],
-                'Silhouette': history['silhouette'],
-                'DBI': history['dbi']
-            })
-            st.dataframe(history_df.style.format({
-                'Gamma': '{:.4f}',
-                'G-best': '{:.4f}',
-                'Silhouette': '{:.4f}',
-                'DBI': '{:.4f}'
-            }).highlight_min(subset=['G-best', 'DBI'], color='lightgreen')
-                            .highlight_max(subset=['Silhouette'], color='lightgreen'))
-            
-            # =============================================
-            # 6. CLUSTERING DENGAN GAMMA OPTIMAL
-            # =============================================
-            W_opt = rbf_kernel(X_scaled, gamma=best_gamma)
-            
-            if not (np.allclose(W_opt, 0) or np.any(np.isnan(W_opt)) or np.any(np.isinf(W_opt))):
-                L_opt = laplacian(W_opt, normed=True)
-                
-                if not (np.any(np.isnan(L_opt.data)) or np.any(np.isinf(L_opt.data))):
-                    eigvals_opt, eigvecs_opt = eigsh(L_opt, k=best_cluster, which='SM', tol=1e-6)
-                    U_opt = normalize(eigvecs_opt, norm='l2')
-
-                    if not (np.isnan(U_opt).any() or np.isinf(U_opt).any()):
-                        kmeans_opt = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
-                        labels_opt = kmeans_opt.fit_predict(U_opt)
-
-                        if len(np.unique(labels_opt)) > 1:
-                            st.session_state.U_opt = U_opt
-                            st.session_state.labels_opt = labels_opt
-                            
-                            sil_opt = silhouette_score(U_opt, labels_opt)
-                            dbi_opt = davies_bouldin_score(U_opt, labels_opt)
-                            
-                            col1, col2 = st.columns(2)
-                            col1.metric("Silhouette Score", f"{sil_opt:.4f}", 
-                                       f"{(sil_opt - sil_score):.4f} vs baseline")
-                            col2.metric("Davies-Bouldin Index", f"{dbi_opt:.4f}", 
-                                       f"{(dbi_score - dbi_opt):.4f} vs baseline")
-                            
-                            # =============================================
-                            # 7. VISUALISASI HASIL
-                            # =============================================
-                            st.subheader("4. Visualisasi Hasil")
-                            
-                            pca = PCA(n_components=2)
-                            U_before_pca = pca.fit_transform(st.session_state.U_before)
-                            U_opt_pca = pca.transform(U_opt)
-                            
-                            fig_comparison, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
-                            
-                            scatter1 = ax1.scatter(U_before_pca[:,0], U_before_pca[:,1], 
-                                                 c=st.session_state.labels_before, 
-                                                 cmap='viridis', s=50, alpha=0.7)
-                            ax1.set_title(f"Sebelum PSO (γ=0.1)\nSilhouette: {sil_score:.4f}, DBI: {dbi_score:.4f}")
-                            ax1.set_xlabel("PC1")
-                            ax1.set_ylabel("PC2")
-                            plt.colorbar(scatter1, ax=ax1, label='Cluster')
-                            
-                            scatter2 = ax2.scatter(U_opt_pca[:,0], U_opt_pca[:,1], 
-                                                 c=labels_opt, 
-                                                 cmap='viridis', s=50, alpha=0.7)
-                            ax2.set_title(f"Sesudah PSO (γ={best_gamma:.4f})\nSilhouette: {sil_opt:.4f}, DBI: {dbi_opt:.4f}")
-                            ax2.set_xlabel("PC1")
-                            ax2.set_ylabel("PC2")
-                            plt.colorbar(scatter2, ax=ax2, label='Cluster')
-                            
-                            st.pyplot(fig_comparison)
-                            
-                            # =============================================
-                            # 8. SIMPAN HASIL KE DATAFRAME
-                            # =============================================
-                            try:
-                                if 'df_cleaned' in st.session_state and st.session_state.df_cleaned is not None:
-                                    df = st.session_state.df_cleaned.copy()
-                                else:
-                                    df = st.session_state.df.copy()
-                                
-                                df['Cluster'] = labels_opt
-                                st.session_state.df_clustered = df
-                                
-                                st.subheader("Distribusi Cluster")
-                                cluster_counts = df['Cluster'].value_counts().sort_index()
-                                st.bar_chart(cluster_counts)
-                                
-                                if 'Kabupaten/Kota' in df.columns:
-                                    st.subheader("Pemetaan Cluster")
-                                    st.dataframe(df[['Kabupaten/Kota', 'Cluster']].sort_values('Cluster'))
-                                    
-                            except Exception as e:
-                                st.error(f"Error dalam menyimpan hasil: {str(e)}")
-                        else:
-                            st.error("Hanya 1 cluster yang terbentuk, evaluasi gagal.")
-                    else:
-                        st.error("Matriks fitur U mengandung nilai NaN atau inf.")
-                else:
-                    st.error("Matriks Laplacian mengandung nilai NaN atau inf.")
+                # Gabungkan metrics (kita ingin memaksimalkan silhouette dan meminimalkan DBI)
+                fitness = (1 - silhouette) + dbi  # Gabungan kedua metrics
+                return fitness
             else:
-                st.error("Matriks kernel W mengandung nilai NaN, inf, atau nol semua.")
-
+                return np.inf
+                
         except Exception as e:
-            st.error(f"Terjadi kesalahan dalam optimasi PSO: {str(e)}")
+            st.warning(f"Error pada gamma={gamma:.4f}: {str(e)}")
+            return np.inf
+
+    if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
+        with st.spinner("Menjalankan optimasi PSO (mungkin memakan waktu beberapa menit)..."):
+            try:
+                # Dictionary untuk menyimpan history
+                history = {
+                    'iteration': [],
+                    'g_best': [],
+                    'best_gamma': [],
+                    'silhouette': [],
+                    'dbi': [],
+                    'pbest_history': [],
+                    'gbest_history': []
+                }
+                
+                # Define callback function
+                def callback(optimizer):
+                    iteration = optimizer.rep
+                    g_best = optimizer.swarm.best_cost
+                    best_gamma = optimizer.swarm.best_pos[0][0]
+                    
+                    # Hitung metrics untuk best gamma
+                    W = rbf_kernel(X_scaled, gamma=best_gamma)
+                    L = laplacian(W, normed=True)
+                    eigvals, eigvecs = eigsh(L, k=best_cluster, which='SM', tol=1e-6)
+                    U = normalize(eigvecs, norm='l2')
+                    kmeans = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
+                    labels = kmeans.fit_predict(U)
+                    
+                    silhouette = silhouette_score(U, labels)
+                    dbi = davies_bouldin_score(U, labels)
+                    
+                    # Simpan history
+                    history['iteration'].append(iteration)
+                    history['g_best'].append(g_best)
+                    history['best_gamma'].append(best_gamma)
+                    history['silhouette'].append(silhouette)
+                    history['dbi'].append(dbi)
+                    history['pbest_history'].append([particle.pbest_pos for particle in optimizer.swarm])
+                    history['gbest_history'].append(optimizer.swarm.best_pos)
+                    
+                    # Update progress bar
+                    progress = (iteration + 1) / 30
+                    progress_bar.progress(progress, text=f"Iterasi {iteration + 1}/30 - Best Gamma: {best_gamma:.4f}")
+                
+                # Setup optimizer
+                options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}
+                bounds = (np.array([0.001]), np.array([5.0]))
+                
+                optimizer = GlobalBestPSO(
+                    n_particles=10,
+                    dimensions=1,
+                    options=options,
+                    bounds=bounds
+                )
+                
+                # Buat progress bar
+                progress_bar = st.progress(0, text="Memulai optimasi...")
+                
+                # Jalankan optimasi
+                optimizer.optimize(evaluate_gamma_robust, iters=30, callback=callback)
+                
+                best_gamma = optimizer.swarm.best_pos[0][0]
+                st.session_state.best_gamma = best_gamma
+                st.session_state.pso_history = history
+                
+                st.success(f"**Optimasi selesai!** Gamma optimal: {best_gamma:.4f}")
+                
+                # =============================================
+                # 5. TAMPILKAN HASIL OPTIMASI
+                # =============================================
+                
+                # Visualisasi evolusi PBest dan GBest
+                st.subheader("Evolusi PBest dan GBest")
+                
+                # Buat dataframe untuk visualisasi
+                pbest_evolution = []
+                for i, pbest_iter in enumerate(history['pbest_history']):
+                    for j, pbest in enumerate(pbest_iter):
+                        pbest_evolution.append({
+                            'Iteration': i,
+                            'Particle': j,
+                            'Gamma': pbest[0],
+                            'Type': 'PBest'
+                        })
+                
+                gbest_evolution = []
+                for i, gbest_iter in enumerate(history['gbest_history']):
+                    gbest_evolution.append({
+                        'Iteration': i,
+                        'Particle': 'GBest',
+                        'Gamma': gbest_iter[0][0],
+                        'Type': 'GBest'
+                    })
+                
+                evolution_df = pd.DataFrame(pbest_evolution + gbest_evolution)
+                
+                # Plot evolusi
+                fig_evolution, ax = plt.subplots(figsize=(12, 6))
+                sns.lineplot(
+                    data=evolution_df, 
+                    x='Iteration', 
+                    y='Gamma', 
+                    hue='Type', 
+                    style='Type',
+                    markers=True,
+                    dashes=False,
+                    ax=ax
+                )
+                ax.set_title("Evolusi Nilai Gamma pada PBest dan GBest")
+                ax.set_xlabel("Iterasi")
+                ax.set_ylabel("Nilai Gamma")
+                st.pyplot(fig_evolution)
+
+                # Tampilkan grafik konvergensi
+                fig_convergence, ax = plt.subplots(figsize=(10, 6))
+                ax.plot(history['iteration'], history['g_best'], 'b-', label='Global Best')
+                ax.set_xlabel('Iterasi')
+                ax.set_ylabel('Nilai Fitness (G-best)')
+                ax.set_title('Konvergensi PSO')
+                ax.legend()
+                ax.grid(True)
+                st.pyplot(fig_convergence)
+                
+                # Tampilkan iterasi terbaik
+                best_iter_idx = np.argmin(history['g_best'])
+                st.info(f"""
+                **Iterasi terbaik:** {history['iteration'][best_iter_idx]}  
+                **Gamma terbaik:** {history['best_gamma'][best_iter_idx]:.4f}  
+                **Silhouette Score:** {history['silhouette'][best_iter_idx]:.4f}  
+                **Davies-Bouldin Index:** {history['dbi'][best_iter_idx]:.4f}
+                """)
+                
+                # Tampilkan tabel history
+                st.subheader("History Optimasi PSO")
+                history_df = pd.DataFrame({
+                    'Iterasi': history['iteration'],
+                    'Gamma': history['best_gamma'],
+                    'G-best': history['g_best'],
+                    'Silhouette': history['silhouette'],
+                    'DBI': history['dbi']
+                })
+                st.dataframe(history_df.style.format({
+                    'Gamma': '{:.4f}',
+                    'G-best': '{:.4f}',
+                    'Silhouette': '{:.4f}',
+                    'DBI': '{:.4f}'
+                }).highlight_min(subset=['G-best', 'DBI'], color='lightgreen')
+                                .highlight_max(subset=['Silhouette'], color='lightgreen'))
+                
+                # =============================================
+                # 6. CLUSTERING DENGAN GAMMA OPTIMAL
+                # =============================================
+                W_opt = rbf_kernel(X_scaled, gamma=best_gamma)
+                
+                if not (np.allclose(W_opt, 0) or np.any(np.isnan(W_opt)) or np.any(np.isinf(W_opt))):
+                    L_opt = laplacian(W_opt, normed=True)
+                    
+                    if not (np.any(np.isnan(L_opt.data)) or np.any(np.isinf(L_opt.data))):
+                        eigvals_opt, eigvecs_opt = eigsh(L_opt, k=best_cluster, which='SM', tol=1e-6)
+                        U_opt = normalize(eigvecs_opt, norm='l2')
+
+                        if not (np.isnan(U_opt).any() or np.isinf(U_opt).any()):
+                            kmeans_opt = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
+                            labels_opt = kmeans_opt.fit_predict(U_opt)
+
+                            if len(np.unique(labels_opt)) > 1:
+                                st.session_state.U_opt = U_opt
+                                st.session_state.labels_opt = labels_opt
+                                
+                                sil_opt = silhouette_score(U_opt, labels_opt)
+                                dbi_opt = davies_bouldin_score(U_opt, labels_opt)
+                                
+                                col1, col2 = st.columns(2)
+                                col1.metric("Silhouette Score", f"{sil_opt:.4f}", 
+                                           f"{(sil_opt - sil_score):.4f} vs baseline")
+                                col2.metric("Davies-Bouldin Index", f"{dbi_opt:.4f}", 
+                                           f"{(dbi_score - dbi_opt):.4f} vs baseline")
+                                
+                                # =============================================
+                                # 7. VISUALISASI HASIL
+                                # =============================================
+                                st.subheader("4. Visualisasi Hasil")
+                                
+                                pca = PCA(n_components=2)
+                                U_before_pca = pca.fit_transform(st.session_state.U_before)
+                                U_opt_pca = pca.transform(U_opt)
+                                
+                                fig_comparison, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+                                
+                                scatter1 = ax1.scatter(U_before_pca[:,0], U_before_pca[:,1], 
+                                                     c=st.session_state.labels_before, 
+                                                     cmap='viridis', s=50, alpha=0.7)
+                                ax1.set_title(f"Sebelum PSO (γ=0.1)\nSilhouette: {sil_score:.4f}, DBI: {dbi_score:.4f}")
+                                ax1.set_xlabel("PC1")
+                                ax1.set_ylabel("PC2")
+                                plt.colorbar(scatter1, ax=ax1, label='Cluster')
+                                
+                                scatter2 = ax2.scatter(U_opt_pca[:,0], U_opt_pca[:,1], 
+                                                     c=labels_opt, 
+                                                     cmap='viridis', s=50, alpha=0.7)
+                                ax2.set_title(f"Sesudah PSO (γ={best_gamma:.4f})\nSilhouette: {sil_opt:.4f}, DBI: {dbi_opt:.4f}")
+                                ax2.set_xlabel("PC1")
+                                ax2.set_ylabel("PC2")
+                                plt.colorbar(scatter2, ax=ax2, label='Cluster')
+                                
+                                st.pyplot(fig_comparison)
+                                
+                                # =============================================
+                                # 8. SIMPAN HASIL KE DATAFRAME
+                                # =============================================
+                                try:
+                                    if 'df_cleaned' in st.session_state and st.session_state.df_cleaned is not None:
+                                        df = st.session_state.df_cleaned.copy()
+                                    else:
+                                        df = st.session_state.df.copy()
+                                    
+                                    df['Cluster'] = labels_opt
+                                    st.session_state.df_clustered = df
+                                    
+                                    st.subheader("Distribusi Cluster")
+                                    cluster_counts = df['Cluster'].value_counts().sort_index()
+                                    st.bar_chart(cluster_counts)
+                                    
+                                    if 'Kabupaten/Kota' in df.columns:
+                                        st.subheader("Pemetaan Cluster")
+                                        st.dataframe(df[['Kabupaten/Kota', 'Cluster']].sort_values('Cluster'))
+                                        
+                                except Exception as e:
+                                    st.error(f"Error dalam menyimpan hasil: {str(e)}")
+                            else:
+                                st.error("Hanya 1 cluster yang terbentuk, evaluasi gagal.")
+                        else:
+                            st.error("Matriks fitur U mengandung nilai NaN atau inf.")
+                    else:
+                        st.error("Matriks Laplacian mengandung nilai NaN atau inf.")
+                else:
+                    st.error("Matriks kernel W mengandung nilai NaN, inf, atau nol semua.")
+
+            except Exception as e:
+                st.error(f"Terjadi kesalahan dalam optimasi PSO: {str(e)}")
 
                 
 def results_analysis():
