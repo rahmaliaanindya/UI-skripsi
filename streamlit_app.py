@@ -23,6 +23,7 @@ import os
 from functools import lru_cache
 from multiprocessing import Pool, cpu_count
 from datetime import datetime
+from functools import partial
 
 # Set random seed for reproducibility
 SEED = 42
@@ -142,7 +143,9 @@ def evaluate_single_gamma(args):
         print(f"Error evaluating gamma {gamma_val}: {str(e)}")
         return 10.0
 
-def pso_objective_function(gamma_array, X_scaled=None, best_cluster=None):
+
+# Pindahkan fungsi objective ke luar
+def pso_objective_function(gamma_array, X_scaled, best_cluster):
     """Fungsi objective untuk PSO yang bisa dipickle"""
     # Pastikan gamma_array berbentuk (n_particles, 1)
     if gamma_array.ndim == 1:
@@ -213,7 +216,7 @@ def run_fast_pso_optimization(X_scaled, best_cluster):
     try:
         with st.spinner("Optimasi berjalan (maksimal 5 menit)..."):
             # Buat partial function untuk objective function
-            objective_func = lambda x: pso_objective_function(x, X_scaled, best_cluster)
+            objective_func = partial(pso_objective_function, X_scaled=X_scaled, best_cluster=best_cluster)
             
             best_cost, best_pos = optimizer.optimize(
                 objective_func,
