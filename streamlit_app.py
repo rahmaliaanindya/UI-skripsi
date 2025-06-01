@@ -8,19 +8,21 @@ from sklearn.cluster import SpectralClustering, KMeans
 from sklearn.metrics import silhouette_score, davies_bouldin_score
 from sklearn.metrics.pairwise import rbf_kernel
 from scipy.sparse.csgraph import laplacian
-from scipy.linalg import eigh  # Untuk matriks symmetric
-from scipy.sparse.linalg import eigsh  # Untuk matriks sparse
+from scipy.linalg import eigh
+from scipy.sparse.linalg import eigsh
 from sklearn.preprocessing import normalize
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.decomposition import PCA
 from collections import Counter
 import pyswarms as ps
 from pyswarms.single.global_best import GlobalBestPSO
+from numba import njit, prange
 import warnings
 from io import StringIO
 import sys
 import random
 import os
+import time
 
 # Set random seed for reproducibility
 SEED = 42
@@ -28,6 +30,140 @@ np.random.seed(SEED)
 random.seed(SEED)
 os.environ['PYTHONHASHSEED'] = str(SEED)
 warnings.filterwarnings("ignore")
+
+# ======================
+# NUMBA-OPTIMIZED FUNCTIONS
+# ======================
+
+@njit(fastmath=True, parallel=True)
+def numba_rbf_kernel(X, gamma):
+    n_samples = X.shape[0]
+    K = np.zeros((n_samples, n_samples))
+    for i in prange(n_samples):
+        for j in prange(n_samples):
+            diff = X[i] - X[j]
+            K[i,j] = np.exp(-gamma * np.dot(diff, diff))
+    return K
+
+@njit(fastmath=True)
+def numba_laplacian(W):
+    D = np.diag(np.sum(W, axis=1))
+    L = D - W
+    return L
+
+@njit(fastmath=True)
+def numba_eigsh(L, k):
+    eigvals, eigvecs = np.linalg.eigh(L)
+    return eigvals[:k], eigvecs[:, :k]
+
+@njit(fastmath=True)
+def numba_normalize(U):
+    norms = np.sqrt(np.sum(U**2, axis=1))
+    return U / norms.reshape(-1, 1)
+
+@njit(fastmath=True)
+def numba_silhouette_score(U, labels):
+    n = U.shape[0]
+    if len(np.unique(labels)) == 1:
+        return 0.0
+    
+    intra_dist = np.zeros(n)
+    inter_dist = np.zeros(n)
+    
+    for i in range(n):
+        cluster_i = labels[i]
+        mask_i = (labels == cluster_i)
+        
+        # Intra-cluster distance
+        a_i = np.mean(np.sqrt(np.sum((U[mask_i] - U[i])**2, axis=1)))
+        
+        # Inter-cluster distance
+        b_i = np.inf
+        for cluster_j in np.unique(labels):
+            if cluster_j != cluster_i:
+                mask_j = (labels == cluster_j)
+                dist = np.mean(np.sqrt(np.sum((U[mask_j] - U[i])**2, axis=1)))
+                if dist < b_i:
+                    b_i = dist
+        
+        intra_dist[i] = a_i
+        inter_dist[i] = b_i
+    
+    s = (inter_dist - intra_dist) / np.maximum(intra_dist, inter_dist)
+    return np.mean(s)
+
+@njit(fastmath=True)
+def numba_davies_bouldin_score(U, labels):
+    n_clusters = len(np.unique(labels))
+    if n_clusters == 1:
+        return 0.0
+    
+    centroids = np.zeros((n_clusters, U.shape[1]))
+    s_i = np.zeros(n_clusters)
+    
+    for i, cluster in enumerate(np.unique(labels)):
+        mask = (labels == cluster)
+        centroids[i] = np.mean(U[mask], axis=0)
+        s_i[i] = np.mean(np.sqrt(np.sum((U[mask] - centroids[i])**2, axis=1)))
+    
+    r_ij = np.zeros((n_clusters, n_clusters))
+    for i in range(n_clusters):
+        for j in range(n_clusters):
+            if i != j:
+                d_ij = np.sqrt(np.sum((centroids[i] - centroids[j])**2))
+                r_ij[i,j] = (s_i[i] + s_i[j]) / d_ij
+    
+    return np.mean(np.max(r_ij, axis=1))
+
+@njit(parallel=True)
+def evaluate_gamma_numba(gamma_array, X_scaled, best_cluster, n_runs=3):
+    scores = np.zeros(gamma_array.shape[0])
+    
+    for i in prange(gamma_array.shape[0]):
+        gamma_val = gamma_array[i,0]
+        sil_sum = 0.0
+        dbi_sum = 0.0
+        
+        for _ in range(n_runs):
+            try:
+                # 1. Hitung kernel RBF
+                W = numba_rbf_kernel(X_scaled, gamma_val)
+                
+                # 2. Hitung Laplacian
+                L = numba_laplacian(W)
+                
+                # 3. Eigen decomposition
+                eigvals, eigvecs = numba_eigsh(L, best_cluster)
+                
+                # 4. Normalisasi eigenvector
+                U = numba_normalize(eigvecs)
+                
+                # 5. KMeans clustering (using sklearn but called separately)
+                # Note: This part can't be njit compiled
+                labels = run_kmeans(U, best_cluster)
+                
+                # 6. Hitung metrik
+                sil = numba_silhouette_score(U, labels)
+                dbi = numba_davies_bouldin_score(U, labels)
+                
+                sil_sum += sil
+                dbi_sum += dbi
+                
+            except:
+                sil_sum += 0.0
+                dbi_sum += 10.0
+        
+        # Rata-rata skor
+        mean_sil = sil_sum / n_runs
+        mean_dbi = dbi_sum / n_runs
+        scores[i] = -mean_sil + mean_dbi  # Semakin kecil semakin baik
+    
+    return scores
+
+# Wrapper function for KMeans (can't be njit compiled)
+def run_kmeans(U, n_clusters):
+    kmeans = KMeans(n_clusters=n_clusters, random_state=SEED, n_init=10)
+    return kmeans.fit_predict(U)
 
 # ======================
 # STREAMLIT UI SETUP
@@ -391,70 +527,20 @@ def clustering_analysis():
 
     
     # =============================================
-    # 4. OPTIMASI GAMMA DENGAN PSO
+    # 4. OPTIMASI GAMMA DENGAN PSO (NUMBA-OPTIMIZED)
     # =============================================
     st.subheader("3. Optimasi Gamma dengan PSO")
     
     if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
-        with st.spinner("Menjalankan optimasi PSO (mungkin memakan waktu beberapa menit)..."):
+        with st.spinner("Menjalankan optimasi PSO dipercepat dengan Numba..."):
             try:
-                # Fungsi evaluasi yang lebih sederhana
-                def evaluate_gamma_robust(gamma_array):
-                    scores = []
-                    data_for_kernel = X_scaled
-                    n_runs = 3  # Jumlah run untuk stabilitas
-
-                    for gamma in gamma_array:
-                        gamma_val = gamma[0]
-                        sil_list, dbi_list = [], []
-
-                        for _ in range(n_runs):
-                            try:
-                                W = rbf_kernel(data_for_kernel, gamma=gamma_val)
-
-                                if np.allclose(W, 0) or np.any(np.isnan(W)) or np.any(np.isinf(W)):
-                                    raise ValueError("Invalid kernel matrix.")
-
-                                L = laplacian(W, normed=True)
-
-                                if np.any(np.isnan(L.data)) or np.any(np.isinf(L.data)):
-                                    raise ValueError("Invalid Laplacian.")
-
-                                eigvals, eigvecs = eigsh(L, k=best_cluster, which='SM', tol=1e-6)
-                                U = normalize(eigvecs, norm='l2')
-
-                                if np.isnan(U).any() or np.isinf(U).any():
-                                    raise ValueError("Invalid U.")
-
-                                kmeans = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
-                                labels = kmeans.fit_predict(U)
-
-                                if len(np.unique(labels)) < 2:
-                                    raise ValueError("Only one cluster.")
-
-                                sil = silhouette_score(U, labels)
-                                dbi = davies_bouldin_score(U, labels)
-
-                                sil_list.append(sil)
-                                dbi_list.append(dbi)
-
-                            except Exception:
-                                # Penalti jika gagal
-                                sil_list.append(0.0)
-                                dbi_list.append(10.0)
-
-                        mean_sil = np.mean(sil_list)
-                        mean_dbi = np.mean(dbi_list)
-                        fitness_score = -mean_sil + mean_dbi
-                        scores.append(fitness_score)
-
-                    return np.array(scores)
+                start_time = time.time()
                 
                 # Konfigurasi PSO
                 options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}
-                bounds = (np.array([0.001]), np.array([5.0]))  # Range gamma
-
-                # Inisialisasi PSO
+                bounds = (np.array([0.001]), np.array([5.0]))
+                
+                # Inisialisasi optimizer
                 optimizer = GlobalBestPSO(
                     n_particles=20,
                     dimensions=1,
@@ -462,31 +548,33 @@ def clustering_analysis():
                     bounds=bounds
                 )
                 
+                # Fungsi cost yang dioptimasi
+                def cost_func(gamma_array):
+                    return evaluate_gamma_numba(gamma_array, X_scaled, best_cluster)
+                
                 # Jalankan optimasi
-                best_cost, best_pos = optimizer.optimize(
-                    evaluate_gamma_robust, 
-                    iters=50,
-                    verbose=False
-                )
+                best_cost, best_pos = optimizer.optimize(cost_func, iters=50)
                 
                 best_gamma = best_pos[0]
                 st.session_state.best_gamma = best_gamma
                 
-                # Evaluasi hasil optimal
-                W_opt = rbf_kernel(X_scaled, gamma=best_gamma)
-                L_opt = laplacian(W_opt, normed=True)
-                eigvals_opt, eigvecs_opt = eigsh(L_opt, k=best_cluster, which='SM', tol=1e-6)
-                U_opt = normalize(eigvecs_opt, norm='l2')
-                kmeans_opt = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
-                labels_opt = kmeans_opt.fit_predict(U_opt)
+                # Evaluasi hasil optimal dengan Numba
+                W_opt = numba_rbf_kernel(X_scaled, best_gamma)
+                L_opt = numba_laplacian(W_opt)
+                eigvals_opt, eigvecs_opt = numba_eigsh(L_opt, best_cluster)
+                U_opt = numba_normalize(eigvecs_opt)
+                labels_opt = run_kmeans(U_opt, best_cluster)
                 
                 st.session_state.U_opt = U_opt
                 st.session_state.labels_opt = labels_opt
                 
-                sil_opt = silhouette_score(U_opt, labels_opt)
-                dbi_opt = davies_bouldin_score(U_opt, labels_opt)
+                # Hitung metrik
+                sil_opt = numba_silhouette_score(U_opt, labels_opt)
+                dbi_opt = numba_davies_bouldin_score(U_opt, labels_opt)
                 
-                st.success(f"**Optimasi selesai!** Gamma optimal: {best_gamma:.4f}")
+                end_time = time.time()
+                
+                st.success(f"**Optimasi selesai!** Gamma optimal: {best_gamma:.4f} (Waktu: {end_time-start_time:.2f} detik)")
                 
                 # Tampilkan hasil
                 col1, col2 = st.columns(2)
@@ -541,7 +629,6 @@ def clustering_analysis():
             except Exception as e:
                 st.error(f"Terjadi kesalahan dalam optimasi PSO: {str(e)}")
 
-                
 def results_analysis():
     st.header("📊 Hasil Analisis Cluster")
     
