@@ -82,11 +82,98 @@ def fast_kmeans(U, n_clusters, max_iter=10):
         centroids = new_centroids
     return labels
 
-@njit(fastmath=True, parallel=True)
-def evaluate_gamma_optimized(gamma_array, X_scaled, best_cluster, n_runs=2):
+@njit(fastmath=True)
+def numba_silhouette_score(U, labels):
+    n_samples = U.shape[0]
+    n_clusters = len(np.unique(labels))
+    silhouette = 0.0
+    
+    for i in range(n_samples):
+        cluster_i = labels[i]
+        
+        # Hitung a(i) - jarak rata-rata ke titik lain dalam cluster yang sama
+        a_i = 0.0
+        count_a = 0
+        for j in range(n_samples):
+            if labels[j] == cluster_i and i != j:
+                a_i += np.sqrt(np.sum((U[i] - U[j])**2))
+                count_a += 1
+        if count_a > 0:
+            a_i /= count_a
+        
+        # Hitung b(i) - jarak rata-rata minimum ke titik di cluster lain
+        b_i = np.inf
+        for k in range(n_clusters):
+            if k != cluster_i:
+                b_k = 0.0
+                count_b = 0
+                for j in range(n_samples):
+                    if labels[j] == k:
+                        b_k += np.sqrt(np.sum((U[i] - U[j])**2))
+                        count_b += 1
+                if count_b > 0:
+                    b_k /= count_b
+                    if b_k < b_i:
+                        b_i = b_k
+        
+        if max(a_i, b_i) > 0:
+            s_i = (b_i - a_i) / max(a_i, b_i)
+        else:
+            s_i = 0.0
+            
+        silhouette += s_i
+    
+    return silhouette / n_samples
+
+@njit(fastmath=True)
+def numba_davies_bouldin_score(U, labels):
+    n_clusters = len(np.unique(labels))
+    centroids = np.zeros((n_clusters, U.shape[1]))
+    cluster_sizes = np.zeros(n_clusters)
+    
+    # Hitung centroid untuk setiap cluster
+    for i in range(U.shape[0]):
+        cluster = labels[i]
+        centroids[cluster] += U[i]
+        cluster_sizes[cluster] += 1
+    
+    for k in range(n_clusters):
+        if cluster_sizes[k] > 0:
+            centroids[k] /= cluster_sizes[k]
+    
+    # Hitung S_i - ukuran dispersi rata-rata dalam cluster
+    S = np.zeros(n_clusters)
+    for k in range(n_clusters):
+        sum_dist = 0.0
+        count = 0
+        for i in range(U.shape[0]):
+            if labels[i] == k:
+                sum_dist += np.sqrt(np.sum((U[i] - centroids[k])**2))
+                count += 1
+        if count > 0:
+            S[k] = sum_dist / count
+    
+    # Hitung R_ij dan kemudian R_i
+    R = np.zeros(n_clusters)
+    for i in range(n_clusters):
+        max_R = -np.inf
+        for j in range(n_clusters):
+            if i != j:
+                M_ij = np.sqrt(np.sum((centroids[i] - centroids[j])**2))
+                if M_ij > 0:
+                    R_ij = (S[i] + S[j]) / M_ij
+                    if R_ij > max_R:
+                        max_R = R_ij
+        R[i] = max_R
+    
+    # Hitung DBI
+    return np.mean(R)
+
+# Fungsi evaluasi yang dipindahkan ke level modul agar bisa dipickle
+def evaluate_gamma(gamma_array, X_scaled, best_cluster, n_runs=2):
     scores = np.zeros(gamma_array.shape[0])
     
-    for i in prange(gamma_array.shape[0]):  # Parallel loop
+    for i in range(gamma_array.shape[0]):
         gamma_val = gamma_array[i,0]
         sil_sum = 0.0
         dbi_sum = 0.0
@@ -504,17 +591,12 @@ def optimized_clustering_analysis():
                 bounds=bounds
             )
             
-            # Cache untuk kernel matrix
-            @lru_cache(maxsize=100)
-            def cached_rbf_kernel(gamma_val):
-                return numba_rbf_kernel(X_scaled, gamma_val)
-            
-            # Fungsi evaluasi yang dioptimasi
-            def cost_func(gamma_array):
+            # Fungsi cost yang sederhana dan bisa dipickle
+            def cost_function(gamma_array):
                 progress = (len(optimizer.cost_history) / 50) * 100 if hasattr(optimizer, 'cost_history') else 0
                 progress_bar.progress(min(100, int(progress)))
                 
-                scores = evaluate_gamma_optimized(gamma_array, X_scaled, optimal_k, n_runs=2)
+                scores = evaluate_gamma(gamma_array, X_scaled, best_cluster, n_runs=2)
                 
                 if hasattr(optimizer, 'cost_history'):
                     status_text.text(f"Iterasi {len(optimizer.cost_history)}/50 - Best Cost: {np.min(scores):.4f}")
@@ -523,7 +605,7 @@ def optimized_clustering_analysis():
             
             # Jalankan optimasi dengan iterasi tetap 50
             best_cost, best_pos = optimizer.optimize(
-                cost_func, 
+                cost_function, 
                 iters=50,  # Tetap 50 iterasi
                 n_processes=4  # Gunakan 4 core CPU
             )
@@ -537,10 +619,10 @@ def optimized_clustering_analysis():
             # Evaluasi hasil optimal
             W_opt = numba_rbf_kernel(X_scaled, best_gamma)
             L_opt = numba_laplacian(W_opt)
-            eigvals_opt, eigvecs_opt = numba_eigsh(L_opt, optimal_k)
+            eigvals_opt, eigvecs_opt = numba_eigsh(L_opt, best_cluster)
             U_opt = numba_normalize(eigvecs_opt)
             
-            labels_opt = fast_kmeans(U_opt, optimal_k)
+            labels_opt = fast_kmeans(U_opt, best_cluster)
             
             st.session_state.U_opt = U_opt
             st.session_state.labels_opt = labels_opt
@@ -602,6 +684,8 @@ def optimized_clustering_analysis():
 
         except Exception as e:
             st.error(f"Terjadi kesalahan dalam optimasi PSO: {str(e)}")
+            import traceback
+            st.text(traceback.format_exc())
 
 def results_analysis():
     st.header("📊 Hasil Analisis Cluster")
