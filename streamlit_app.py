@@ -479,7 +479,7 @@ def clustering_analysis():
                 progress_bar = st.progress(0, text="Memulai optimasi...")
                 
                 # Jalankan optimasi secara manual per iterasi
-                for i in range(50):
+                for i in range(30):
                     try:
                         # Jalankan satu iterasi
                         cost, pos = optimizer.optimize(evaluate_gamma_robust, iters=1)
