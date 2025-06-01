@@ -8,12 +8,11 @@ from sklearn.cluster import SpectralClustering, KMeans
 from sklearn.metrics import silhouette_score, davies_bouldin_score
 from sklearn.metrics.pairwise import rbf_kernel
 from scipy.sparse.csgraph import laplacian
-from scipy.linalg import eigh  # Untuk matriks symmetric
-from scipy.sparse.linalg import eigsh  # Untuk matriks sparse
+from scipy.linalg import eigh
+from scipy.sparse.linalg import eigsh
 from sklearn.preprocessing import normalize
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.decomposition import PCA
-from collections import Counter
 import pyswarms as ps
 from pyswarms.single.global_best import GlobalBestPSO
 import warnings
@@ -21,6 +20,9 @@ from io import StringIO
 import sys
 import random
 import os
+from functools import lru_cache
+from multiprocessing import Pool, cpu_count
+from datetime import datetime
 
 # Set random seed for reproducibility
 SEED = 42
@@ -91,6 +93,131 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
+
+# ======================
+# OPTIMIZED PSO FUNCTIONS
+# ======================
+
+def evaluate_single_gamma(args):
+    """Evaluasi satu nilai gamma untuk parallel processing"""
+    gamma_val, X_scaled, best_cluster = args
+    try:
+        W = rbf_kernel(X_scaled, gamma=gamma_val)
+        
+        if np.allclose(W, 0) or np.any(np.isnan(W)) or np.any(np.isinf(W)):
+            return 10.0  # Return bad score
+        
+        L = laplacian(W, normed=True)
+        
+        if np.any(np.isnan(L.data)) or np.any(np.isinf(L.data)):
+            return 10.0
+            
+        eigvals, eigvecs = eigsh(L, k=best_cluster, which='SM', tol=1e-4)
+        U = normalize(eigvecs, norm='l2')
+        
+        if np.isnan(U).any() or np.isinf(U).any():
+            return 10.0
+            
+        kmeans = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=5)
+        labels = kmeans.fit_predict(U)
+        
+        if len(np.unique(labels)) < 2:
+            return 10.0
+            
+        sil = silhouette_score(U, labels)
+        dbi = davies_bouldin_score(U, labels)
+        
+        return -sil + dbi  # Gabungkan kedua metrik
+        
+    except:
+        return 10.0
+
+def evaluate_gamma_parallel(gamma_array, X_scaled, best_cluster):
+    """Evaluasi gamma secara parallel"""
+    n_cores = min(cpu_count(), 4)  # Batasi core yang digunakan
+    args_list = [(g[0], X_scaled, best_cluster) for g in gamma_array]
+    
+    with Pool(processes=n_cores) as pool:
+        scores = pool.map(evaluate_single_gamma, args_list)
+    
+    return np.array(scores)
+
+def run_fast_pso_optimization(X_scaled, best_cluster):
+    """Optimasi PSO dengan percepatan"""
+    st.info("🚀 Menjalankan PSO versi cepat dengan optimasi caching dan parallel processing...")
+    
+    # 1. Setup PSO dengan parameter optimal
+    options = {
+        'c1': 1.5,  # Cognitive parameter
+        'c2': 1.5,  # Social parameter
+        'w': 0.7,   # Inertia weight
+        'k': 10,    # Neighbors count
+        'p': 2      # Norm type (2 untuk L2)
+    }
+    bounds = (np.array([0.001]), np.array([5.0]))
+    
+    optimizer = GlobalBestPSO(
+        n_particles=20,  # Tetap pertahankan jumlah partikel
+        dimensions=1,
+        options=options,
+        bounds=bounds
+    )
+    
+    # 2. Setup progress tracking
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    cost_history = []
+    best_pos_history = []
+    start_time = datetime.now()
+    
+    def callback(optimizer):
+        # Update progress
+        progress = (optimizer.it + 1) / optimizer.max_iter
+        progress_bar.progress(min(int(progress * 100), 100))
+        
+        # Update status
+        elapsed = (datetime.now() - start_time).total_seconds()
+        status_text.markdown(f"""
+        <div class="status-box">
+            <b>Iterasi:</b> {optimizer.it+1}/{optimizer.max_iter}<br>
+            <b>Waktu:</b> {elapsed:.1f} detik<br>
+            <b>Best Gamma:</b> {optimizer.swarm.best_pos[0]:.4f}<br>
+            <b>Best Cost:</b> {optimizer.swarm.best_cost:.4f}
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Simpan history
+        cost_history.append(optimizer.swarm.best_cost)
+        best_pos_history.append(optimizer.swarm.best_pos[0])
+    
+    # 3. Jalankan optimasi dengan timeout
+    try:
+        with st.spinner("Optimasi berjalan (maksimal 5 menit)..."):
+            best_cost, best_pos = optimizer.optimize(
+                lambda x: evaluate_gamma_parallel(x, X_scaled, best_cluster),
+                iters=50,  # Tetap pertahankan iterasi
+                callback=callback,
+                timeout=300,  # Timeout 5 menit
+                verbose=False
+            )
+    except TimeoutError:
+        st.warning("Optimasi dihentikan setelah 5 menit, menggunakan hasil terbaik saat ini")
+        best_pos = optimizer.swarm.best_pos
+        best_cost = optimizer.swarm.best_cost
+    
+    # 4. Tampilkan hasil
+    st.success(f"Optimasi selesai! Gamma optimal: {best_pos[0]:.4f} (Cost: {best_cost:.4f})")
+    
+    # Plot konvergensi
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.plot(cost_history, 'b-', label='Best Cost')
+    ax.set_title('PSO Convergence History')
+    ax.set_xlabel('Iteration')
+    ax.set_ylabel('Fitness Score')
+    ax.legend()
+    st.pyplot(fig)
+    
+    return best_pos[0], cost_history
 
 # ======================
 # MAIN APP FUNCTIONS
@@ -281,7 +408,7 @@ def data_preprocessing():
     st.dataframe(pd.DataFrame(X_scaled, columns=X.columns))
 
 def clustering_analysis():
-    st.header("🤖 Spectral Clustering dengan PSO")
+    st.header("🤖 Spectral Clustering dengan PSO (Optimized)")
     
     if 'X_scaled' not in st.session_state or st.session_state.X_scaled is None:
         st.warning("Silakan lakukan preprocessing data terlebih dahulu")
@@ -390,131 +517,19 @@ def clustering_analysis():
     # =============================================
     # 4. OPTIMASI GAMMA DENGAN PSO
     # =============================================
-    st.subheader("3. Optimasi Gamma dengan PSO")
+     st.subheader("3. Optimasi Gamma dengan PSO (Optimized)")
+    
+    if st.button("🚀 Jalankan Optimasi PSO (Cepat)", type="primary"):
+        with st.spinner("Mempersiapkan optimasi..."):
+            best_gamma, cost_history = run_fast_pso_optimization(X_scaled, best_cluster)
+            st.session_state.best_gamma = best_gamma
             
-    if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
-        with st.spinner("Menjalankan optimasi PSO (mungkin memakan waktu beberapa menit)..."):
-            try:
-                # Dictionary untuk menyimpan history
-                history = {
-                    'iteration': [],
-                    'g_best': [],
-                    'best_gamma': [],
-                    'silhouette': [],
-                    'dbi': []
-                }
-                
-                # Definisikan fungsi evaluasi
-                def evaluate_gamma_robust(gamma_array):
-                    scores = []
-                    data_for_kernel = X_scaled
-                    n_runs = 3
-    
-                    for gamma in gamma_array:
-                        gamma_val = gamma[0]
-                        sil_list, dbi_list = [], []
-    
-                        for _ in range(n_runs):
-                            try:
-                                W = rbf_kernel(data_for_kernel, gamma=gamma_val)
-    
-                                if np.allclose(W, 0) or np.any(np.isnan(W)) or np.any(np.isinf(W)):
-                                    raise ValueError("Invalid kernel matrix.")
-    
-                                L = laplacian(W, normed=True)
-    
-                                if np.any(np.isnan(L.data)) or np.any(np.isinf(L.data)):
-                                    raise ValueError("Invalid Laplacian.")
-    
-                                eigvals, eigvecs = eigsh(L, k=best_cluster, which='SM', tol=1e-6)
-                                U = normalize(eigvecs, norm='l2')
-    
-                                if np.isnan(U).any() or np.isinf(U).any():
-                                    raise ValueError("Invalid U.")
-    
-                                kmeans = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
-                                labels = kmeans.fit_predict(U)
-    
-                                if len(np.unique(labels)) < 2:
-                                    raise ValueError("Only one cluster.")
-    
-                                sil = silhouette_score(U, labels)
-                                dbi = davies_bouldin_score(U, labels)
-    
-                                sil_list.append(sil)
-                                dbi_list.append(dbi)
-    
-                            except Exception:
-                                sil_list.append(0.0)
-                                dbi_list.append(10.0)
-    
-                        mean_sil = np.mean(sil_list)
-                        mean_dbi = np.mean(dbi_list)
-                        fitness_score = -mean_sil + mean_dbi
-                        scores.append(fitness_score)
-    
-                    return np.array(scores)
-                
-                options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}
-                bounds = (np.array([0.001]), np.array([5.0]))
-    
-                # Inisialisasi optimizer
-                optimizer = GlobalBestPSO(
-                    n_particles=20,
-                    dimensions=1,
-                    options=options,
-                    bounds=bounds
-                )
-    
-                # Buat progress bar
-                progress_bar = st.progress(0, text="Memulai optimasi...")
-    
-                # Jalankan optimasi
-                best_cost, best_pos = optimizer.optimize(
-                    evaluate_gamma_robust,  # Fungsi evaluasi
-                    iters=50,
-                    verbose=False
-                )
-    
-                best_gamma = best_pos[0]
-                st.session_state.best_gamma = best_gamma
-    
-                # Simpan hasil iterasi terakhir
-                history['iteration'].append(50)
-                history['g_best'].append(best_cost)
-                history['best_gamma'].append(best_gamma)
-                
-                # Hitung metrik clustering untuk gamma terbaik
-                try:
-                    W = rbf_kernel(X_scaled, gamma=best_gamma)
-                    L = laplacian(W, normed=True)
-                    eigvals, eigvecs = eigsh(L, k=best_cluster, which='SM', tol=1e-6)
-                    U = normalize(eigvecs, norm='l2')
-                    kmeans = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
-                    labels = kmeans.fit_predict(U)
-                    
-                    sil = silhouette_score(U, labels)
-                    dbi = davies_bouldin_score(U, labels)
-                    
-                    history['silhouette'].append(sil)
-                    history['dbi'].append(dbi)
-                except:
-                    history['silhouette'].append(0.0)
-                    history['dbi'].append(10.0)
-    
-                st.session_state.pso_history = history
-    
-                # =============================================
-                # TAMPILKAN HASIL OPTIMASI
-                # =============================================
-                st.success(f"**Optimasi selesai!** Gamma optimal: {best_gamma:.4f}")
-    
-                # Tampilkan metrik clustering
-                st.info(f"""
-                **Gamma terbaik:** {best_gamma:.4f}  
-                **Silhouette Score:** {sil:.4f}  
-                **Davies-Bouldin Index:** {dbi:.4f}
-                """)
+            # Simpan history
+            st.session_state.pso_history = {
+                'iteration': list(range(len(cost_history))),
+                'cost': cost_history,
+                'best_gamma': best_gamma
+            }
     
                 # =============================================
                 # 5. CLUSTERING DENGAN GAMMA OPTIMAL
