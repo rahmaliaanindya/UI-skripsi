@@ -473,7 +473,7 @@ def clustering_analysis():
                     
                     # Update history
                     g_best = optimizer.swarm.best_cost
-                    best_gamma = optimizer.swarm.best_pos[0][0]
+                    best_gamma = optimizer.swarm.best_pos[0]  # Accessing the first element directly
                     
                     # Hitung metrics untuk best gamma
                     W = rbf_kernel(X_scaled, gamma=best_gamma)
@@ -499,7 +499,7 @@ def clustering_analysis():
                     progress = (iteration + 1) / 30
                     progress_bar.progress(progress, text=f"Iterasi {iteration + 1}/30 - Best Gamma: {best_gamma:.4f}")
                 
-                best_gamma = optimizer.swarm.best_pos[0][0]
+                best_gamma = optimizer.swarm.best_pos[0]  # Accessing the first element directly
                 st.session_state.best_gamma = best_gamma
                 st.session_state.pso_history = history
                 
@@ -528,7 +528,7 @@ def clustering_analysis():
                     gbest_evolution.append({
                         'Iteration': i,
                         'Particle': 'GBest',
-                        'Gamma': gbest_iter[0][0],
+                        'Gamma': gbest_iter[0],
                         'Type': 'GBest'
                     })
                 
