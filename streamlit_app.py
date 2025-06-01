@@ -217,26 +217,17 @@ def run_fast_pso_optimization(X_scaled, best_cluster):
     # 4. Jalankan optimasi dengan timeout
     try:
         with st.spinner("Optimasi berjalan (maksimal 5 menit)..."):
-            # Gunakan partial untuk binding parameter yang tidak berubah
-            from functools import partial
-            objective_func = partial(objective_func_wrapper, 
-                                   X_scaled=X_scaled, 
-                                   best_cluster=best_cluster)
-            
+            # Gunakan serial processing sebagai fallback
             best_cost, best_pos = optimizer.optimize(
-                objective_func,
+                lambda g: evaluate_gamma_serial(g, X_scaled, best_cluster),
                 iters=50,
-                n_processes=4,
+                n_processes=1,  # Nonaktifkan multiprocessing
                 verbose=False
             )
             
             # Panggil callback untuk update terakhir
             pso_callback(None)
             
-    except TimeoutError:
-        st.warning("Optimasi dihentikan setelah 5 menit, menggunakan hasil terbaik saat ini")
-        best_pos = optimizer.swarm.best_pos
-        best_cost = optimizer.swarm.best_cost
     except Exception as e:
         st.error(f"Error during optimization: {str(e)}")
         return None, []
@@ -244,20 +235,17 @@ def run_fast_pso_optimization(X_scaled, best_cluster):
     # 5. Tampilkan hasil
     if best_pos is not None and not np.isnan(best_pos).any():
         st.success(f"Optimasi selesai! Gamma optimal: {best_pos[0]:.4f} (Cost: {best_cost:.4f})")
-        
-        # Plot konvergensi
-        fig, ax = plt.subplots(figsize=(10, 5))
-        ax.plot(cost_history, 'b-', label='Best Cost')
-        ax.set_title('PSO Convergence History')
-        ax.set_xlabel('Iteration')
-        ax.set_ylabel('Fitness Score')
-        ax.legend()
-        st.pyplot(fig)
-        
         return best_pos[0], cost_history
     else:
         st.error("Optimasi gagal, tidak mendapatkan nilai gamma yang valid")
         return None, []
+
+def evaluate_gamma_serial(gamma_array, X_scaled, best_cluster):
+    """Evaluasi gamma secara serial"""
+    scores = []
+    for g in gamma_array:
+        scores.append(evaluate_single_gamma((g, X_scaled, best_cluster)))
+    return np.array(scores)
     
 # ======================
 # MAIN APP FUNCTIONS
