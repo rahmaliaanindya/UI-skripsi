@@ -551,7 +551,7 @@ def clustering_analysis():
                     dimensions=1,
                     options={'c1': 1.5, 'c2': 1.5, 'w': 0.7},
                     bounds=([0.001], [5.0]),
-                    n_processes=4
+                    n_processes=1
                 )
                 
                 # Jalankan dengan fungsi evaluasi hybrid
