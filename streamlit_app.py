@@ -24,8 +24,13 @@ import os
 from numba import njit
 from scipy.sparse import csr_matrix
 from joblib import Parallel, delayed
+import logging
 
-# Set random seed for reproducibility
+# Konfigurasi logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Set random seed untuk reproducibility
 SEED = 42
 np.random.seed(SEED)
 random.seed(SEED)
@@ -69,9 +74,10 @@ def evaluate_particle(gamma, X_scaled, k):
             sil_score = silhouette_score(U, labels)
             dbi_score = davies_bouldin_score(U, labels)
             return -(sil_score - (dbi_score / 10))  # Combined metric
-        return 100
-    except:
-        return 100
+        return 100  # Return large value if clustering fails
+    except Exception as e:
+        logger.warning(f"Error in particle evaluation: {str(e)}")
+        return 100  # Return large value if error occurs
 
 def evaluate_gamma_robust_fast(gammas):
     """Optimized evaluation function with parallel processing"""
@@ -86,7 +92,7 @@ def evaluate_gamma_robust_fast(gammas):
     return np.array(scores)
 
 class FastPSO(GlobalBestPSO):
-    """Optimized PSO with better progress tracking"""
+    """Optimized PSO with better progress tracking and error handling"""
     def __init__(self, n_particles, dimensions, options, bounds, n_processes=None):
         # Initialize parent class with required parameters
         super().__init__(
@@ -104,24 +110,58 @@ class FastPSO(GlobalBestPSO):
     
     def optimize(self, objective_func, iters, progress_bar=None):
         for i in range(iters):
-            # Run one iteration
-            super().optimize(objective_func, iters=1)  # Run just one iteration
+            try:
+                # Run one iteration
+                super().optimize(objective_func, iters=1)  # Run just one iteration
+                
+                # Store history with robust error handling
+                self.history['iteration'].append(i+1)
+                self.history['best_cost'].append(self.swarm.best_cost)
+                
+                # Handle best_pos carefully
+                if hasattr(self.swarm, 'best_pos') and self.swarm.best_pos is not None:
+                    try:
+                        # Check if best_pos has expected structure
+                        if isinstance(self.swarm.best_pos, (np.ndarray, list)):
+                            if len(self.swarm.best_pos) > 0:
+                                if isinstance(self.swarm.best_pos[0], (np.ndarray, list)):
+                                    pos_value = float(self.swarm.best_pos[0][0]) if len(self.swarm.best_pos[0]) > 0 else None
+                                else:
+                                    pos_value = float(self.swarm.best_pos[0])
+                                self.history['best_pos'].append(pos_value)
+                            else:
+                                self.history['best_pos'].append(None)
+                        else:
+                            self.history['best_pos'].append(float(self.swarm.best_pos))
+                    except (IndexError, TypeError) as e:
+                        logger.warning(f"Could not access best_pos: {str(e)}")
+                        self.history['best_pos'].append(None)
+                else:
+                    self.history['best_pos'].append(None)
+                
+                # Update progress
+                if progress_bar:
+                    progress = (i+1)/iters
+                    remaining = (iters - i - 1) * 0.5  # Estimated time
+                    progress_bar.progress(
+                        min(progress, 1.0),  # Ensure progress doesn't exceed 1.0
+                        text=f"Iter {i+1}/{iters} - Best: {self.swarm.best_cost:.4f} - Est: {remaining:.1f}s"
+                    )
             
-            # Store history
-            self.history['iteration'].append(i+1)
-            self.history['best_cost'].append(self.swarm.best_cost)
-            self.history['best_pos'].append(self.swarm.best_pos[0][0])
-            
-            # Update progress
-            if progress_bar:
-                progress = (i+1)/iters
-                remaining = (iters - i - 1) * 0.5  # Estimated time
-                progress_bar.progress(
-                    progress,
-                    text=f"Iter {i+1}/{iters} - Best: {self.swarm.best_cost:.4f} - Est: {remaining:.1f}s"
-                )
+            except Exception as e:
+                logger.error(f"Error in PSO iteration {i+1}: {str(e)}")
+                # Append None if error occurs
+                self.history['iteration'].append(i+1)
+                self.history['best_cost'].append(None)
+                self.history['best_pos'].append(None)
+                continue
         
-        return self.swarm.best_cost, self.swarm.best_pos
+        # Return best results found
+        if hasattr(self.swarm, 'best_cost') and hasattr(self.swarm, 'best_pos'):
+            return self.swarm.best_cost, self.swarm.best_pos
+        else:
+            logger.error("PSO optimization failed to return valid results")
+            return None, None
 
 # ======================
 # STREAMLIT UI SETUP
@@ -482,61 +522,101 @@ def clustering_analysis():
     st.pyplot(fig)
     
     # PSO Optimization
-    st.subheader("PSO Optimization")
-    if st.button("🚀 Run Optimized PSO", type="primary"):
-        with st.spinner("Optimizing gamma (faster with parallel processing)..."):
+    st.subheader("3. Optimasi Gamma dengan PSO")
+    
+    if st.button("🚀 Jalankan Optimasi PSO", type="primary"):
+        with st.spinner("Menjalankan optimasi gamma (mungkin memakan waktu beberapa menit)..."):
             progress_bar = st.progress(0)
             
-            # Setup optimized PSO
-            optimizer = FastPSO(
-                n_particles=20,
-                dimensions=1,
-                options={'c1': 1.5, 'c2': 1.5, 'w': 0.7},
-                bounds=([0.001], [5.0])
-            )
-            
-            # Run optimization
-            cost, pos = optimizer.optimize(
-                evaluate_gamma_robust_fast,
-                iters=50,
-                progress_bar=progress_bar
-            )
-            
-            best_gamma = pos[0][0]
-            st.session_state.best_gamma = best_gamma
-            
-            # Show results
-            st.success(f"Optimization complete! Best gamma: {best_gamma:.4f}")
-            
-            # Visualize convergence
-            fig, ax = plt.subplots(figsize=(10, 5))
-            ax.plot(optimizer.history['iteration'], optimizer.history['best_cost'], 'b-')
-            ax.set_title("PSO Convergence")
-            ax.set_xlabel("Iteration")
-            ax.set_ylabel("Best Cost")
-            st.pyplot(fig)
-            
-            # Show optimized clustering
-            st.subheader("Optimized Clustering Results")
-            W_opt = rbf_kernel_fast(X_scaled, best_gamma)
-            W_opt[W_opt < 0.01] = 0
-            L_opt = laplacian(csr_matrix(W_opt), normed=True)
-            eigvals_opt, eigvecs_opt = eigsh(L_opt, k=optimal_k, which='SM', tol=1e-6)
-            U_opt = normalize(eigvecs_opt, norm='l2')
-            labels_opt = KMeans(n_clusters=optimal_k, random_state=SEED, n_init='auto').fit_predict(U_opt)
-            
-            st.session_state.U_opt = U_opt
-            st.session_state.labels_opt = labels_opt
-            
-            # Compare results
-            col1, col2 = st.columns(2)
-            col1.metric("Optimized Silhouette", 
-                       f"{silhouette_score(U_opt, labels_opt):.4f}",
-                       f"{(silhouette_score(U_opt, labels_opt) - silhouette_score(U, labels)):.4f}")
-            col2.metric("Optimized DBI", 
-                       f"{davies_bouldin_score(U_opt, labels_opt):.4f}",
-                       f"{(davies_bouldin_score(U, labels) - davies_bouldin_score(U_opt, labels_opt)):.4f}")
-
+            try:
+                # Setup PSO dengan parameter yang lebih robust
+                optimizer = FastPSO(
+                    n_particles=15,  # Mengurangi jumlah partikel untuk performa
+                    dimensions=1,
+                    options={'c1': 1.5, 'c2': 1.5, 'w': 0.7},
+                    bounds=([0.001], [5.0]),  # Gamma antara 0.001 dan 5.0
+                    n_processes=4
+                )
+                
+                # Run optimization dengan error handling
+                cost, pos = optimizer.optimize(
+                    evaluate_gamma_robust_fast,
+                    iters=30,  # Mengurangi iterasi untuk demo
+                    progress_bar=progress_bar
+                )
+                
+                if cost is None or pos is None:
+                    st.error("Optimasi gagal menghasilkan hasil yang valid. Silakan coba lagi.")
+                    return
+                
+                best_gamma = float(pos[0]) if len(pos) > 0 else None
+                
+                if best_gamma is None:
+                    st.error("Tidak dapat menentukan gamma optimal")
+                    return
+                
+                st.session_state.best_gamma = best_gamma
+                st.session_state.pso_history = optimizer.history
+                
+                # Tampilkan hasil
+                st.success(f"Optimasi selesai! Gamma terbaik: {best_gamma:.4f}")
+                st.metric("Nilai Fitness Terbaik", f"{cost:.4f}")
+                
+                # Visualisasi konvergensi
+                fig, ax = plt.subplots(figsize=(10, 5))
+                ax.plot(optimizer.history['iteration'], 
+                       optimizer.history['best_cost'], 
+                       'b-', label='Best Cost')
+                ax.set_title("Konvergensi PSO")
+                ax.set_xlabel("Iterasi")
+                ax.set_ylabel("Nilai Fitness")
+                ax.legend()
+                st.pyplot(fig)
+                
+                # Clustering dengan gamma optimal
+                st.subheader("Hasil Clustering dengan Gamma Optimal")
+                
+                W_opt = rbf_kernel_fast(X_scaled, best_gamma)
+                W_opt[W_opt < 0.01] = 0
+                L_opt = laplacian(csr_matrix(W_opt), normed=True)
+                eigvals_opt, eigvecs_opt = eigsh(L_opt, k=optimal_k, which='SM', tol=1e-6)
+                U_opt = normalize(eigvecs_opt, norm='l2')
+                labels_opt = KMeans(n_clusters=optimal_k, random_state=SEED, n_init='auto').fit_predict(U_opt)
+                
+                st.session_state.U_opt = U_opt
+                st.session_state.labels_opt = labels_opt
+                
+                # Hitung metrik
+                opt_sil_score = silhouette_score(U_opt, labels_opt)
+                opt_dbi_score = davies_bouldin_score(U_opt, labels_opt)
+                
+                # Bandingkan hasil
+                col1, col2 = st.columns(2)
+                col1.metric("Silhouette Score (Optimal)", 
+                           f"{opt_sil_score:.4f}",
+                           f"{(opt_sil_score - sil_score):.4f}")
+                col2.metric("DBI Score (Optimal)", 
+                           f"{opt_dbi_score:.4f}",
+                           f"{(dbi_score - opt_dbi_score):.4f}")
+                
+                # Visualisasi clustering
+                fig = plt.figure(figsize=(8, 6))
+                plt.scatter(U_opt[:, 0], U_opt[:, 1], c=labels_opt, cmap='viridis', alpha=0.7)
+                plt.title(f'Clustering Optimal (γ={best_gamma:.4f})\nSilhouette: {opt_sil_score:.4f}, DBI: {opt_dbi_score:.4f}')
+                plt.xlabel('Eigenvector 1')
+                plt.ylabel('Eigenvector 2')
+                st.pyplot(fig)
+                
+                # Simpan hasil clustering ke dataframe
+                df = st.session_state.df_cleaned.copy()
+                df['Cluster'] = labels_opt
+                st.session_state.df_clustered = df
+                
+                st.success("Clustering dengan gamma optimal berhasil disimpan!")
+                
+            except Exception as e:
+                st.error(f"Terjadi kesalahan saat optimasi: {str(e)}")
+                logger.error(f"Optimization error: {str(e)}")
 def results_analysis():
     st.header("📊 Hasil Analisis Cluster")
     
