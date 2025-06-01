@@ -11,6 +11,7 @@ from sklearn.metrics import silhouette_score, davies_bouldin_score
 from sklearn.decomposition import PCA
 from pyswarms.single import GlobalBestPSO
 import traceback
+import random
 
 # Set random seed for reproducibility
 SEED = 42
