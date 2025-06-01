@@ -251,40 +251,15 @@ def exploratory_data_analysis():
         st.pyplot(fig)
     else:
         st.warning("Tidak cukup variabel numerik untuk menampilkan matriks korelasi")
-    import streamlit as st
-
-    st.markdown("""
-    ### 🎨 1. Warna pada Heatmap
-    - 🔴 **Merah tua** → Korelasi positif kuat (semakin satu variabel naik, yang lain juga naik)
-    - 🔵 **Biru tua** → Korelasi negatif kuat (semakin satu variabel naik, yang lain cenderung turun)
-    - ⚪️ **Putih/abu-abu** → Korelasi lemah atau tidak ada hubungan linear
-    
-    ---
-    
-    ### 📈 2. Nilai Korelasi Pearson
-    
-    | Nilai Korelasi | Arti Interpretasi | Keterangan |
-    |----------------|-------------------|------------|
-    | +1.00          | Korelasi positif sempurna     | Variabel X naik → Y pasti naik |
-    | +0.70 – +0.99  | Korelasi positif kuat         | X naik → Y cenderung naik |
-    | +0.40 – +0.69  | Korelasi positif sedang       | X naik → Y kemungkinan naik |
-    | +0.10 – +0.39  | Korelasi positif lemah        | Hubungan lemah |
-    |  0             | Tidak ada korelasi linear     | Tidak saling terkait |
-    | -0.10 – -0.39  | Korelasi negatif lemah        | Hubungan lemah |
-    | -0.40 – -0.69  | Korelasi negatif sedang       | X naik → Y kemungkinan turun |
-    | -0.70 – -0.99  | Korelasi negatif kuat         | X naik → Y cenderung turun |
-    | -1.00          | Korelasi negatif sempurna     | X naik → Y pasti turun |
-    
-    ---
-    
-    ### 🔍 3. Cara Membaca
-    - Lihat **nilai korelasi antar pasangan variabel** di setiap sel.
-    - Fokus pada variabel target (misalnya: `Persentase Penduduk Miskin`) dan cari korelasi yang paling tinggi (positif atau negatif).
-    - Warna dapat membantu secara visual untuk mengenali hubungan paling signifikan.
-    - Korelasi tinggi (baik positif maupun negatif) menunjukkan variabel tersebut **berkaitan erat** dan bisa menjadi fitur penting dalam model prediksi atau klasifikasi.
-    - Korelasi antar variabel independen yang tinggi bisa menandakan adanya **multikolinearitas**.
-    """)
-
+st.markdown("""
+- **Heatmap korelasi** menunjukkan hubungan antar variabel dalam bentuk angka dan warna.
+- **Nilai korelasi** berkisar dari **-1 sampai 1**:
+  - `+1` → Hubungan positif sempurna (jika satu variabel naik, yang lain ikut naik)
+  - `0` → Tidak ada hubungan linear
+  - `-1` → Hubungan negatif sempurna (jika satu variabel naik, yang lain turun)
+- **Warna biru** menunjukkan korelasi negatif, **warna merah** menunjukkan korelasi positif.
+- Semakin gelap warnanya, semakin kuat hubungan antar variabel tersebut.
+""")
 
 def data_preprocessing():
     st.header("⚙️ Data Preprocessing")
