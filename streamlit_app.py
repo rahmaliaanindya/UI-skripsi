@@ -468,8 +468,8 @@ def clustering_analysis():
     plt.ylabel('Eigenvector 2')
     st.pyplot(fig)
 
-    # =============================================
-    # 3. OPTIMASI GAMMA DENGAN PSO
+        # =============================================
+    # 4. OPTIMASI GAMMA DENGAN PSO
     # =============================================
     st.subheader("3. Optimasi Gamma dengan PSO")
     
@@ -498,13 +498,13 @@ def clustering_analysis():
                                 if np.any(np.isnan(L.data)) or np.any(np.isinf(L.data)):
                                     raise ValueError("Invalid Laplacian.")
 
-                                eigvals, eigvecs = eigsh(L, k=optimal_k, which='SM', tol=1e-6)
+                                eigvals, eigvecs = eigsh(L, k=best_cluster, which='SM', tol=1e-6)
                                 U = normalize(eigvecs, norm='l2')
 
                                 if np.isnan(U).any() or np.isinf(U).any():
                                     raise ValueError("Invalid U.")
 
-                                kmeans = KMeans(n_clusters=optimal_k, random_state=SEED, n_init=10)
+                                kmeans = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
                                 labels = kmeans.fit_predict(U)
 
                                 if len(np.unique(labels)) < 2:
@@ -553,9 +553,9 @@ def clustering_analysis():
                 # Evaluasi hasil optimal
                 W_opt = rbf_kernel(X_scaled, gamma=best_gamma)
                 L_opt = laplacian(W_opt, normed=True)
-                eigvals_opt, eigvecs_opt = eigsh(L_opt, k=optimal_k, which='SM', tol=1e-6)
+                eigvals_opt, eigvecs_opt = eigsh(L_opt, k=best_cluster, which='SM', tol=1e-6)
                 U_opt = normalize(eigvecs_opt, norm='l2')
-                kmeans_opt = KMeans(n_clusters=optimal_k, random_state=SEED, n_init=10)
+                kmeans_opt = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
                 labels_opt = kmeans_opt.fit_predict(U_opt)
                 
                 st.session_state.U_opt = U_opt
