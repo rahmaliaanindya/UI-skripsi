@@ -388,7 +388,7 @@ def clustering_analysis():
     plt.ylabel('Eigenvector 2')
     st.pyplot(fig)
 
-        # =============================================
+    # =============================================
     # 4. OPTIMASI GAMMA DENGAN PSO - REVISI TANPA CALLBACK
     # =============================================
     st.subheader("3. Optimasi Gamma dengan PSO")
@@ -680,6 +680,53 @@ def clustering_analysis():
 
             except Exception as e:
                 st.error(f"Terjadi kesalahan dalam optimasi PSO: {str(e)}")
+
+def results_analysis():
+    st.header("📊 Results Analysis")
+    
+    if 'df_clustered' not in st.session_state:
+        st.warning("Silakan lakukan clustering terlebih dahulu")
+        return
+    
+    df = st.session_state.df_clustered
+    
+    # Show clustered data
+    st.subheader("Clustered Data")
+    st.dataframe(df)
+    
+    # Cluster statistics
+    st.subheader("Cluster Statistics")
+    cluster_stats = df.groupby('Cluster').mean(numeric_only=True)
+    st.dataframe(cluster_stats.style.background_gradient(cmap='Blues'))
+    
+    # Feature importance analysis
+    if 'X_scaled' in st.session_state and 'labels_opt' in st.session_state:
+        st.subheader("Feature Importance Analysis")
+        
+        X = st.session_state.X_scaled
+        y = st.session_state.labels_opt
+        
+        # Train Random Forest to get feature importance
+        rf = RandomForestClassifier(random_state=SEED)
+        rf.fit(X, y)
+        
+        # Get feature importance
+        importance = rf.feature_importances_
+        feature_names = st.session_state.feature_names
+        
+        # Create importance dataframe
+        importance_df = pd.DataFrame({
+            'Feature': feature_names,
+            'Importance': importance
+        }).sort_values('Importance', ascending=False)
+        
+        # Plot feature importance
+        fig, ax = plt.subplots(figsize=(10, 6))
+        sns.barplot(x='Importance', y='Feature', data=importance_df, palette='viridis', ax=ax)
+        ax.set_title('Feature Importance for Clustering')
+        st.pyplot(fig)
+        
+        st.dataframe(importance_df)
 
 # ======================
 # APP LAYOUT
