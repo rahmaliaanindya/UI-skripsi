@@ -94,6 +94,60 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ======================
+# OPTIMIZED PSO FUNCTIONS
+# ======================
+
+def evaluate_single_gamma(gamma_val, X_scaled, best_cluster):
+    """Evaluasi satu nilai gamma untuk parallel processing"""
+    sil_list, dbi_list = [], []
+    n_runs = 3  # Jumlah pengulangan untuk evaluasi
+
+    for _ in range(n_runs):
+        try:
+            W = rbf_kernel(X_scaled, gamma=gamma_val)
+
+            if np.allclose(W, 0) or np.any(np.isnan(W)) or np.any(np.isinf(W)):
+                raise ValueError("Invalid kernel matrix.")
+
+            L = laplacian(W, normed=True)
+
+            if np.any(np.isnan(L.data)) or np.any(np.isinf(L.data)):
+                raise ValueError("Invalid Laplacian.")
+
+            eigvals, eigvecs = eigsh(L, k=best_cluster, which='SM', tol=1e-6)
+            U = normalize(eigvecs, norm='l2')
+
+            if np.isnan(U).any() or np.isinf(U).any():
+                raise ValueError("Invalid U.")
+
+            kmeans = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
+            labels = kmeans.fit_predict(U)
+
+            if len(np.unique(labels)) < 2:
+                raise ValueError("Only one cluster.")
+
+            sil = silhouette_score(U, labels)
+            dbi = davies_bouldin_score(U, labels)
+
+            sil_list.append(sil)
+            dbi_list.append(dbi)
+
+        except Exception:
+            sil_list.append(0.0)
+            dbi_list.append(10.0)
+
+    mean_sil = np.mean(sil_list)
+    mean_dbi = np.mean(dbi_list)
+    fitness_score = -mean_sil + mean_dbi
+    return fitness_score
+
+def evaluate_gamma_robust(gamma_array, X_scaled, best_cluster):
+    """Evaluasi gamma secara paralel"""
+    with Pool() as pool:
+        scores = pool.starmap(evaluate_single_gamma, [(g[0], X_scaled, best_cluster) for g in gamma_array])
+    return np.array(scores)
+
+# ======================
 # MAIN APP FUNCTIONS
 # ======================
 
@@ -409,54 +463,6 @@ def clustering_analysis():
                     'dbi': []
                 }
     
-                def evaluate_single_gamma(gamma_val):
-                    sil_list, dbi_list = [], []
-                    n_runs = 3  # Jumlah pengulangan untuk evaluasi
-    
-                    for _ in range(n_runs):
-                        try:
-                            W = rbf_kernel(X_scaled, gamma=gamma_val)
-    
-                            if np.allclose(W, 0) or np.any(np.isnan(W)) or np.any(np.isinf(W)):
-                                raise ValueError("Invalid kernel matrix.")
-    
-                            L = laplacian(W, normed=True)
-    
-                            if np.any(np.isnan(L.data)) or np.any(np.isinf(L.data)):
-                                raise ValueError("Invalid Laplacian.")
-    
-                            eigvals, eigvecs = eigsh(L, k=best_cluster, which='SM', tol=1e-6)
-                            U = normalize(eigvecs, norm='l2')
-    
-                            if np.isnan(U).any() or np.isinf(U).any():
-                                raise ValueError("Invalid U.")
-    
-                            kmeans = KMeans(n_clusters=best_cluster, random_state=SEED, n_init=10)
-                            labels = kmeans.fit_predict(U)
-    
-                            if len(np.unique(labels)) < 2:
-                                raise ValueError("Only one cluster.")
-    
-                            sil = silhouette_score(U, labels)
-                            dbi = davies_bouldin_score(U, labels)
-    
-                            sil_list.append(sil)
-                            dbi_list.append(dbi)
-    
-                        except Exception:
-                            sil_list.append(0.0)
-                            dbi_list.append(10.0)
-    
-                    mean_sil = np.mean(sil_list)
-                    mean_dbi = np.mean(dbi_list)
-                    fitness_score = -mean_sil + mean_dbi
-                    return fitness_score
-    
-                def evaluate_gamma_robust(gamma_array):
-                    with Pool() as pool:
-                        scores = pool.map(evaluate_single_gamma, gamma_array.flatten())
-                    return np.array(scores)
-    
                 options = {'c1': 1.5, 'c2': 1.5, 'w': 0.7}
                 bounds = (np.array([0.001]), np.array([5.0]))
     
@@ -471,7 +477,7 @@ def clustering_analysis():
                 progress_bar = st.progress(0, text="Memulai optimasi...")
     
                 best_cost, best_pos = optimizer.optimize(
-                    evaluate_gamma_robust,
+                    lambda gamma_array: evaluate_gamma_robust(gamma_array, st.session_state.X_scaled, best_cluster),
                     iters=50,
                     verbose=False
                 )
@@ -524,7 +530,7 @@ def clustering_analysis():
                 # =============================================
                 # 5. CLUSTERING DENGAN GAMMA OPTIMAL
                 # =============================================
-                W_opt = rbf_kernel(X_scaled, gamma=best_gamma)
+                W_opt = rbf_kernel(st.session_state.X_scaled, gamma=best_gamma)
     
                 if not (np.allclose(W_opt, 0) or np.any(np.isnan(W_opt)) or np.any(np.isinf(W_opt))):
                     L_opt = laplacian(W_opt, normed=True)
@@ -612,7 +618,6 @@ def clustering_analysis():
     
             except Exception as e:
                 st.error(f"Terjadi kesalahan dalam optimasi PSO: {str(e)}")
-
 
                 
 def results_analysis():
