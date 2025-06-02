@@ -912,30 +912,20 @@ def results_analysis():
             st.write(f"- Davies-Bouldin Index: {davies_bouldin_score(st.session_state.U_opt, st.session_state.labels_opt):.4f}")
         
         # Visualisasi
-        pca = PCA(n_components=2)
-        U_before_pca = pca.fit_transform(st.session_state.U_before)
-        U_opt_pca = pca.transform(st.session_state.U_opt)  # Perbaikan di sini
+        fig = plt.figure(figsize=(12, 6))
         
-        fig_comparison, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+        plt.subplot(121)
+        plt.scatter(st.session_state.U_before[:, 0], st.session_state.U_before[:, 1], 
+                    c=st.session_state.labels_before, cmap='viridis')
+        plt.title("Sebelum Optimasi")
         
-        scatter1 = ax1.scatter(U_before_pca[:,0], U_before_pca[:,1], 
-                             c=st.session_state.labels_before, 
-                             cmap='viridis', s=50, alpha=0.7)
-        ax1.set_title(f"Sebelum PSO (γ=0.1)\nSilhouette: {st.session_state.sil_score:.4f}, DBI: {st.session_state.dbi_score:.4f}")  # Perbaikan
-        ax1.set_xlabel("PC1")
-        ax1.set_ylabel("PC2")
-        plt.colorbar(scatter1, ax=ax1, label='Cluster')
+        plt.subplot(122)
+        plt.scatter(st.session_state.U_opt[:, 0], st.session_state.U_opt[:, 1], 
+                    c=st.session_state.labels_opt, cmap='viridis')
+        plt.title("Sesudah Optimasi")
         
-        scatter2 = ax2.scatter(U_opt_pca[:,0], U_opt_pca[:,1], 
-                             c=st.session_state.labels_opt,  # Perbaikan
-                             cmap='viridis', s=50, alpha=0.7)
-        ax2.set_title(f"Sesudah PSO (γ={st.session_state.best_gamma:.4f})\nSilhouette: {st.session_state.sil_opt:.4f}, DBI: {st.session_state.dbi_opt:.4f}")  # Perbaikan
-        ax2.set_xlabel("PC1")
-        ax2.set_ylabel("PC2")
-        plt.colorbar(scatter2, ax=ax2, label='Cluster')
-        
-        st.pyplot(fig_comparison)                                                                                                                                
-            
+        st.pyplot(fig)
+
         st.markdown("""
                                     - **Titik-titik pada plot** mewakili setiap observasi (misalnya, Kabupaten/Kota) dalam dataset.
                                     - **Warna Titik (Cluster)** menunjukkan cluster tempat observasi tersebut dikelompokkan oleh algoritma Spectral Clustering.  
