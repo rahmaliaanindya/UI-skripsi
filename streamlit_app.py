@@ -914,22 +914,22 @@ def results_analysis():
         # Visualisasi
         pca = PCA(n_components=2)
         U_before_pca = pca.fit_transform(st.session_state.U_before)
-        U_opt_pca = pca.transform(U_opt)
+        U_opt_pca = pca.transform(st.session_state.U_opt)  # Perbaikan di sini
         
         fig_comparison, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
         
         scatter1 = ax1.scatter(U_before_pca[:,0], U_before_pca[:,1], 
                              c=st.session_state.labels_before, 
                              cmap='viridis', s=50, alpha=0.7)
-        ax1.set_title(f"Sebelum PSO (γ=0.1)\nSilhouette: {sil_score:.4f}, DBI: {dbi_score:.4f}")
+        ax1.set_title(f"Sebelum PSO (γ=0.1)\nSilhouette: {st.session_state.sil_score:.4f}, DBI: {st.session_state.dbi_score:.4f}")  # Perbaikan
         ax1.set_xlabel("PC1")
         ax1.set_ylabel("PC2")
         plt.colorbar(scatter1, ax=ax1, label='Cluster')
         
         scatter2 = ax2.scatter(U_opt_pca[:,0], U_opt_pca[:,1], 
-                             c=labels_opt, 
+                             c=st.session_state.labels_opt,  # Perbaikan
                              cmap='viridis', s=50, alpha=0.7)
-        ax2.set_title(f"Sesudah PSO (γ={best_gamma:.4f})\nSilhouette: {sil_opt:.4f}, DBI: {dbi_opt:.4f}")
+        ax2.set_title(f"Sesudah PSO (γ={st.session_state.best_gamma:.4f})\nSilhouette: {st.session_state.sil_opt:.4f}, DBI: {st.session_state.dbi_opt:.4f}")  # Perbaikan
         ax2.set_xlabel("PC1")
         ax2.set_ylabel("PC2")
         plt.colorbar(scatter2, ax=ax2, label='Cluster')
