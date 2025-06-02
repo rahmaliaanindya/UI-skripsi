@@ -806,10 +806,15 @@ def results_analysis():
         
         st.dataframe(importance_df)
 
-# 4. Pemetaan Daerah per Cluster
+# Pemetaan Daerah per Cluster
     if 'Kabupaten/Kota' in df.columns:
-        st.subheader("4. Pemetaan Daerah per Cluster")
-        
+        st.subheader("Pemetaan Daerah per Cluster")
+
+        st.markdown("""
+        Berikut ini adalah tabel yang menampilkan daftar Kabupaten/Kota beserta cluster pengelompokan
+        dan variabel utama dari kategori yang berbeda (Kemiskinan, Pendidikan, Ketenagakerjaan, Kesehatan, IPM).
+        Data diurutkan berdasarkan indikator kemiskinan utama.
+        """)
         try:
             # Gabungkan dengan data asli
             if 'df_cleaned' in st.session_state:
@@ -879,7 +884,9 @@ def results_analysis():
                         'Garis Kemiskinan (Rupiah/Bulan/Kapita)': st.column_config.NumberColumn(format="%,d")
                     }
                 )
-                
+                st.markdown("""
+                 "Pilih indikator di bawah ini untuk melihat statistik deskriptifnya pada masing-masing cluster."
+                """)
                 # Analisis sederhana per cluster
                 st.subheader("Analisis Indikator per Cluster")
                 
