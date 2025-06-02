@@ -735,16 +735,48 @@ def results_analysis():
         return
     
     df = st.session_state.df_clustered
+
+    st.markdown("""
+    ### **Hasil Pengelompokan Data (Clustering)**
+    
+    Berikut adalah hasil akhir dari proses clustering. Setiap baris data telah diberikan label **Cluster**, yang menunjukkan kelompok atau kategori kemiskinan yang serupa berdasarkan fitur-fitur yang digunakan.  
+    Hasil clustering ini akan menjadi dasar dalam analisis lebih lanjut, seperti visualisasi dan evaluasi performa model clustering.
+    """)
     
     # Show clustered data
     st.subheader("Clustered Data")
     st.dataframe(df)
+
+    st.markdown("""
+    ### **Statistik Tiap Cluster**
     
+    Tabel berikut menyajikan **rata-rata nilai setiap indikator** untuk masing-masing klaster.  
+    Statistik ini membantu dalam **menginterpretasikan karakteristik dari setiap cluster**, misalnya:
+    
+    - Cluster dengan nilai **rata-rata persentase penduduk miskin tinggi** bisa diartikan sebagai cluster dengan tingkat kemiskinan relatif lebih parah.
+    - Cluster dengan **rata-rata pengeluaran per kapita tinggi dan tingkat pengangguran rendah** dapat menunjukkan wilayah yang relatif lebih sejahtera.
+    
+    Analisis statistik ini penting untuk memahami profil sosial ekonomi dari masing-masing kelompok hasil clustering.
+    """)
     # Cluster statistics
     st.subheader("Cluster Statistics")
     cluster_stats = df.groupby('Cluster').mean(numeric_only=True)
     st.dataframe(cluster_stats.style.background_gradient(cmap='Blues'))
+
+    st.markdown("""
+    ### **Analisis Feature Importance**
     
+    Analisis ini bertujuan untuk mengetahui **seberapa besar pengaruh masing-masing fitur (indikator)** terhadap hasil pengelompokan (clustering) yang telah dilakukan.
+    
+    Dengan memanfaatkan model **Random Forest**, bisa mengukur tingkat kepentingan relatif dari setiap fitur terhadap label hasil clustering.  
+    Fitur dengan nilai importance yang lebih tinggi memiliki kontribusi yang lebih besar dalam menentukan kelompok cluster.
+    
+    Informasi ini dapat membantu:
+    - Mengetahui **indikator utama** dalam klasifikasi kemiskinan.
+    - Memberikan **rekomendasi kebijakan** berdasarkan fitur yang paling berpengaruh.
+    
+    Hasil ditampilkan dalam bentuk visualisasi batang dan tabel pentingnya fitur.
+    """)
     # Feature importance analysis
     if 'X_scaled' in st.session_state and 'labels_opt' in st.session_state:
         st.subheader("Feature Importance Analysis")
