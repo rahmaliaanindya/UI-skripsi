@@ -895,7 +895,7 @@ def results_analysis():
                 hide_index=True
             )
     
-    # 6. Perbandingan Sebelum-Sesudah PSO
+        # 6. Perbandingan Sebelum-Sesudah PSO
     st.subheader("Perbandingan Hasil Sebelum dan Sesudah Optimasi")
     
     if all(key in st.session_state for key in ['U_before', 'labels_before', 'U_opt', 'labels_opt']):
@@ -907,24 +907,35 @@ def results_analysis():
             st.write(f"- Davies-Bouldin Index: {davies_bouldin_score(st.session_state.U_before, st.session_state.labels_before):.4f}")
             
         with col2:
-            st.markdown(f"**Sesudah Optimasi (γ={st.session_state.get('best_gamma', 0):.4f}):**")
+            best_gamma = st.session_state.get('best_gamma', 0)
+            st.markdown(f"**Sesudah Optimasi (γ={best_gamma:.4f}):**")
             st.write(f"- Silhouette Score: {silhouette_score(st.session_state.U_opt, st.session_state.labels_opt):.4f}")
             st.write(f"- Davies-Bouldin Index: {davies_bouldin_score(st.session_state.U_opt, st.session_state.labels_opt):.4f}")
         
-        # Visualisasi
-        fig = plt.figure(figsize=(12, 6))
+        # Visualisasi dengan format yang sama seperti di PSO
+        pca = PCA(n_components=2)
+        U_before_pca = pca.fit_transform(st.session_state.U_before)
+        U_opt_pca = pca.transform(st.session_state.U_opt)
         
-        plt.subplot(121)
-        plt.scatter(st.session_state.U_before[:, 0], st.session_state.U_before[:, 1], 
-                    c=st.session_state.labels_before, cmap='viridis')
-        plt.title("Sebelum Optimasi")
+        fig_comparison, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
         
-        plt.subplot(122)
-        plt.scatter(st.session_state.U_opt[:, 0], st.session_state.U_opt[:, 1], 
-                    c=st.session_state.labels_opt, cmap='viridis')
-        plt.title("Sesudah Optimasi")
+        scatter1 = ax1.scatter(U_before_pca[:,0], U_before_pca[:,1], 
+                             c=st.session_state.labels_before, 
+                             cmap='viridis', s=50, alpha=0.7)
+        ax1.set_title(f"Sebelum PSO (γ=0.1)\nSilhouette: {silhouette_score(st.session_state.U_before, st.session_state.labels_before):.4f}, DBI: {davies_bouldin_score(st.session_state.U_before, st.session_state.labels_before):.4f}")
+        ax1.set_xlabel("PC1")
+        ax1.set_ylabel("PC2")
+        plt.colorbar(scatter1, ax=ax1, label='Cluster')
         
-        st.pyplot(fig)
+        scatter2 = ax2.scatter(U_opt_pca[:,0], U_opt_pca[:,1], 
+                             c=st.session_state.labels_opt, 
+                             cmap='viridis', s=50, alpha=0.7)
+        ax2.set_title(f"Sesudah PSO (γ={best_gamma:.4f})\nSilhouette: {silhouette_score(st.session_state.U_opt, st.session_state.labels_opt):.4f}, DBI: {davies_bouldin_score(st.session_state.U_opt, st.session_state.labels_opt):.4f}")
+        ax2.set_xlabel("PC1")
+        ax2.set_ylabel("PC2")
+        plt.colorbar(scatter2, ax=ax2, label='Cluster')
+        
+        st.pyplot(fig_comparison)
 
         st.markdown("""
                                     - **Titik-titik pada plot** mewakili setiap observasi (misalnya, Kabupaten/Kota) dalam dataset.
