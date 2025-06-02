@@ -263,6 +263,19 @@ def exploratory_data_analysis():
 
 def data_preprocessing():
     st.header("⚙️ Data Preprocessing")
+    st.markdown("""
+    Pada tahap ini, dilakukan proses **data preprocessing** dengan tujuan menyiapkan data agar dapat digunakan dalam proses analisis dan pemodelan. Tahapan preprocessing yang dilakukan meliputi:
+
+    1. **Menghapus Kolom Non-Numerik:**  
+       Kolom `'Kabupaten/Kota'` dihapus karena bersifat kategorikal dan tidak dibutuhkan dalam proses perhitungan numerik seperti clustering.
+
+    2. **Scaling (Normalisasi Data):**  
+       Data dinormalisasi menggunakan **RobustScaler**, yaitu metode scaling yang tidak sensitif terhadap outlier.  
+       - Fungsi `RobustScaler` adalah untuk mengubah skala data agar setiap fitur memiliki rentang nilai yang sebanding.  
+       - Scaling ini penting agar algoritma seperti **Spectral Clustering** atau optimasi **PSO (Particle Swarm Optimization)** tidak bias terhadap fitur dengan skala lebih besar.
+
+    Metode RobustScaler bekerja dengan cara mengurangi median dan membaginya dengan rentang interkuartil (IQR = Q3 - Q1), sehingga lebih stabil terhadap data ekstrem (outlier).
+    """)
 
     if 'df' not in st.session_state or st.session_state.df is None:
         st.warning("Silakan upload data terlebih dahulu")
