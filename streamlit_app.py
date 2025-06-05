@@ -442,7 +442,7 @@ def clustering_analysis():
                 gamma = float(gamma_values)
             
             # Ensure gamma stays within bounds
-            gamma = max(0.001, min(gamma, 2.0))
+            gamma = max(0.001, min(gamma, 5.0))
             
             # Hitung matriks kernel
             W = rbf_kernel(X_scaled, gamma=gamma)
