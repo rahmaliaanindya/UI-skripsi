@@ -657,16 +657,16 @@ def clustering_analysis():
                                                          c=st.session_state.labels_before, 
                                                          cmap='viridis', s=50, alpha=0.7)
                                     ax1.set_title(f"Sebelum PSO (γ=0.1)\nSilhouette: {sil_score:.4f}, DBI: {dbi_score:.4f}")
-                                    ax1.set_xlabel("PC1")
-                                    ax1.set_ylabel("PC2")
+                                    ax1.set_xlabel("Eigenvector 1")
+                                    ax1.set_ylabel("Eigenvector 2")
                                     plt.colorbar(scatter1, ax=ax1, label='Cluster')
                                     
                                     scatter2 = ax2.scatter(U_opt_pca[:,0], U_opt_pca[:,1], 
                                                          c=labels_opt, 
                                                          cmap='viridis', s=50, alpha=0.7)
                                     ax2.set_title(f"Sesudah PSO (γ={best_gamma:.4f})\nSilhouette: {sil_opt:.4f}, DBI: {dbi_opt:.4f}")
-                                    ax2.set_xlabel("PC1")
-                                    ax2.set_ylabel("PC2")
+                                    ax2.set_xlabel("Eigenvector 1")
+                                    ax2.set_ylabel("Eigenvector 2")
                                     plt.colorbar(scatter2, ax=ax2, label='Cluster')
                                     
                                     st.pyplot(fig_comparison)
@@ -975,8 +975,8 @@ def results_analysis():
                              c=st.session_state.labels_before, 
                              cmap='viridis', s=50, alpha=0.7)
         ax1.set_title(f"Sebelum PSO (γ=0.1)\nSilhouette: {silhouette_score(st.session_state.U_before, st.session_state.labels_before):.4f}, DBI: {davies_bouldin_score(st.session_state.U_before, st.session_state.labels_before):.4f}")
-        ax1.set_xlabel("PC1")
-        ax1.set_ylabel("PC2")
+        ax1.set_xlabel("Eigenvector 1")
+        ax1.set_ylabel("Eigenvector 2")
         plt.colorbar(scatter1, ax=ax1, label='Cluster')
         
         scatter2 = ax2.scatter(U_opt_pca[:,0], U_opt_pca[:,1], 
