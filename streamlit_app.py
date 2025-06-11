@@ -40,7 +40,7 @@ st.markdown("""
         background-color: #f5f5f5;
     }
     .stButton>button {
-        background-color: #4CAF50;
+        background-color: #CCCCCC;
         color: white;
         font-weight: bold;
     }
