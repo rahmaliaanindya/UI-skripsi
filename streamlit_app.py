@@ -37,7 +37,7 @@ st.set_page_config(page_title="Spectral Clustering with PSO", layout="wide", pag
 st.markdown("""
 <style>
     .main {
-        background-color: #ADD8E6;
+        background-color: #f5f5f5;
     }
     .stButton>button {
         background-color: #4CAF50;
