@@ -293,6 +293,28 @@ def data_preprocessing():
     st.subheader("Contoh Data Sebelum Scaling")
     st.dataframe(X)
 
+    # ===== Tampilkan Jumlah Nilai Null =====
+    st.subheader("Jumlah Nilai Null per Kolom")
+    st.dataframe(X.isnull().sum())
+
+    # ===== Penanganan Nilai Null =====
+    if X.isnull().values.any():
+        st.markdown("### Penanganan Nilai Null")
+        handling_method = st.radio(
+            "Pilih metode penanganan nilai null:",
+            ["Hapus baris dengan nilai null", "Ganti dengan median", "Ganti dengan rata-rata"]
+        )
+
+        if handling_method == "Hapus baris dengan nilai null":
+            X = X.dropna()
+            st.info("Baris dengan nilai null telah dihapus.")
+        elif handling_method == "Ganti dengan median":
+            X = X.fillna(X.median(numeric_only=True))
+            st.info("Nilai null telah diganti dengan median.")
+        elif handling_method == "Ganti dengan rata-rata":
+            X = X.fillna(X.mean(numeric_only=True))
+            st.info("Nilai null telah diganti dengan rata-rata.")
+            
     # Scaling
     scaler = RobustScaler(with_centering=True, with_scaling=True, quantile_range=(25.0, 75.0))
     X_scaled = scaler.fit_transform(X)
