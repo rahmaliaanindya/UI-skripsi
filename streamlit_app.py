@@ -377,13 +377,13 @@ def clustering_analysis():
     st.success(f"**Cluster optimal terpilih:** k={best_cluster} (Silhouette: {best_silhouette:.4f}, DBI: {best_dbi:.4f})")
 
     st.markdown("""
-    | Rentang Nilai Silhoutte Score | Interpretasi |
-    |---------------|--------------|
-    | 0.71 – 1.00   | Klaster sangat baik (struktur kuat) |
-    | 0.51 – 0.70   | Klaster baik (cukup jelas) |
-    | 0.26 – 0.50   | Klaster lemah/cukup |
-    | 0.00 – 0.25   | Klaster buruk/tidak jelas |
-    | < 0.00        | Salah klaster/tumpang tindih |
+    | Rentang Nilai Silhouette Score | Kategori | Interpretasi |
+    |-------------------------------|----------|--------------|
+    | 0.71 – 1.00                   | Tinggi   | Klaster sangat baik (struktur kuat) |
+    | 0.51 – 0.70                   | Tinggi   | Klaster baik (cukup jelas) |
+    | 0.26 – 0.50                   | Sedang   | Klaster lemah/cukup |
+    | 0.00 – 0.25                   | Rendah   | Klaster buruk/tidak jelas |
+    | < 0.00                        | Rendah   | Salah klaster/tumpang tindih |
     """)
     
     # =============================================
