@@ -377,7 +377,7 @@ def clustering_analysis():
     st.success(f"**Cluster optimal terpilih:** k={best_cluster} (Silhouette: {best_silhouette:.4f}, DBI: {best_dbi:.4f})")
 
     st.markdown("""
-    | Rentang Nilai | Interpretasi |
+    | Rentang Nilai Silhoutte Score | Interpretasi |
     |---------------|--------------|
     | 0.71 – 1.00   | Klaster sangat baik (struktur kuat) |
     | 0.51 – 0.70   | Klaster baik (cukup jelas) |
